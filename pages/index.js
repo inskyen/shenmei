@@ -11,6 +11,7 @@ export default function Home() {
   // 状态 2：点击文字区域 -> 触发图文详情单页
   const [detailPageVideo, setDetailPageVideo] = useState(null);
 
+  // 初始化加载数据
   useEffect(() => {
     fetch('/api/videos')
       .then(res => res.json())
@@ -23,6 +24,46 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  // 核心魔法：监听浏览器返回事件（处理手机侧滑返回）
+  useEffect(() => {
+    const handlePopState = () => {
+      // 一旦触发侧滑返回，立刻清空状态，关闭所有浮层，但不退出网页
+      if (immersiveVideo) setImmersiveVideo(null);
+      if (detailPageVideo) setDetailPageVideo(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [immersiveVideo, detailPageVideo]);
+
+  // 打开私人放映室（推入历史记录）
+  const openImmersive = (video) => {
+    window.history.pushState({ modal: true }, "");
+    setImmersiveVideo(video);
+  };
+
+  // 关闭私人放映室（吐出历史记录）
+  const closeImmersive = () => {
+    setImmersiveVideo(null);
+    if (window.history.state && window.history.state.modal) {
+      window.history.back();
+    }
+  };
+
+  // 打开详情页（推入历史记录）
+  const openDetailPage = (video) => {
+    window.history.pushState({ modal: true }, "");
+    setDetailPageVideo(video);
+  };
+
+  // 关闭详情页（吐出历史记录）
+  const closeDetailPage = () => {
+    setDetailPageVideo(null);
+    if (window.history.state && window.history.state.modal) {
+      window.history.back();
+    }
+  };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
@@ -51,7 +92,6 @@ export default function Home() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {videos.map((video) => (
-              
               <article 
                 key={video.id || video.bvid} 
                 style={{ 
@@ -61,7 +101,7 @@ export default function Home() {
               >
                 {/* 交互区 A：点击头部文字 -> 进入单页详情 */}
                 <div 
-                  onClick={() => setDetailPageVideo(video)}
+                  onClick={() => openDetailPage(video)}
                   style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', cursor: 'pointer' }}
                 >
                   <div style={{ 
@@ -78,7 +118,7 @@ export default function Home() {
 
                 {/* 交互区 B：点击视频封面 -> 进入居中悬浮播放 */}
                 <div 
-                  onClick={() => setImmersiveVideo(video)}
+                  onClick={() => openImmersive(video)}
                   style={{ display: 'block', position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000000', cursor: 'pointer' }}
                 >
                   <img src={video.cover} alt={video.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -89,7 +129,7 @@ export default function Home() {
 
                 {/* 交互区 C：点击底部文字 -> 进入单页详情 */}
                 <div 
-                  onClick={() => setDetailPageVideo(video)}
+                  onClick={() => openDetailPage(video)}
                   style={{ padding: '16px', cursor: 'pointer' }}
                 >
                   <h2 style={{ fontSize: '15px', fontWeight: '500', margin: '0 0 10px 0', lineHeight: '1.6', color: '#2C3E50' }}>{video.title}</h2>
@@ -104,16 +144,15 @@ export default function Home() {
         )}
       </main>
 
-      {/* 浮层 1：全新升级的“私人放映室”居中悬浮模式 */}
+      {/* 浮层 1：私人放映室（居中悬浮模式） */}
       {immersiveVideo && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 9999, // 90%透明度的暗黑背景
+          backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 9999,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
         }}>
-          {/* 右上角的优雅关闭按钮 */}
           <div 
-            onClick={() => setImmersiveVideo(null)} 
+            onClick={closeImmersive} 
             style={{ 
               position: 'absolute', top: '24px', right: '24px', zIndex: 10000, 
               width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.1)', 
@@ -122,17 +161,14 @@ export default function Home() {
             }}
           >✕</div>
           
-          {/* 居中的视频容器，限制最大宽度，保持 16:9 */}
           <div style={{ width: '100%', maxWidth: '800px', padding: '0 16px' }}>
             <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
               <iframe 
                 src={`//player.bilibili.com/player.html?bvid=${immersiveVideo.bvid}&page=1&autoplay=1&high_quality=1&danmaku=1`} 
-                scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} 
-                allow="autoplay; fullscreen" /* 👈 就是加了这一句权限声明 */
+                scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
               ></iframe>
             </div>
-            {/* 视频下方简单悬浮个标题，增加质感 */}
             <div style={{ marginTop: '20px', color: '#FFFFFF', textAlign: 'center' }}>
               <h2 style={{ fontSize: '16px', fontWeight: '500', margin: '0 0 8px 0', letterSpacing: '0.5px' }}>{immersiveVideo.title}</h2>
               <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>@{immersiveVideo.up_name}</div>
@@ -148,15 +184,14 @@ export default function Home() {
           backgroundColor: '#F8FAFC', zIndex: 999, overflowY: 'auto'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', padding: '16px', backgroundColor: '#FFFFFF', position: 'sticky', top: 0, boxShadow: '0 2px 10px rgba(184, 212, 232, 0.15)' }}>
-            <div onClick={() => setDetailPageVideo(null)} style={{ padding: '8px', cursor: 'pointer', color: '#6B9AB8', fontWeight: '500' }}>← 返回</div>
+            <div onClick={closeDetailPage} style={{ padding: '8px', cursor: 'pointer', color: '#6B9AB8', fontWeight: '500' }}>← 返回</div>
             <div style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#2C3E50', paddingRight: '40px' }}>动态详情</div>
           </div>
           <div style={{ padding: '20px' }}>
             <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden' }}>
               <iframe 
                 src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1`} 
-                scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} 
-                allow="autoplay; fullscreen" /* 👈 就是加了这一句权限声明 */
+                scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
               ></iframe>
             </div>
