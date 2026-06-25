@@ -28,7 +28,6 @@ export default function Home() {
   // 核心魔法：监听浏览器返回事件（处理手机侧滑返回）
   useEffect(() => {
     const handlePopState = () => {
-      // 一旦触发侧滑返回，立刻清空状态，关闭所有浮层，但不退出网页
       if (immersiveVideo) setImmersiveVideo(null);
       if (detailPageVideo) setDetailPageVideo(null);
     };
@@ -37,13 +36,13 @@ export default function Home() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [immersiveVideo, detailPageVideo]);
 
-  // 打开私人放映室（推入历史记录）
+  // 打开私人放映室
   const openImmersive = (video) => {
     window.history.pushState({ modal: true }, "");
     setImmersiveVideo(video);
   };
 
-  // 关闭私人放映室（吐出历史记录）
+  // 关闭私人放映室
   const closeImmersive = () => {
     setImmersiveVideo(null);
     if (window.history.state && window.history.state.modal) {
@@ -51,13 +50,13 @@ export default function Home() {
     }
   };
 
-  // 打开详情页（推入历史记录）
+  // 打开详情页
   const openDetailPage = (video) => {
     window.history.pushState({ modal: true }, "");
     setDetailPageVideo(video);
   };
 
-  // 关闭详情页（吐出历史记录）
+  // 关闭详情页
   const closeDetailPage = () => {
     setDetailPageVideo(null);
     if (window.history.state && window.history.state.modal) {
@@ -144,7 +143,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* 浮层 1：私人放映室（居中悬浮模式） */}
+      {/* 浮层 1：私人放映室（居中悬浮模式 - 已追加自动自动循环播放及权限控制） */}
       {immersiveVideo && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
@@ -163,8 +162,9 @@ export default function Home() {
           
           <div style={{ width: '100%', maxWidth: '800px', padding: '0 16px' }}>
             <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+              {/* URL 结尾追加了 &loop=1 ，并且增加了 allow="autoplay; fullscreen" 授权 */}
               <iframe 
-                src={`//player.bilibili.com/player.html?bvid=${immersiveVideo.bvid}&page=1&autoplay=1&high_quality=1&danmaku=1`} 
+                src={`//player.bilibili.com/player.html?bvid=${immersiveVideo.bvid}&page=1&autoplay=1&high_quality=1&danmaku=1&loop=1`} 
                 scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
               ></iframe>
@@ -189,8 +189,9 @@ export default function Home() {
           </div>
           <div style={{ padding: '20px' }}>
             <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden' }}>
+              {/* 这里同样追加了 &loop=1 和 自动播放授权 */}
               <iframe 
-                src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1`} 
+                src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1&loop=1`} 
                 scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
               ></iframe>
