@@ -1,26 +1,27 @@
+import { createClient } from '@supabase/supabase-js';
+
+// 从环境变量中读取配置并初始化 Supabase 客户端
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export default async function handler(req, res) {
-  const MEDIA_ID = '2456935435';
-  
   try {
-    const response = await fetch(
-      `https://api.bilibili.com/x/v3/fav/resource/list?media_id=${MEDIA_ID}&pn=1&ps=20&type=2`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Referer': 'https://www.bilibili.com'
-        }
-      }
-    );
-    
-    const data = await response.json();
-    const medias = (data?.data?.medias || []).map(item => ({
-    ...item,
-    cover: item.cover?.replace('http://', 'https://')
-    }));
-    
-    res.status(200).json({ videos: medias });
+    // 从 videos 表中查询所有字段，并按照创建时间（created_at）倒序排列
+    const { data, error } = await supabase
+      .from('videos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // 返回给前端的结构保持不变
+    res.status(200).json({ videos: data });
     
   } catch (err) {
-    res.status(500).json({ error: '加载失败' });
+    console.error('Supabase 查询错误:', err);
+    res.status(500).json({ error: '数据加载失败' });
   }
 }
