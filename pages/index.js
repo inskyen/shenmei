@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) setUser(data.session.user);
-    };
-    checkUser();
-  }, []);
   
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
@@ -97,6 +86,7 @@ export default function Home() {
         </div>
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '4px', alignItems: 'center' }}>
           <svg style={{ width: '24px', height: '24px', color: '#2A527A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+
           <div 
             onClick={() => window.location.href = '/login'} 
             style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
