@@ -139,3 +139,16 @@
 - 已使用真實 video id 驗證本地 `/v/[id]` 返回 200。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：小館頁
+
+- 將 `/m` 從占位頁改為真實小館列表頁。
+- 小館列表會讀取 active `modules`，展示名稱、slug、介紹、封面或主色塊。
+- 將 `/m/[slug]` 從占位頁改為真實小館詳情頁。
+- 小館詳情會按 slug 讀取 `modules`，並讀取 `post_modules -> posts -> videos` 展示館內策展。
+- 小館詳情會批量讀取 `profiles`，展示發布者與推薦理由。
+- 小館內策展可點進 `/p/[id]`，封面可點進 `/v/[id]`。
+- 小館空狀態、載入狀態與錯誤狀態已補齊。
+- 已驗證本地 `/m` 與 `/m/[slug]` 均返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。
