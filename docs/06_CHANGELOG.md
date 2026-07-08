@@ -126,3 +126,16 @@
 - 已使用真實 post id 驗證本地 `/p/[id]` 返回 200。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：影片主頁
+
+- 將 `/v/[id]` 從占位頁改為真實影片主頁。
+- 影片主頁會讀取 `videos`，並展示 B 站播放器、影片標題與 UP 主。
+- 會讀取同一支影片下所有公開已發布的 `posts`，形成推薦列表。
+- 推薦列表會批量讀取 `profiles`，展示發布者、日期、推薦理由、喜歡數與留言數。
+- 每條推薦可點擊進入 `/p/[id]`。
+- 影片頁右上角 `推薦` 會跳到 `/submit`，並預填 BVID 與影片標題。
+- `/submit` 已支援從網址 query 預填 BVID 和影片標題。
+- 已使用真實 video id 驗證本地 `/v/[id]` 返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。

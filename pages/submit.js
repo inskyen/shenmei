@@ -40,8 +40,8 @@ function createFallbackUsername() {
 
 export default function SubmitPage() {
   const router = useRouter();
-  const [sourceInput, setSourceInput] = useState('');
-  const [videoTitle, setVideoTitle] = useState('');
+  const [sourceInput, setSourceInput] = useState(null);
+  const [videoTitle, setVideoTitle] = useState(null);
   const [coverUrl, setCoverUrl] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [note, setNote] = useState('');
@@ -49,6 +49,10 @@ export default function SubmitPage() {
   const [selectedModuleIds, setSelectedModuleIds] = useState([]);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
+  const prefilledTitle = router.isReady && typeof router.query.title === 'string' ? router.query.title : '';
+  const sourceValue = sourceInput ?? prefilledBvid;
+  const videoTitleValue = videoTitle ?? prefilledTitle;
 
   useEffect(() => {
     async function loadModules() {
@@ -128,7 +132,7 @@ export default function SubmitPage() {
   };
 
   const createVideo = async (bvid) => {
-    const title = videoTitle.trim();
+    const title = videoTitleValue.trim();
 
     if (title.length < 2) {
       throw new Error('這支影片還沒有收錄，請先補上影片標題。');
@@ -162,7 +166,7 @@ export default function SubmitPage() {
     event.preventDefault();
     setMessage('');
 
-    const bvid = parseBvid(sourceInput);
+    const bvid = parseBvid(sourceValue);
     const trimmedNote = note.trim();
 
     if (!bvid) {
@@ -248,7 +252,7 @@ export default function SubmitPage() {
           <label htmlFor="source" style={labelStyle}>B 站連結 / BVID</label>
           <input
             id="source"
-            value={sourceInput}
+            value={sourceValue}
             onChange={(event) => setSourceInput(event.target.value)}
             placeholder="https://www.bilibili.com/video/BV..."
             style={fieldStyle}
@@ -278,7 +282,7 @@ export default function SubmitPage() {
           <label htmlFor="videoTitle" style={labelStyle}>影片標題</label>
           <input
             id="videoTitle"
-            value={videoTitle}
+            value={videoTitleValue}
             onChange={(event) => setVideoTitle(event.target.value)}
             placeholder="新影片第一次收錄時需要"
             style={fieldStyle}

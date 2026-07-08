@@ -1,18 +1,351 @@
+import { useEffect, useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import PageShell, { PlaceholderNote } from '@/components/PageShell';
+import { supabase } from '@/lib/supabase/client';
+
+const pageStyle = {
+  backgroundColor: '#F0F4F8',
+  color: '#2A527A',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  minHeight: '100vh',
+};
+
+const cardStyle = {
+  backgroundColor: '#FFFFFF',
+  border: '1px solid rgba(194, 214, 230, 0.55)',
+  borderRadius: '18px',
+  boxShadow: '0 1px 4px rgba(42, 82, 122, 0.06)',
+};
+
+function formatDate(timestamp) {
+  if (!timestamp) return '';
+
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getDisplayName(post, profile) {
+  return profile?.display_name || profile?.username || post.legacy_added_by || '策展人';
+}
+
+function getInitial(name) {
+  return name ? name.charAt(0).toUpperCase() : '審';
+}
+
+function buildSubmitHref(video) {
+  const params = new URLSearchParams();
+
+  if (video?.external_id) {
+    params.set('bvid', video.external_id);
+  }
+
+  if (video?.title) {
+    params.set('title', video.title);
+  }
+
+  return `/submit${params.toString() ? `?${params.toString()}` : ''}`;
+}
 
 export default function VideoPage() {
   const router = useRouter();
   const { id } = router.query;
+  const [video, setVideo] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [profilesById, setProfilesById] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+
+    async function loadVideoPage() {
+      setLoading(true);
+      setErrorMessage('');
+
+      try {
+        const { data: videoData, error: videoError } = await supabase
+          .from('videos')
+          .select('id, external_id, source_url, title, cover_url, author_name, created_at')
+          .eq('id', id)
+          .single();
+
+        if (videoError) {
+          throw videoError;
+        }
+
+        setVideo(videoData);
+
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('id, user_id, legacy_added_by, note, created_at, like_count, comment_count')
+          .eq('video_id', videoData.id)
+          .eq('status', 'published')
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false });
+
+        if (postsError) {
+          throw postsError;
+        }
+
+        const posts = postsData || [];
+        setRecommendations(posts);
+
+        const profileIds = [...new Set(posts.map((post) => post.user_id).filter(Boolean))];
+
+        if (profileIds.length === 0) {
+          setProfilesById({});
+          return;
+        }
+
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', profileIds);
+
+        if (profilesError) {
+          throw profilesError;
+        }
+
+        const nextProfilesById = {};
+        (profilesData || []).forEach((profile) => {
+          nextProfilesById[profile.id] = profile;
+        });
+
+        setProfilesById(nextProfilesById);
+      } catch (error) {
+        console.error('影片主頁載入失敗:', error);
+        setErrorMessage('這支影片暫時無法顯示，可能已被移除或尚未公開。');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadVideoPage();
+  }, [id]);
 
   return (
-    <PageShell
-      title={`影片 / ${id || '...'}`}
-      subtitle="影片主頁會沉澱播放、所有推薦與公共留言。"
-    >
-      <PlaceholderNote>
-        影片頁正在搭建中。這裡之後會像 B 站影片頁一樣，以 video 為核心展示所有策展與討論。
-      </PlaceholderNote>
-    </PageShell>
+    <div style={pageStyle}>
+      <Head>
+        <title>{video ? `${video.title || '影片'} · 審美者` : '影片 · 審美者'}</title>
+      </Head>
+
+      <header style={{
+        alignItems: 'center',
+        backgroundColor: 'rgba(240, 244, 248, 0.92)',
+        backdropFilter: 'blur(14px)',
+        borderBottom: '1px solid rgba(194, 214, 230, 0.5)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '18px 18px 14px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+      }}>
+        <button
+          type="button"
+          onClick={() => router.push('/')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#6B99C3',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 600,
+            padding: 0,
+          }}
+        >
+          ← 大廳
+        </button>
+        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>影片主頁</div>
+        <button
+          type="button"
+          onClick={() => router.push(buildSubmitHref(video))}
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #C2D6E6',
+            borderRadius: '999px',
+            color: '#6B99C3',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 700,
+            padding: '7px 10px',
+          }}
+        >
+          推薦
+        </button>
+      </header>
+
+      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '18px 16px 88px' }}>
+        {loading && (
+          <div style={{ color: '#87ACCA', padding: '44px 0', textAlign: 'center' }}>
+            正在整理這支影片的審美痕跡...
+          </div>
+        )}
+
+        {!loading && errorMessage && (
+          <section style={{ ...cardStyle, padding: '28px 20px', textAlign: 'center' }}>
+            <div style={{ color: '#87ACCA', lineHeight: 1.8 }}>{errorMessage}</div>
+          </section>
+        )}
+
+        {!loading && video && (
+          <article style={{ display: 'grid', gap: '16px' }}>
+            <section style={{ ...cardStyle, overflow: 'hidden' }}>
+              <div style={{
+                backgroundColor: '#0E1722',
+                position: 'relative',
+                width: '100%',
+                paddingTop: '56.25%',
+              }}>
+                {video.external_id ? (
+                  <iframe
+                    src={`//player.bilibili.com/player.html?bvid=${video.external_id}&page=1&high_quality=1&danmaku=1`}
+                    scrolling="no"
+                    border="0"
+                    frameBorder="no"
+                    framespacing="0"
+                    allowFullScreen={true}
+                    allow="autoplay; fullscreen"
+                    style={{
+                      border: 'none',
+                      height: '100%',
+                      left: 0,
+                      position: 'absolute',
+                      top: 0,
+                      width: '100%',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    alignItems: 'center',
+                    color: '#C2D6E6',
+                    display: 'flex',
+                    inset: 0,
+                    justifyContent: 'center',
+                    position: 'absolute',
+                  }}>
+                    影片暫時無法播放
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '18px' }}>
+                <h1 style={{ color: '#2A527A', fontSize: '21px', lineHeight: 1.45, margin: 0 }}>
+                  {video.title || '未命名影片'}
+                </h1>
+                <div style={{ color: '#87ACCA', fontSize: '13px', lineHeight: 1.7, marginTop: '8px' }}>
+                  UP 主：{video.author_name || '未知'}
+                </div>
+              </div>
+            </section>
+
+            <section style={{
+              ...cardStyle,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: '16px', textAlign: 'center' }}>
+                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>{recommendations.length}</div>
+                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>推薦</div>
+              </div>
+              <div style={{ borderLeft: '1px solid rgba(194, 214, 230, 0.55)', padding: '16px', textAlign: 'center' }}>
+                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>
+                  {recommendations.reduce((sum, post) => sum + (post.like_count || 0), 0)}
+                </div>
+                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>喜歡</div>
+              </div>
+            </section>
+
+            <section style={{ display: 'grid', gap: '12px' }}>
+              <h2 style={{
+                color: '#2A527A',
+                fontSize: '17px',
+                margin: '6px 2px 0',
+              }}>
+                所有推薦
+              </h2>
+
+              {recommendations.length === 0 && (
+                <div style={{ ...cardStyle, color: '#87ACCA', lineHeight: 1.8, padding: '22px 18px', textAlign: 'center' }}>
+                  還沒有人推薦這支影片。你可以成為第一個把它放進大廳的人。
+                </div>
+              )}
+
+              {recommendations.map((post) => {
+                const profile = post.user_id ? profilesById[post.user_id] : null;
+                const displayName = getDisplayName(post, profile);
+
+                return (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onClick={() => router.push(`/p/${post.id}`)}
+                    style={{
+                      ...cardStyle,
+                      cursor: 'pointer',
+                      display: 'block',
+                      padding: '16px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ alignItems: 'center', display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                      <div
+                        aria-label={displayName}
+                        style={{
+                          alignItems: 'center',
+                          backgroundColor: '#C2D6E6',
+                          backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none',
+                          backgroundPosition: 'center',
+                          backgroundSize: 'cover',
+                          borderRadius: '50%',
+                          color: '#FFFFFF',
+                          display: 'flex',
+                          flex: '0 0 auto',
+                          fontWeight: 800,
+                          height: '38px',
+                          justifyContent: 'center',
+                          width: '38px',
+                        }}
+                      >
+                        {profile?.avatar_url ? '' : getInitial(displayName)}
+                      </div>
+
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: '#2A527A', fontSize: '14px', fontWeight: 700 }}>{displayName}</div>
+                        <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '3px' }}>
+                          {formatDate(post.created_at)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p style={{
+                      color: '#2A527A',
+                      fontSize: '15px',
+                      lineHeight: 1.75,
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                      {post.note}
+                    </p>
+
+                    <div style={{
+                      color: '#87ACCA',
+                      display: 'flex',
+                      fontSize: '12px',
+                      gap: '14px',
+                      marginTop: '12px',
+                    }}>
+                      <span>{post.like_count || 0} 喜歡</span>
+                      <span>{post.comment_count || 0} 留言</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </section>
+          </article>
+        )}
+      </main>
+    </div>
   );
 }
