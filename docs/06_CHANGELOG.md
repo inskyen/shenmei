@@ -166,3 +166,15 @@
 - 已驗證 `/api/feed` 在 profile 兼容修正後返回 200。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：探索搜尋頁
+
+- 將 `/search` 從占位頁改為真實影片搜尋頁。
+- 支援用影片標題、UP 主、BVID 搜尋已收錄 `videos`。
+- 搜尋結果展示封面、標題、UP 主與 BVID。
+- 搜尋結果可進入 `/v/[id]` 影片主頁。
+- 搜尋結果可點 `推薦`，跳到 `/submit` 並預填 BVID 與影片標題。
+- 搜不到結果時提供前往 `/submit` 的入口。
+- 已驗證本地 `/search` 返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。
