@@ -1,13 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-
-// 从环境变量中读取配置并初始化 Supabase 客户端
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase/client';
 
 export default async function handler(req, res) {
   try {
-    // 从 videos 表中查询所有字段，并按照创建时间（created_at）倒序排列
+    // 過渡接口：目前首頁仍讀舊的 videos 表。
+    // 正式 MVP 會把首頁資料源切到 posts，再連帶 video/profile/module 資料。
     const { data, error } = await supabase
       .from('videos')
       .select('*')
@@ -17,11 +13,11 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    // 返回给前端的结构保持不变
+    // 返回給前端的結構暫時保持不變，避免第一步地基整理影響現有首頁。
     res.status(200).json({ videos: data });
     
   } catch (err) {
-    console.error('Supabase 查询错误:', err);
-    res.status(500).json({ error: '数据加载失败' });
+    console.error('Supabase 查詢錯誤:', err);
+    res.status(500).json({ error: '資料載入失敗' });
   }
 }
