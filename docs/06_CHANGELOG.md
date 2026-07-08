@@ -114,3 +114,15 @@
 - 新增 `supabase/migrations/20260709_000001_allow_profile_self_insert.sql`，允許登入使用者補建自己的 profile。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：策展動態詳情頁
+
+- 將 `/p/[id]` 從占位頁改為真實詳情頁。
+- 詳情頁會讀取公開已發布的 `posts`，並連帶取得影片資料。
+- 若 post 有 `user_id`，會讀取對應 `profiles` 顯示發布者。
+- 會讀取 `post_modules`，並展示可點擊的小館標籤。
+- 頁面展示 B 站播放器、影片標題、UP 主、推薦理由、日期、喜歡數與留言數。
+- 空狀態、載入狀態與錯誤狀態已補齊。
+- 已使用真實 post id 驗證本地 `/p/[id]` 返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。
