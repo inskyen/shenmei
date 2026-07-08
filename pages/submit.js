@@ -108,15 +108,12 @@ export default function SubmitPage() {
       return;
     }
 
-    const emailName = user.email?.split('@')[0] || '策展人';
-
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
           username: createFallbackUsername(),
-          display_name: emailName,
         });
 
       if (!insertError) {

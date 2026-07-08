@@ -152,3 +152,17 @@
 - 已驗證本地 `/m` 與 `/m/[slug]` 均返回 200。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：使用者頁
+
+- 將 `/u/[username]` 從占位頁改為真實使用者頁。
+- 使用者頁會讀取 `profiles`，展示 username、頭像、簡介占位與策展統計。
+- 使用者頁會讀取該 profile 發布的公開 `posts`，並連帶展示影片封面、影片標題、推薦理由、喜歡數與留言數。
+- `/u/me` 會檢查登入狀態；未登入跳轉 `/login`，已登入則跳轉自己的 username 頁。
+- 首頁 feed 會帶回 profile username / avatar，點作者區可進入 `/u/[username]`。
+- 為兼容遠端舊 `profiles` 表，前端暫時只依賴 `username / avatar_url`。
+- 新增 `supabase/migrations/20260709_000002_align_profiles_columns.sql`，用於補齊 `display_name / bio / aesthetic_tags / message_permission`。
+- 已驗證本地 `/u/me` 與 `/u/[username]` 均返回 200。
+- 已驗證 `/api/feed` 在 profile 兼容修正後返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。

@@ -25,7 +25,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.display_name || profile?.username || post.legacy_added_by || '策展人';
+  return profile?.username || post.legacy_added_by || '策展人';
 }
 
 function getInitial(name) {
@@ -104,7 +104,7 @@ export default function ModuleDetailPage() {
 
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, display_name, avatar_url')
+          .select('id, username, avatar_url')
           .in('id', profileIds);
 
         if (profilesError) {

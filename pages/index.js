@@ -67,6 +67,17 @@ export default function Home() {
     }
   };
 
+  const openUserPage = (event, video) => {
+    event.stopPropagation();
+
+    if (video.profile_username) {
+      router.push(`/u/${video.profile_username}`);
+      return;
+    }
+
+    openDetailPage(video);
+  };
+
   const closeDetailPage = () => {
     setDetailPageVideo(null);
     if (window.history.state && window.history.state.modal) {
@@ -125,9 +136,23 @@ export default function Home() {
                 
                 {/* 头部：用户信息区 (点击进入详情页) */}
                 <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#C2D6E6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 'bold' }}>
-                       {video.added_by ? video.added_by.charAt(0) : '天'}
+                  <div onClick={(event) => openUserPage(event, video)} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#C2D6E6',
+                      backgroundImage: video.profile_avatar_url ? `url(${video.profile_avatar_url})` : 'none',
+                      backgroundPosition: 'center',
+                      backgroundSize: 'cover',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFFFFF',
+                      fontWeight: 'bold',
+                    }}>
+                       {video.profile_avatar_url ? '' : (video.added_by ? video.added_by.charAt(0) : '天')}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -14,6 +14,10 @@ export default async function handler(req, res) {
         legacy_added_by,
         like_count,
         comment_count,
+        profiles (
+          username,
+          avatar_url
+        ),
         videos (
           id,
           external_id,
@@ -36,6 +40,7 @@ export default async function handler(req, res) {
     // post_id 用來進入 /p/[id]，id/video_id 用來進入 /v/[id]。
     const items = (data || []).map((post) => {
       const video = post.videos || {};
+      const profile = post.profiles || {};
 
       return {
         post_id: post.id,
@@ -46,7 +51,9 @@ export default async function handler(req, res) {
         video_title: video.title,
         cover: video.cover_url,
         up_name: video.author_name,
-        added_by: post.legacy_added_by || '策展人',
+        added_by: profile.username || post.legacy_added_by || '策展人',
+        profile_username: profile.username || null,
+        profile_avatar_url: profile.avatar_url || null,
         created_at: post.created_at,
         fav_time: video.fav_time,
         play_count: post.like_count,
