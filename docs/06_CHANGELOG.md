@@ -97,3 +97,20 @@
 - 首頁卡片可進入 `/p/[id]`，影片標題可進入 `/v/[id]`，封面仍保留沉浸播放。
 - 底部 `大廳 / 探索 / 發佈 / 訊息 / 我的` 已接到對應頁面。
 - 右側懸浮入口改為通知入口 `/notifications`，避免和底部發佈按鈕重複。
+
+## 2026-07-09
+
+### 追加施工：發佈策展 MVP
+
+- 將 `/submit` 從占位頁改成可提交表單。
+- 支援輸入 B 站連結或 BVID，前端會解析出 BVID。
+- 發布前檢查登入狀態，未登入時跳轉到 `/login`。
+- 發布時先查 `videos` 是否已有同一支 B 站影片。
+- 若影片不存在，使用表單中的標題、UP 主、封面 URL 建立最小 `videos` 記錄。
+- 建立 `posts`，寫入推薦理由、影片關聯、公開可見與已發布狀態。
+- 若已存在小館，表單可選小館並寫入 `post_modules`。
+- 發布成功後跳回 `/`，讓新策展回到大廳最新流。
+- 新增發布前 profile 自檢；若舊 auth 帳號缺少 profile，會自動補建數字 username。
+- 新增 `supabase/migrations/20260709_000001_allow_profile_self_insert.sql`，允許登入使用者補建自己的 profile。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。
