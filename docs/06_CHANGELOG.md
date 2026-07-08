@@ -178,3 +178,15 @@
 - 已驗證本地 `/search` 返回 200。
 - 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
 - 已跑 `npm run build`，生產構建通過。
+
+### 追加施工：喜歡 like
+
+- 新增 `lib/reactions/postLikes.js`，封裝 post 喜歡狀態讀取與切換。
+- 大廳首頁會在載入 feed 後讀取目前使用者已喜歡的 posts。
+- 大廳卡片的心形按鈕可插入或刪除 `reactions`，並即時更新本地 like_count。
+- `/p/[id]` 策展詳情頁會讀取目前使用者是否已喜歡此 post。
+- `/p/[id]` 可點擊喜歡/取消喜歡，並即時更新詳情頁 like_count。
+- 未登入使用者點喜歡會跳轉 `/login`。
+- 已驗證本地 `/`、`/p/[id]`、`/api/feed` 均返回 200。
+- 已跑 `npm run lint`，結果 0 errors，保留首頁既有 2 個 `<img>` warning。
+- 已跑 `npm run build`，生產構建通過。

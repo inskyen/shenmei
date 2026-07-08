@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/client';
+import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 const pageStyle = {
   backgroundColor: '#F0F4F8',
@@ -38,6 +39,8 @@ export default function PostPage() {
   const [post, setPost] = useState(null);
   const [profile, setProfile] = useState(null);
   const [modules, setModules] = useState([]);
+  const [liked, setLiked] = useState(false);
+  const [liking, setLiking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -78,6 +81,7 @@ export default function PostPage() {
         }
 
         setPost(postData);
+        setLiked(false);
 
         if (postData.user_id) {
           const { data: profileData, error: profileError } = await supabase
@@ -105,6 +109,9 @@ export default function PostPage() {
         }
 
         setModules((moduleRows || []).map((row) => row.modules).filter(Boolean));
+
+        const likedPostIds = await loadLikedPostIds([postData.id]);
+        setLiked(likedPostIds.has(postData.id));
       } catch (error) {
         console.error('策展動態載入失敗:', error);
         setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
@@ -118,6 +125,34 @@ export default function PostPage() {
 
   const video = post?.videos || {};
   const displayName = getDisplayName(post, profile);
+
+  const handleToggleLike = async () => {
+    if (!post?.id || liking) {
+      return;
+    }
+
+    setLiking(true);
+
+    try {
+      const result = await togglePostLike(post.id);
+
+      if (result.requiresLogin) {
+        router.push('/login');
+        return;
+      }
+
+      setLiked(result.liked);
+      setPost((currentPost) => ({
+        ...currentPost,
+        like_count: Math.max(0, (currentPost.like_count || 0) + result.delta),
+      }));
+    } catch (error) {
+      console.error('喜歡操作失敗:', error);
+      alert('喜歡操作失敗，請稍後再試。');
+    } finally {
+      setLiking(false);
+    }
+  };
 
   return (
     <div style={pageStyle}>
@@ -302,10 +337,24 @@ export default function PostPage() {
               gridTemplateColumns: '1fr 1fr',
               overflow: 'hidden',
             }}>
-              <div style={{ padding: '16px', textAlign: 'center' }}>
-                <div style={{ color: '#2A527A', fontSize: '20px', fontWeight: 800 }}>{post.like_count || 0}</div>
-                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>喜歡</div>
-              </div>
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                disabled={liking}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: liked ? '#E06B75' : '#2A527A',
+                  cursor: liking ? 'wait' : 'pointer',
+                  padding: '16px',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: '20px', fontWeight: 800 }}>{post.like_count || 0}</div>
+                <div style={{ color: liked ? '#E06B75' : '#87ACCA', fontSize: '12px', marginTop: '4px' }}>
+                  {liked ? '已喜歡' : '喜歡'}
+                </div>
+              </button>
               <div style={{ borderLeft: '1px solid rgba(194, 214, 230, 0.55)', padding: '16px', textAlign: 'center' }}>
                 <div style={{ color: '#2A527A', fontSize: '20px', fontWeight: 800 }}>{post.comment_count || 0}</div>
                 <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>留言</div>

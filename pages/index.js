@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 export default function Home() {
   const router = useRouter();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [likedPostIds, setLikedPostIds] = useState(new Set());
+  const [likingPostIds, setLikingPostIds] = useState(new Set());
   
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
@@ -18,8 +21,16 @@ export default function Home() {
     fetch('/api/feed')
       .then(res => res.json())
       .then(data => {
-        setVideos(data.items || []);
+        const items = data.items || [];
+        setVideos(items);
         setLoading(false);
+
+        return loadLikedPostIds(items.map((item) => item.post_id));
+      })
+      .then((nextLikedPostIds) => {
+        if (nextLikedPostIds) {
+          setLikedPostIds(nextLikedPostIds);
+        }
       })
       .catch(err => {
         console.error(err);
@@ -76,6 +87,52 @@ export default function Home() {
     }
 
     openDetailPage(video);
+  };
+
+  const handleToggleLike = async (event, video) => {
+    event.stopPropagation();
+
+    if (!video.post_id || likingPostIds.has(video.post_id)) {
+      return;
+    }
+
+    setLikingPostIds((currentIds) => new Set(currentIds).add(video.post_id));
+
+    try {
+      const result = await togglePostLike(video.post_id);
+
+      if (result.requiresLogin) {
+        router.push('/login');
+        return;
+      }
+
+      setLikedPostIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+
+        if (result.liked) {
+          nextIds.add(video.post_id);
+        } else {
+          nextIds.delete(video.post_id);
+        }
+
+        return nextIds;
+      });
+
+      setVideos((currentItems) => currentItems.map((item) => (
+        item.post_id === video.post_id
+          ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
+          : item
+      )));
+    } catch (error) {
+      console.error('喜歡操作失敗:', error);
+      alert('喜歡操作失敗，請稍後再試。');
+    } finally {
+      setLikingPostIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(video.post_id);
+        return nextIds;
+      });
+    }
   };
 
   const closeDetailPage = () => {
@@ -188,7 +245,23 @@ export default function Home() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#87ACCA', padding: '0 8px' }}>
                   <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg><span style={{ fontSize: '12px' }}>{video.comment_count || 0}</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg><span style={{ fontSize: '12px' }}>{video.play_count || 0}</span></div>
+                  <button
+                    type="button"
+                    onClick={(event) => handleToggleLike(event, video)}
+                    disabled={likingPostIds.has(video.post_id)}
+                    style={{
+                      alignItems: 'center',
+                      background: 'transparent',
+                      border: 'none',
+                      color: likedPostIds.has(video.post_id) ? '#E06B75' : '#87ACCA',
+                      cursor: likingPostIds.has(video.post_id) ? 'wait' : 'pointer',
+                      display: 'flex',
+                      gap: '4px',
+                      padding: 0,
+                    }}
+                  >
+                    <svg style={{ width: '24px', height: '24px' }} fill={likedPostIds.has(video.post_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg><span style={{ fontSize: '12px' }}>{video.play_count || 0}</span>
+                  </button>
                 </div>
               </article>
             ))}
