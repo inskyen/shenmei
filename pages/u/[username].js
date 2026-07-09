@@ -4,23 +4,8 @@ import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
-const pageStyle = {
-  backgroundColor: '#F0F4F8',
-  color: '#2A527A',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  minHeight: '100vh',
-};
-
-const cardStyle = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid rgba(194, 214, 230, 0.55)',
-  borderRadius: '18px',
-  boxShadow: '0 1px 4px rgba(42, 82, 122, 0.06)',
-};
-
 function formatDate(timestamp) {
   if (!timestamp) return '';
-
   const date = new Date(timestamp);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -57,9 +42,7 @@ export default function UserPage() {
             replace: true,
           });
 
-          if (!user) {
-            return;
-          }
+          if (!user) return;
 
           const { data: myProfile, error: myProfileError } = await supabase
             .from('profiles')
@@ -67,9 +50,7 @@ export default function UserPage() {
             .eq('id', user.id)
             .maybeSingle();
 
-          if (myProfileError) {
-            throw myProfileError;
-          }
+          if (myProfileError) throw myProfileError;
 
           if (myProfile?.username) {
             router.replace(`/u/${myProfile.username}`);
@@ -77,15 +58,14 @@ export default function UserPage() {
           }
         }
 
+        // Fetch target profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, created_at')
+          .select('id, username, display_name, avatar_url, bio, aesthetic_tags')
           .eq('username', targetUsername)
           .maybeSingle();
 
-        if (profileError) {
-          throw profileError;
-        }
+        if (profileError) throw profileError;
 
         if (!profileData) {
           setErrorMessage('找不到這位策展人。');
@@ -94,9 +74,11 @@ export default function UserPage() {
 
         setProfile(profileData);
 
+        // Check if viewing own profile
         const currentUser = await requireLogin({ silent: true });
         setIsOwnProfile(Boolean(currentUser && currentUser.id === profileData.id));
 
+        // Fetch posts
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -118,9 +100,7 @@ export default function UserPage() {
           .eq('visibility', 'public')
           .order('created_at', { ascending: false });
 
-        if (postsError) {
-          throw postsError;
-        }
+        if (postsError) throw postsError;
 
         setPosts(postsData || []);
       } catch (error) {
@@ -134,268 +114,220 @@ export default function UserPage() {
     loadUserPage();
   }, [router, username]);
 
-  const displayName = profile?.username || '策展人';
+  const displayName = profile?.display_name || profile?.username || '策展人';
+  const totalLikes = posts.reduce((sum, post) => sum + (post.like_count || 0), 0);
 
-  const goToSubmit = async () => {
-    try {
-      const user = await requireLogin({
-        router,
-        nextPath: '/submit',
-        message: '請先登入，才能發佈策展。',
-      });
+  if (loading) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>正在讀取資料...</div>;
+  }
 
-      if (user) {
-        router.push('/submit');
-      }
-    } catch (error) {
-      console.error('登入狀態檢查失敗:', error);
-      setErrorMessage('登入狀態確認失敗，請稍後再試。');
-    }
-  };
+  if (errorMessage) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>
+        <p>{errorMessage}</p>
+        <button onClick={() => router.push('/')} style={{ marginTop: '16px', padding: '8px 16px', backgroundColor: '#C2D6E6', border: 'none', borderRadius: '20px', color: '#2A527A', cursor: 'pointer' }}>回首頁</button>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return null;
+  }
 
   return (
-    <div style={pageStyle}>
+    <div style={{
+      backgroundColor: '#F9FAFB',
+      minHeight: '100vh',
+      color: '#2A527A',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
       <Head>
-        <title>{profile ? `${displayName} · 審美者` : '策展人 · 審美者'}</title>
+        <title>{displayName} · 審美者</title>
       </Head>
 
-      <header style={{
-        alignItems: 'center',
-        backgroundColor: 'rgba(240, 244, 248, 0.92)',
-        backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid rgba(194, 214, 230, 0.5)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '18px 18px 14px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10,
-      }}>
-        <button
-          type="button"
-          onClick={() => router.push('/')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#6B99C3',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 600,
-            padding: 0,
-          }}
-        >
-          ← 大廳
-        </button>
-        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>策展人</div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {isOwnProfile && (
-            <button
-              type="button"
-              onClick={() => router.push('/settings')}
-              style={{
-                backgroundColor: '#F0F4F8',
-                border: '1px solid #C2D6E6',
-                borderRadius: '999px',
-                color: '#6B99C3',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: 700,
-                padding: '7px 10px',
-              }}
-            >
-              設定
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={goToSubmit}
-            style={{
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #C2D6E6',
-              borderRadius: '999px',
-              color: '#6B99C3',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: 700,
-              padding: '7px 10px',
-            }}
+      {/* Top Header / Background Wall */}
+      <div style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+        <div style={{ 
+          height: '140px', 
+          background: 'linear-gradient(135deg, #FFEDD8, #D8E2F8)',
+          width: '100%' 
+        }}>
+          <button 
+            onClick={() => router.push('/')}
+            style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(255,255,255,0.3)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2A527A', backdropFilter: 'blur(4px)' }}
           >
-            發佈
+            ←
           </button>
         </div>
-      </header>
 
-      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '18px 16px 88px' }}>
-        {loading && (
-          <div style={{ color: '#87ACCA', padding: '44px 0', textAlign: 'center' }}>
-            正在翻開這位策展人的檔案...
-          </div>
-        )}
-
-        {!loading && errorMessage && (
-          <section style={{ ...cardStyle, padding: '28px 20px', textAlign: 'center' }}>
-            <div style={{ color: '#87ACCA', lineHeight: 1.8 }}>{errorMessage}</div>
-          </section>
-        )}
-
-        {!loading && profile && (
-          <article style={{ display: 'grid', gap: '16px' }}>
-            <section style={{ ...cardStyle, padding: '20px' }}>
-              <div style={{ alignItems: 'center', display: 'flex', gap: '16px' }}>
-                <div
-                  aria-label={displayName}
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: '#C2D6E6',
-                    backgroundImage: profile.avatar_url ? `url(${profile.avatar_url})` : 'none',
-                    backgroundPosition: 'center',
-                    backgroundSize: 'cover',
-                    borderRadius: '28px',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    flex: '0 0 auto',
-                    fontSize: '28px',
-                    fontWeight: 900,
-                    height: '76px',
-                    justifyContent: 'center',
-                    width: '76px',
-                  }}
-                >
-                  {profile.avatar_url ? '' : getInitial(displayName)}
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <h1 style={{ color: '#2A527A', fontSize: '24px', lineHeight: 1.25, margin: 0 }}>
-                    {displayName}
-                  </h1>
-                  <div style={{ color: '#87ACCA', fontSize: '13px', marginTop: '6px' }}>
-                    @{profile.username}
-                  </div>
-                </div>
-              </div>
-
-              <p style={{ color: '#6B99C3', fontSize: '14px', lineHeight: 1.8, margin: '18px 0 0' }}>
-                {profile.bio || '這位策展人還沒有寫簡介。'}
-              </p>
-
-              {profile.aesthetic_tags?.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                  {profile.aesthetic_tags.map((tag) => (
-                    <span
-                      key={tag}
-                      style={{
-                        backgroundColor: '#F0F4F8',
-                        border: '1px solid #C2D6E6',
-                        borderRadius: '999px',
-                        color: '#6B99C3',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        padding: '7px 10px',
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section style={{
-              ...cardStyle,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+        {/* Profile Card Container (pulls up into the header) */}
+        <div style={{ padding: '0 20px', marginTop: '-36px', position: 'relative' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
+            {/* Avatar */}
+            <div style={{
+              width: '84px',
+              height: '84px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '3px solid #F9FAFB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(42,82,122,0.08)',
               overflow: 'hidden',
+              backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}>
-              <div style={{ padding: '16px', textAlign: 'center' }}>
-                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>{posts.length}</div>
-                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>策展</div>
-              </div>
-              <div style={{ borderLeft: '1px solid rgba(194, 214, 230, 0.55)', padding: '16px', textAlign: 'center' }}>
-                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>
-                  {posts.reduce((sum, post) => sum + (post.like_count || 0), 0)}
-                </div>
-                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>收穫喜歡</div>
-              </div>
-            </section>
-
-            <section style={{ display: 'grid', gap: '12px' }}>
-              <h2 style={{ color: '#2A527A', fontSize: '17px', margin: '6px 2px 0' }}>
-                策展動態
-              </h2>
-
-              {posts.length === 0 && (
-                <div style={{ ...cardStyle, color: '#87ACCA', lineHeight: 1.8, padding: '22px 18px', textAlign: 'center' }}>
-                  這裡還沒有留下策展痕跡。
-                </div>
+              {!profile.avatar_url && (
+                <span style={{ fontSize: '32px', fontWeight: 800, color: '#C2D6E6' }}>{getInitial(displayName)}</span>
               )}
+            </div>
 
+            {/* Action Button */}
+            {isOwnProfile ? (
+              <button 
+                onClick={() => router.push('/settings')}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#2A527A',
+                  border: '1px solid rgba(194, 214, 230, 0.8)',
+                  borderRadius: '99px',
+                  padding: '6px 20px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(42,82,122,0.04)'
+                }}
+              >
+                編輯資料
+              </button>
+            ) : (
+              <button 
+                style={{
+                  backgroundColor: '#6B99C3',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '99px',
+                  padding: '6px 24px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(107,153,195,0.3)'
+                }}
+              >
+                + 關注
+              </button>
+            )}
+          </div>
+
+          {/* Info */}
+          <div style={{ marginBottom: '16px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 4px 0', color: '#1A365D' }}>
+              {displayName}
+            </h1>
+            <div style={{ fontSize: '13px', color: '#87ACCA' }}>
+              審美號：{profile.username}
+            </div>
+          </div>
+
+          {/* Bio */}
+          <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: '#4A6984' }}>
+            {profile.bio || '這個人很懶，什麼都沒寫。'}
+          </p>
+
+          {/* Stats Row */}
+          <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', paddingBottom: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{posts.length}</span>
+              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>策展</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{totalLikes}</span>
+              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>獲讚</span>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', color: '#2A527A' }}>
+            策展動態
+          </h2>
+
+          {/* Masonry Feed */}
+          {posts.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#87ACCA', padding: '40px 0' }}>
+              這裡還沒有留下策展痕跡。
+            </div>
+          ) : (
+            <div style={{ columnCount: 2, columnGap: '12px' }}>
               {posts.map((post) => {
                 const video = post.videos || {};
-
                 return (
-                  <article key={post.id} style={{ ...cardStyle, overflow: 'hidden' }}>
-                    {video.cover_url && (
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/v/${video.id}`)}
-                        style={{
-                          backgroundImage: `url(${video.cover_url})`,
-                          backgroundPosition: 'center',
-                          backgroundSize: 'cover',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'block',
-                          paddingTop: '38%',
-                          width: '100%',
-                        }}
-                        aria-label={video.title || '影片'}
-                      />
-                    )}
-
-                    <button
-                      type="button"
+                  <div key={post.id} style={{ breakInside: 'avoid', marginBottom: '12px' }}>
+                    <div 
                       onClick={() => router.push(`/p/${post.id}`)}
                       style={{
-                        background: 'transparent',
-                        border: 'none',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
                         cursor: 'pointer',
-                        display: 'block',
-                        padding: '16px',
-                        textAlign: 'left',
-                        width: '100%',
+                        boxShadow: '0 2px 8px rgba(42,82,122,0.05)',
+                        display: 'flex',
+                        flexDirection: 'column'
                       }}
                     >
-                      <div style={{ color: '#87ACCA', fontSize: '12px', marginBottom: '8px' }}>
-                        {formatDate(post.created_at)}
+                      {/* Cover */}
+                      <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: '#E1E9F0' }}>
+                        {video.cover_url && (
+                          <img 
+                            src={video.cover_url} 
+                            alt={video.title} 
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        )}
+                        {!video.cover_url && (
+                          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA', fontSize: '12px' }}>無封面</div>
+                        )}
                       </div>
 
-                      <div style={{ color: '#6B99C3', fontSize: '13px', lineHeight: 1.65, marginBottom: '8px' }}>
-                        {video.title || '未命名影片'}
+                      {/* Content Snippet */}
+                      <div style={{ padding: '10px 12px' }}>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          fontWeight: 600, 
+                          color: '#2A527A',
+                          display: '-webkit-box', 
+                          WebkitLineClamp: 2, 
+                          WebkitBoxOrient: 'vertical', 
+                          overflow: 'hidden',
+                          lineHeight: 1.4,
+                          marginBottom: '8px'
+                        }}>
+                          {post.note || video.title}
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11px', color: '#87ACCA', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                             <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#C2D6E6', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
+                             {displayName.slice(0, 8)}{displayName.length > 8 ? '...' : ''}
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#87ACCA', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            {post.like_count || 0}
+                          </span>
+                        </div>
                       </div>
-
-                      <p style={{ color: '#2A527A', fontSize: '15px', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>
-                        {post.note}
-                      </p>
-
-                      <div style={{
-                        color: '#87ACCA',
-                        display: 'flex',
-                        fontSize: '12px',
-                        gap: '14px',
-                        marginTop: '12px',
-                      }}>
-                        <span>{post.like_count || 0} 喜歡</span>
-                        <span>{post.comment_count || 0} 留言</span>
-                      </div>
-                    </button>
-                  </article>
+                    </div>
+                  </div>
                 );
               })}
-            </section>
-          </article>
-        )}
-      </main>
+            </div>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 }

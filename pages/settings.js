@@ -1,166 +1,328 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import PageShell, { PlaceholderNote } from '@/components/PageShell';
+import Head from 'next/head';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
-const rowStyle = {
-  alignItems: 'center',
-  borderBottom: '1px solid rgba(194, 214, 230, 0.45)',
-  display: 'flex',
-  gap: '16px',
-  justifyContent: 'space-between',
-  padding: '16px 0',
-};
-
-const labelStyle = {
-  color: '#2A527A',
-  fontSize: '15px',
-  fontWeight: 700,
-  margin: 0,
-};
-
-const hintStyle = {
-  color: '#87ACCA',
-  fontSize: '13px',
-  lineHeight: 1.7,
-  margin: '6px 0 0',
+const AVATAR_GROUPS = {
+  mbti: [
+    "/avatars/intj-architect.svg", "/avatars/intp-logician.svg", "/avatars/entj-commander.svg", "/avatars/entp-debater.svg",
+    "/avatars/infj-advocate.svg", "/avatars/infp-mediator.svg", "/avatars/enfj-protagonist.svg", "/avatars/enfp-campaigner.svg",
+    "/avatars/istj-logistician.svg", "/avatars/isfj-defender.svg", "/avatars/estj-executive.svg", "/avatars/esfj-consul.svg",
+    "/avatars/istp-virtuoso.svg", "/avatars/isfp-adventurer.svg", "/avatars/estp-entrepreneur.svg", "/avatars/esfp-entertainer.svg"
+  ],
+  rings: Array.from({length: 16}, (_, i) => `/avatars/rings${i+1}.svg`),
+  notion: Array.from({length: 16}, (_, i) => `/avatars/notion_${i+1}.svg`)
 };
 
 export default function SettingsPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [user, setUser] = useState(null);
-  const [signingOut, setSigningOut] = useState(false);
+  
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('error'); // 'error' or 'success'
+  const [activeGroup, setActiveGroup] = useState('mbti');
 
   useEffect(() => {
-    async function guardSettings() {
+    async function loadProfile() {
       try {
         const currentUser = await requireLogin({
           router,
           nextPath: '/settings',
-          message: '請先登入，才能進入設定。',
+          message: '請先登入，才能編輯資料。',
           replace: true,
         });
 
+        if (!currentUser) return;
         setUser(currentUser);
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url, bio')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setUsername(data.username || '');
+          setDisplayName(data.display_name || '');
+          setAvatarUrl(data.avatar_url || '');
+          setBio(data.bio || '');
+        }
       } catch (error) {
-        console.error('設定頁登入檢查失敗:', error);
-        setMessage('登入狀態確認失敗，請稍後再試。');
+        console.error('設定頁載入失敗:', error);
+        setMessage('資料載入失敗，請稍後再試。');
       } finally {
         setChecking(false);
       }
     }
 
-    guardSettings();
+    loadProfile();
   }, [router]);
 
-  const handleSignOut = async () => {
+  const handleSave = async () => {
+    if (!user) return;
     setMessage('');
-    setSigningOut(true);
+    setMessageType('error');
 
+    // Frontend validation
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername.match(/^[a-zA-Z0-9_]{3,32}$/)) {
+      setMessage('審美號必須是 3~32 位的英文字母、數字或底線 ( _ )。');
+      return;
+    }
+    
+    if (displayName.trim().length === 0) {
+      setMessage('暱稱不能為空。');
+      return;
+    }
+
+    setSaving(true);
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: trimmedUsername,
+          display_name: displayName.trim(),
+          avatar_url: avatarUrl,
+          bio: bio.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
 
       if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          throw new Error(`這個審美號 (@${trimmedUsername}) 已經被註冊了，換一個試試吧！`);
+        }
         throw error;
       }
 
-      router.push('/login');
+      setMessageType('success');
+      setMessage('資料更新成功！即將回到個人主页...');
+      setTimeout(() => {
+        router.push(`/u/${trimmedUsername}`);
+      }, 1500);
+
     } catch (error) {
-      console.error('登出失敗:', error);
-      setMessage(error.message || '登出失敗，請稍後再試。');
+      console.error('更新資料失敗:', error);
+      setMessage(error.message || '儲存失敗，請稍後再試。');
     } finally {
-      setSigningOut(false);
+      setSaving(false);
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('登出失敗:', error);
+    }
+  };
+
+  if (checking) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>正在讀取資料...</div>;
+  }
+
   return (
-    <PageShell
-      title="設定"
-      subtitle="管理你的審美者帳號。更多個人資料編輯功能會放在這裡。"
-    >
-      {checking && <PlaceholderNote>正在確認登入狀態...</PlaceholderNote>}
+    <div style={{
+      backgroundColor: '#F9FAFB',
+      minHeight: '100vh',
+      color: '#2A527A',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <Head>
+        <title>編輯資料 · 審美者</title>
+      </Head>
 
-      {!checking && !user && (
-        <PlaceholderNote>請先登入，才能管理帳號設定。</PlaceholderNote>
-      )}
+      {/* App Header */}
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 20px',
+        maxWidth: '680px',
+        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
+         <button onClick={() => router.back()} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+           ×
+         </button>
+         <div style={{ fontSize: '17px', fontWeight: 600 }}>編輯資料</div>
+         <button 
+           onClick={handleSave} 
+           disabled={saving}
+           style={{
+             backgroundColor: saving ? '#E1E9F0' : '#6B99C3',
+             color: saving ? '#87ACCA' : '#FFFFFF',
+             border: 'none',
+             borderRadius: '20px',
+             padding: '8px 24px',
+             fontSize: '15px',
+             fontWeight: 600,
+             cursor: saving ? 'not-allowed' : 'pointer',
+             transition: 'all 0.2s'
+           }}
+         >
+           {saving ? '儲存中' : '儲存'}
+         </button>
+      </header>
 
-      {!checking && user && (
-        <div>
-          <div style={rowStyle}>
-            <div>
-              <p style={labelStyle}>目前帳號</p>
-              <p style={hintStyle}>{user.email || '已登入使用者'}</p>
-            </div>
-          </div>
-
-          <div style={rowStyle}>
-            <div>
-              <p style={labelStyle}>個人資料</p>
-              <p style={hintStyle}>暱稱、頭像、簡介與審美標籤會在後續版本開放編輯。</p>
-            </div>
-            <button
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px', maxWidth: '680px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+        
+        {/* Avatar Section */}
+        <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px' }}>
+          <div style={{
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            backgroundColor: '#E1E9F0',
+            backgroundImage: avatarUrl ? `url("${avatarUrl}")` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            marginBottom: '16px',
+            boxShadow: '0 4px 12px rgba(42,82,122,0.1)'
+          }} />
+          
+          <div style={{ fontSize: '13px', color: '#87ACCA', marginBottom: '12px' }}>點擊選擇一個預設頭像</div>
+          
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', backgroundColor: '#F0F4F8', padding: '4px', borderRadius: '99px', width: '100%' }}>
+            <button 
+              onClick={() => setActiveGroup('mbti')}
               type="button"
-              disabled
               style={{
-                backgroundColor: '#F0F4F8',
-                border: '1px solid #C2D6E6',
-                borderRadius: '999px',
-                color: '#87ACCA',
-                cursor: 'not-allowed',
-                flex: '0 0 auto',
-                fontSize: '13px',
-                fontWeight: 700,
-                padding: '8px 12px',
-              }}
-            >
-              準備中
-            </button>
-          </div>
-
-          <div style={{ ...rowStyle, borderBottom: 'none' }}>
-            <div>
-              <p style={labelStyle}>登出</p>
-              <p style={hintStyle}>離開這台裝置上的審美者登入狀態。</p>
-            </div>
-            <button
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'mbti' ? '#FFFFFF' : 'transparent',
+                color: activeGroup === 'mbti' ? '#2A527A' : '#87ACCA',
+                boxShadow: activeGroup === 'mbti' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+              }}>16 型人格</button>
+            <button 
+              onClick={() => setActiveGroup('rings')}
               type="button"
-              onClick={handleSignOut}
-              disabled={signingOut}
               style={{
-                backgroundColor: signingOut ? '#C2D6E6' : '#2A527A',
-                border: 'none',
-                borderRadius: '999px',
-                color: '#FFFFFF',
-                cursor: signingOut ? 'wait' : 'pointer',
-                flex: '0 0 auto',
-                fontSize: '13px',
-                fontWeight: 800,
-                padding: '9px 14px',
-              }}
-            >
-              {signingOut ? '登出中...' : '登出'}
-            </button>
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'rings' ? '#FFFFFF' : 'transparent',
+                color: activeGroup === 'rings' ? '#2A527A' : '#87ACCA',
+                boxShadow: activeGroup === 'rings' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+              }}>純粹光環</button>
+            <button 
+              onClick={() => setActiveGroup('notion')}
+              type="button"
+              style={{
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'notion' ? '#FFFFFF' : 'transparent',
+                color: activeGroup === 'notion' ? '#2A527A' : '#87ACCA',
+                boxShadow: activeGroup === 'notion' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+              }}>手繪線條</button>
           </div>
 
-          {message && (
-            <div style={{
-              backgroundColor: '#FFF7F4',
-              border: '1px solid #F4D8CD',
-              borderRadius: '12px',
-              color: '#9F5E4C',
-              fontSize: '14px',
-              lineHeight: 1.6,
-              marginTop: '14px',
-              padding: '12px 14px',
-            }}>
-              {message}
-            </div>
-          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', width: '100%' }}>
+            {AVATAR_GROUPS[activeGroup].map((svg, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setAvatarUrl(svg)}
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '12px',
+                  border: avatarUrl === svg ? '2px solid #6B99C3' : '2px solid transparent',
+                  backgroundImage: `url("${svg}")`,
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  transition: 'transform 0.1s',
+                }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Inputs Section */}
+        <section style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0 20px', boxShadow: '0 2px 12px rgba(42,82,122,0.04)' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0', alignItems: 'center' }}>
+            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA' }}>暱稱</div>
+            <input 
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="輸入你的暱稱"
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0', alignItems: 'center' }}>
+            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA' }}>審美號</div>
+            <div style={{ color: '#2A527A', fontSize: '15px', marginRight: '4px' }}>@</div>
+            <input 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="3~32位英數组合"
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', padding: '16px 0', alignItems: 'flex-start' }}>
+            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA', paddingTop: '2px' }}>簡介</div>
+            <textarea 
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="介紹一下你自己，或是你的審美偏好..."
+              rows={3}
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent', resize: 'none', fontFamily: 'inherit' }}
+            />
+          </div>
+        </section>
+
+        {message && (
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '12px 16px', 
+            borderRadius: '12px',
+            fontSize: '14px',
+            backgroundColor: messageType === 'success' ? '#F0FFF0' : '#FFF7F4',
+            color: messageType === 'success' ? '#2A7A42' : '#9F5E4C',
+            border: `1px solid ${messageType === 'success' ? '#A8E6CF' : '#F4D8CD'}`,
+            textAlign: 'center'
+          }}>
+            {message}
+          </div>
+        )}
+
+        <div style={{ marginTop: 'auto', paddingTop: '40px', paddingBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+          <button 
+            onClick={handleSignOut}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: '#9F5E4C', 
+              fontSize: '15px', 
+              cursor: 'pointer',
+              fontWeight: 600,
+              padding: '10px 20px'
+            }}
+          >
+            登出當前帳號
+          </button>
         </div>
-      )}
-    </PageShell>
+
+      </main>
+    </div>
   );
 }

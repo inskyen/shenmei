@@ -191,8 +191,8 @@ export default function Home() {
   };
 
   return (
-    // 主背景：落雪宣白 #F0F4F8
-    <div style={{ backgroundColor: '#F0F4F8', minHeight: '100vh', color: '#2A527A', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
+    // 主背景：落雪宣白
+    <div style={{ backgroundColor: '#F4F7FA', minHeight: '100vh', color: '#2A3F54', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
       <Head>
         <title>審美者 · AESTHETE</title>
       </Head>
@@ -200,17 +200,17 @@ export default function Home() {
       {/* 顶部导航栏 (复刻 UI 稿) */}
       <header style={{ 
         position: 'sticky', top: 0, zIndex: 20, 
-        backgroundColor: 'rgba(240, 244, 248, 0.9)', backdropFilter: 'blur(12px)',
+        backgroundColor: 'rgba(244, 247, 250, 0.9)', backdropFilter: 'blur(12px)',
         padding: '48px 16px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-        borderBottom: '1px solid rgba(194, 214, 230, 0.5)'
+        borderBottom: '1px solid rgba(217, 228, 245, 0.5)'
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
           <span onClick={() => router.push('/following')} style={{ color: '#87ACCA', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>追蹤</span>
-          <span style={{ color: '#2A527A', fontSize: '24px', fontWeight: 'bold' }}>最新</span>
+          <span style={{ color: '#2A3F54', fontSize: '24px', fontWeight: 'bold' }}>最新</span>
           <span onClick={() => router.push('/m')} style={{ color: '#87ACCA', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>小館</span>
         </div>
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '4px', alignItems: 'center' }}>
-          <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A527A', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A3F54', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
 
           {currentUser ? (
             <div 
@@ -231,23 +231,23 @@ export default function Home() {
       </header>
 
       {/* 帖子信息流 */}
-      <main style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '8px' }}>
+      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '0' }}>
         {loading ? (
           <div style={{ textAlign: 'center', color: '#87ACCA', padding: '40px', fontSize: '14px' }}>流雲正載著美好趕來...</div>
         ) : (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {videos.map((video) => (
-              // 帖子卡片
-              <article key={video.post_id || video.id || video.bvid} style={{ backgroundColor: '#FFFFFF', margin: '16px', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid rgba(194, 214, 230, 0.3)' }}>
+              // 帖子卡片 (Edge-to-Edge)
+              <article key={video.post_id || video.id || video.bvid} style={{ backgroundColor: '#FFFFFF', padding: '20px 0', borderBottom: '1px solid #E8EFF5' }}>
                 
-                {/* 头部：用户信息区 (点击进入详情页) */}
-                <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', cursor: 'pointer' }}>
+                {/* 头部：用户信息区 */}
+                <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', padding: '0 16px', cursor: 'pointer' }}>
                   <div onClick={(event) => openUserPage(event, video)} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <div style={{
-                      width: '40px',
-                      height: '40px',
+                      width: '44px',
+                      height: '44px',
                       borderRadius: '50%',
-                      backgroundColor: '#C2D6E6',
+                      backgroundColor: '#D9E4F5',
                       backgroundImage: video.profile_avatar_url ? `url(${video.profile_avatar_url})` : 'none',
                       backgroundPosition: 'center',
                       backgroundSize: 'cover',
@@ -255,45 +255,56 @@ export default function Home() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#FFFFFF',
+                      color: '#6B99C3',
                       fontWeight: 'bold',
+                      border: '1px solid #E8EFF5'
                     }}>
                        {video.profile_avatar_url ? '' : (video.added_by ? video.added_by.charAt(0) : '天')}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: '#2A527A', fontWeight: '500', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
-                        <span style={{ backgroundColor: '#6B99C3', color: '#FFFFFF', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>隱藏</span>
+                        <span style={{ color: '#2A3F54', fontWeight: '600', fontSize: '15px' }}>{video.added_by || '策展人'}</span>
+                        <span style={{ backgroundColor: '#D9E4F5', color: '#6B99C3', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '99px' }}>INFP</span>
                       </div>
-                      <span style={{ color: '#87ACCA', fontSize: '12px', display: 'block', marginTop: '2px' }}>{formatDate(video.fav_time || video.created_at)}</span>
+                      <span style={{ color: '#9AA6B2', fontSize: '12px', display: 'block', marginTop: '2px' }}>{formatDate(video.fav_time || video.created_at)}</span>
                     </div>
                   </div>
-                  <svg style={{ width: '20px', height: '20px', color: '#87ACCA' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                  <svg style={{ width: '20px', height: '20px', color: '#9AA6B2' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                 </div>
 
                 {/* 文字内容区 */}
-                <p onClick={() => openDetailPage(video)} style={{ color: '#2A527A', fontSize: '14px', lineHeight: '1.6', marginBottom: '12px', cursor: 'pointer' }}>
-                  {video.title}
-                </p>
+                <div onClick={() => openDetailPage(video)} style={{ padding: '0 16px', marginBottom: '14px', cursor: 'pointer' }}>
+                  <p style={{ color: '#2A3F54', fontSize: '15px', lineHeight: '1.6', margin: 0, wordBreak: 'break-word', letterSpacing: '0.3px' }}>
+                    {video.title}
+                  </p>
+                </div>
+
+                {/* 美学标签 (原视频标题) */}
                 {video.video_title && (
-                  <div onClick={() => openVideoPage(video)} style={{ color: '#6B99C3', fontSize: '12px', marginBottom: '10px', cursor: 'pointer' }}>
-                    影片：{video.video_title}
+                  <div style={{ padding: '0 16px', marginBottom: '14px' }}>
+                    <div onClick={() => openVideoPage(video)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#F4F7FA', color: '#6B99C3', padding: '6px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}>
+                      <svg style={{ width: '14px', height: '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      {video.video_title}
+                    </div>
                   </div>
                 )}
 
-                {/* 媒体区域 (点击进入沉浸全屏) */}
-                <div onClick={() => openImmersive(video)} style={{ width: '100%', position: 'relative', paddingTop: '56.25%', backgroundColor: 'rgba(194, 214, 230, 0.4)', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', border: '1px solid #C2D6E6', cursor: 'pointer' }}>
-                  <img src={video.cover} alt={video.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.95 }} />
-                  {/* 悬浮播放icon */}
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '44px', height: '44px', backgroundColor: 'rgba(42, 82, 122, 0.6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-                    <div style={{ width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: '14px solid #FFFFFF', marginLeft: '4px' }}></div>
+                {/* 媒体区域 (Edge-to-Edge 满铺，无圆角，无边距) */}
+                <div onClick={() => openImmersive(video)} style={{ width: '100%', position: 'relative', paddingTop: '56.25%', backgroundColor: '#F4F7FA', overflow: 'hidden', marginBottom: '16px', cursor: 'pointer' }}>
+                  <img src={video.cover} alt={video.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* 悬浮播放icon (水彩风) */}
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '56px', height: '56px', backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                    <div style={{ width: 0, height: 0, borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderLeft: '16px solid #FFFFFF', marginLeft: '6px' }}></div>
                   </div>
                 </div>
 
                 {/* 底部互动区 */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#87ACCA', padding: '0 8px' }}>
-                  <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg><span style={{ fontSize: '12px' }}>{video.comment_count || 0}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9AA6B2', padding: '0 16px' }}>
+                  <svg style={{ width: '26px', height: '26px', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <svg style={{ width: '26px', height: '26px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span style={{ fontSize: '13px', fontWeight: '500' }}>{video.comment_count || 0}</span>
+                  </div>
                   <button
                     type="button"
                     onClick={(event) => handleToggleLike(event, video)}
@@ -302,14 +313,15 @@ export default function Home() {
                       alignItems: 'center',
                       background: 'transparent',
                       border: 'none',
-                      color: likedPostIds.has(video.post_id) ? '#E06B75' : '#87ACCA',
+                      color: likedPostIds.has(video.post_id) ? '#D98C8C' : '#9AA6B2',
                       cursor: likingPostIds.has(video.post_id) ? 'wait' : 'pointer',
                       display: 'flex',
-                      gap: '4px',
+                      gap: '6px',
                       padding: 0,
                     }}
                   >
-                    <svg style={{ width: '24px', height: '24px' }} fill={likedPostIds.has(video.post_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg><span style={{ fontSize: '12px' }}>{video.play_count || 0}</span>
+                    <svg style={{ width: '26px', height: '26px' }} fill={likedPostIds.has(video.post_id) ? 'currentColor' : 'none'} stroke={likedPostIds.has(video.post_id) ? '#D98C8C' : 'currentColor'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                    <span style={{ fontSize: '13px', fontWeight: '500' }}>{video.play_count || 0}</span>
                   </button>
                 </div>
               </article>
