@@ -235,9 +235,10 @@ external_id
 video
 posts for this video
 profiles for those posts
-comments where target_type = video
 modules related through posts
 ```
+
+第一版不讀取影片公共留言。`target_type = video` 的留言查詢保留給第二階段，避免和各篇推薦的討論分流。
 
 ### 7.3 頁面資料形狀
 
@@ -260,8 +261,7 @@ modules related through posts
         "display_name": "策展人"
       }
     }
-  ],
-  "comments": []
+  ]
 }
 ```
 

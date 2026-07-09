@@ -13,6 +13,9 @@ export default function Home() {
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  // 身份與 Profile 是兩個請求：在兩者都確認前保留載入狀態，
+  // 避免右上角依序出現「訪客 -> 預設頭像 -> 真實頭像」的跳動。
+  const [isIdentityLoading, setIsIdentityLoading] = useState(true);
   
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
@@ -41,21 +44,59 @@ export default function Home() {
         setLoading(false);
       });
 
-    // 獲取當前登入使用者與其 Profile
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUser(user);
-      if (user) {
-        supabase
+    let isActive = true;
+
+    async function loadIdentity() {
+      try {
+        // 先確認登入身份；未登入時不需要再請求 profiles。
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!isActive) return;
+
+        setCurrentUser(user || null);
+
+        if (!user) return;
+
+        // 頭像與 username 都準備好後才結束載入，避免預設圖短暫閃過。
+        const { data, error } = await supabase
           .from('profiles')
           .select('avatar_url, username')
           .eq('id', user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) setUserProfile(data);
-          });
+          .single();
+
+        if (!isActive) return;
+
+        if (error) {
+          console.error('讀取個人資料失敗:', error);
+        } else {
+          setUserProfile(data || null);
+        }
+      } catch (error) {
+        // 即使身份確認失敗也結束骨架狀態，讓使用者仍可看到登入入口。
+        console.error('讀取登入身份失敗:', error);
+      } finally {
+        if (isActive) setIsIdentityLoading(false);
       }
-    });
+    }
+
+    loadIdentity();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
+
+  useEffect(() => {
+    if (loading || typeof window === 'undefined') return;
+
+    const savedScrollY = window.sessionStorage.getItem('shenmei:home-scroll-y');
+    if (!savedScrollY) return;
+
+    // 等首頁資料完成渲染後再回到原位置，避免卡片尚未出現時捲動失效。
+    window.sessionStorage.removeItem('shenmei:home-scroll-y');
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, Number(savedScrollY));
+    });
+  }, [loading]);
 
   // 历史记录劫持：防侧滑退出魔法
   useEffect(() => {
@@ -212,12 +253,17 @@ export default function Home() {
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '4px', alignItems: 'center' }}>
           <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A3F54', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
 
-          {currentUser ? (
+          {isIdentityLoading ? (
+            <div
+              aria-label="正在載入帳號"
+              style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#D9E4F5', border: '1px solid #C2D6E6' }}
+            />
+          ) : currentUser ? (
             <div 
               onClick={() => router.push('/u/me')} 
               style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
             >
-              <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || 'shenmei'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="你的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ) : (
             <div 
@@ -233,7 +279,41 @@ export default function Home() {
       {/* 帖子信息流 */}
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '0' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#87ACCA', padding: '40px', fontSize: '14px' }}>流雲正載著美好趕來...</div>
+          <div aria-label="正在載入最新策展" style={{ display: 'grid', gap: '8px', padding: '8px 0 18px' }}>
+            {[0, 1, 2].map((index) => (
+              <article
+                key={index}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(217, 228, 245, 0.72)',
+                  display: 'grid',
+                  gap: '14px',
+                  padding: '16px',
+                }}
+              >
+                <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
+                  <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '30px', width: '30px' }} />
+                  <div style={{ display: 'grid', gap: '7px' }}>
+                    <div className="app-detail-skeleton" style={{ height: '12px', width: '86px' }} />
+                    <div className="app-detail-skeleton" style={{ height: '10px', width: '54px' }} />
+                  </div>
+                </div>
+
+                <div className="app-detail-skeleton" style={{ borderRadius: '12px', height: '220px' }} />
+
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  <div className="app-detail-skeleton" style={{ height: '15px', width: '72%' }} />
+                  <div className="app-detail-skeleton" style={{ height: '12px', width: '94%' }} />
+                  <div className="app-detail-skeleton" style={{ height: '12px', width: '58%' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '18px' }}>
+                  <div className="app-detail-skeleton" style={{ height: '12px', width: '32px' }} />
+                  <div className="app-detail-skeleton" style={{ height: '12px', width: '32px' }} />
+                </div>
+              </article>
+            ))}
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {videos.map((video) => (
@@ -336,23 +416,25 @@ export default function Home() {
         <span style={{ position: 'absolute', top: 0, right: 0, width: '12px', height: '12px', backgroundColor: '#F4D8CD', border: '2px solid #FFFFFF', borderRadius: '50%' }}></span>
       </div>
 
-      {/* 底部 Tab 栏 (纯白毛玻璃效果) */}
+      {/* 底部主導航：首頁預設為啟用狀態，發布保留為視覺焦點。 */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(194, 214, 230, 0.5)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '8px 8px 16px', zIndex: 20 }}>
-        <div onClick={() => router.push('/')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-          <span style={{ fontSize: '10px' }}>大廳</span>
+        <div onClick={() => router.push('/')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#2A527A', cursor: 'pointer' }}>
+          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10.5z"></path></svg>
+          <span style={{ fontSize: '10px', fontWeight: '700' }}>首頁</span>
         </div>
-        <div onClick={() => router.push('/search')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#2A527A', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span style={{ fontSize: '10px', fontWeight: '500' }}>探索</span>
+        <div onClick={() => router.push('/m')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
+          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M4 5.5A1.5 1.5 0 015.5 4H10v7H4V5.5zM14 4h4.5A1.5 1.5 0 0120 5.5V11h-6V4zM4 15h6v5H5.5A1.5 1.5 0 014 18.5V15zM14 15h6v3.5a1.5 1.5 0 01-1.5 1.5H14v-5z"></path></svg>
+          <span style={{ fontSize: '10px', fontWeight: '500' }}>小館</span>
         </div>
-        {/* 核心加号按钮：矢车菊蓝悬浮 */}
-        <div onClick={() => goToProtectedPage('/submit', '請先登入，才能發佈策展。')} style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#6B99C3', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(107, 153, 195, 0.4)', transform: 'translateY(-16px)', border: '4px solid #FFFFFF', color: '#FFFFFF', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+        <div onClick={() => goToProtectedPage('/submit', '請先登入，才能發佈策展。')} style={{ alignItems: 'center', color: '#6B99C3', cursor: 'pointer', display: 'flex', flexDirection: 'column', marginTop: '-22px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#6B99C3', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(107, 153, 195, 0.4)', border: '4px solid #FFFFFF', color: '#FFFFFF' }}>
+            <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+          </div>
+          <span style={{ fontSize: '10px', fontWeight: '700', marginTop: '4px' }}>發布</span>
         </div>
         <div onClick={() => goToProtectedPage('/messages', '請先登入，才能查看訊息。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
           <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-          <span style={{ fontSize: '10px' }}>訊息</span>
+          <span style={{ fontSize: '10px' }}>私訊</span>
         </div>
         <div onClick={() => goToProtectedPage('/u/me', '請先登入，才能進入你的策展人頁。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
           <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>

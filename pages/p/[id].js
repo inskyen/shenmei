@@ -81,37 +81,37 @@ export default function PostPage() {
         setPost(postData);
         setLiked(false);
 
-        if (postData.user_id) {
-          const { data: profileData, error: profileError } = await supabase
+        // 推薦者、所屬小館、按讚狀態與登入身份彼此沒有依賴，
+        // 同時讀取可縮短詳情頁從滑入到完整內容出現的等待時間。
+        const profileRequest = postData.user_id
+          ? supabase
             .from('profiles')
             .select('id, username, avatar_url')
             .eq('id', postData.user_id)
-            .maybeSingle();
+            .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-          if (profileError) {
-            throw profileError;
-          }
+        const [profileResult, moduleResult, likedPostIds, user] = await Promise.all([
+          profileRequest,
+          supabase
+            .from('post_modules')
+            .select('modules (id, slug, name)')
+            .eq('post_id', postData.id),
+          loadLikedPostIds([postData.id]),
+          requireLogin({ silent: true }),
+        ]);
 
-          setProfile(profileData);
-        } else {
-          setProfile(null);
+        if (profileResult.error) {
+          throw profileResult.error;
         }
 
-        const { data: moduleRows, error: moduleError } = await supabase
-          .from('post_modules')
-          .select('modules (id, slug, name)')
-          .eq('post_id', postData.id);
-
-        if (moduleError) {
-          throw moduleError;
+        if (moduleResult.error) {
+          throw moduleResult.error;
         }
 
-        setModules((moduleRows || []).map((row) => row.modules).filter(Boolean));
-
-        const likedPostIds = await loadLikedPostIds([postData.id]);
+        setProfile(profileResult.data || null);
+        setModules((moduleResult.data || []).map((row) => row.modules).filter(Boolean));
         setLiked(likedPostIds.has(postData.id));
-
-        const user = await requireLogin({ silent: true });
         setCurrentUser(user);
       } catch (error) {
         console.error('策展動態載入失敗:', error);
@@ -126,6 +126,16 @@ export default function PostPage() {
 
   const video = post?.videos || {};
   const displayName = getDisplayName(post, profile);
+
+  const goBack = () => {
+    // 從首頁或影片頁點進來時回到原本的畫面；使用者直接開連結時才回首頁。
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/');
+  };
 
   const goToSubmit = async () => {
     try {
@@ -207,7 +217,7 @@ export default function PostPage() {
   };
 
   return (
-    <div style={pageStyle}>
+    <div className="app-detail-page" style={pageStyle}>
       <Head>
         <title>{post ? `${video.title || '策展動態'} · 審美者` : '策展動態 · 審美者'}</title>
       </Head>
@@ -225,7 +235,7 @@ export default function PostPage() {
       }}>
         <button
           type="button"
-          onClick={() => router.push('/')}
+          onClick={goBack}
           style={{
             background: 'transparent',
             border: 'none',
@@ -265,8 +275,16 @@ export default function PostPage() {
 
       <main style={{ margin: '0 auto', maxWidth: '600px' }}>
         {loading && (
-          <div style={{ color: '#87ACCA', padding: '100px 0', textAlign: 'center' }}>
-            流雲正載著美好趕來...
+          <div style={{ display: 'grid', gap: '18px', padding: '84px 16px 28px' }}>
+            <div className="app-detail-skeleton" style={{ height: '260px', borderRadius: 0 }} />
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <div className="app-detail-skeleton" style={{ height: '20px', width: '42%' }} />
+              <div className="app-detail-skeleton" style={{ height: '14px', width: '76%' }} />
+              <div className="app-detail-skeleton" style={{ height: '14px', width: '64%' }} />
+            </div>
+            <div style={{ color: '#87ACCA', fontSize: '13px', paddingTop: '6px', textAlign: 'center' }}>
+              正在打開這篇策展...
+            </div>
           </div>
         )}
 

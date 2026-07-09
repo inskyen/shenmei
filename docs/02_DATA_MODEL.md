@@ -265,7 +265,7 @@ author_name
 可做簡版：
 
 - 優先支持 `target_type = post`。
-- 同時保留 `target_type = video`，方便影片主頁沉澱公共評論。
+- 同時保留 `target_type = video`，供第二階段影片主頁公共評論使用；第一版不在影片頁開放留言入口。
 - `post` 與 `video` 的 ID 型別不同，因此 comments 不使用單一 `target_id`，而是使用 `post_id / video_id`。
 - 只支持一層留言。
 - `parent_id` 先預留。
