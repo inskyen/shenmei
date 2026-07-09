@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
 const pageStyle = {
@@ -35,6 +36,7 @@ export default function UserPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
     if (!username) return;
@@ -45,23 +47,24 @@ export default function UserPage() {
 
       try {
         let targetUsername = username;
+        setIsOwnProfile(false);
 
         if (username === 'me') {
-          const { data: userResult, error: userError } = await supabase.auth.getUser();
+          const user = await requireLogin({
+            router,
+            nextPath: '/u/me',
+            message: '請先登入，才能進入你的策展人頁。',
+            replace: true,
+          });
 
-          if (userError) {
-            throw userError;
-          }
-
-          if (!userResult?.user) {
-            router.replace('/login');
+          if (!user) {
             return;
           }
 
           const { data: myProfile, error: myProfileError } = await supabase
             .from('profiles')
             .select('username')
-            .eq('id', userResult.user.id)
+            .eq('id', user.id)
             .maybeSingle();
 
           if (myProfileError) {
@@ -90,6 +93,9 @@ export default function UserPage() {
         }
 
         setProfile(profileData);
+
+        const currentUser = await requireLogin({ silent: true });
+        setIsOwnProfile(Boolean(currentUser && currentUser.id === profileData.id));
 
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
@@ -130,6 +136,23 @@ export default function UserPage() {
 
   const displayName = profile?.username || '策展人';
 
+  const goToSubmit = async () => {
+    try {
+      const user = await requireLogin({
+        router,
+        nextPath: '/submit',
+        message: '請先登入，才能發佈策展。',
+      });
+
+      if (user) {
+        router.push('/submit');
+      }
+    } catch (error) {
+      console.error('登入狀態檢查失敗:', error);
+      setErrorMessage('登入狀態確認失敗，請稍後再試。');
+    }
+  };
+
   return (
     <div style={pageStyle}>
       <Head>
@@ -164,22 +187,43 @@ export default function UserPage() {
           ← 大廳
         </button>
         <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>策展人</div>
-        <button
-          type="button"
-          onClick={() => router.push('/submit')}
-          style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #C2D6E6',
-            borderRadius: '999px',
-            color: '#6B99C3',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 700,
-            padding: '7px 10px',
-          }}
-        >
-          發佈
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isOwnProfile && (
+            <button
+              type="button"
+              onClick={() => router.push('/settings')}
+              style={{
+                backgroundColor: '#F0F4F8',
+                border: '1px solid #C2D6E6',
+                borderRadius: '999px',
+                color: '#6B99C3',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 700,
+                padding: '7px 10px',
+              }}
+            >
+              設定
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={goToSubmit}
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #C2D6E6',
+              borderRadius: '999px',
+              color: '#6B99C3',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 700,
+              padding: '7px 10px',
+            }}
+          >
+            發佈
+          </button>
+        </div>
       </header>
 
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '18px 16px 88px' }}>

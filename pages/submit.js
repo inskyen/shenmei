@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import PageShell from '@/components/PageShell';
+import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
 const fieldStyle = {
@@ -179,18 +180,17 @@ export default function SubmitPage() {
     setSubmitting(true);
 
     try {
-      const { data: userResult, error: userError } = await supabase.auth.getUser();
+      const user = await requireLogin({
+        router,
+        nextPath: router.asPath,
+        message: '請先登入，才能發佈策展。',
+      });
 
-      if (userError) {
-        throw userError;
-      }
-
-      if (!userResult?.user) {
-        router.push('/login');
+      if (!user) {
         return;
       }
 
-      await ensureProfile(userResult.user);
+      await ensureProfile(user);
 
       let video = await findExistingVideo(bvid);
 
@@ -201,7 +201,7 @@ export default function SubmitPage() {
       const { data: post, error: postError } = await supabase
         .from('posts')
         .insert({
-          user_id: userResult.user.id,
+          user_id: user.id,
           video_id: video.id,
           note: trimmedNote,
           visibility: 'public',
@@ -218,7 +218,7 @@ export default function SubmitPage() {
         const rows = selectedModuleIds.map((moduleId) => ({
           post_id: post.id,
           module_id: moduleId,
-          added_by: userResult.user.id,
+          added_by: user.id,
         }));
 
         const { error: moduleError } = await supabase

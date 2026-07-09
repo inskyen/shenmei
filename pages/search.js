@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
 const pageStyle = {
@@ -60,6 +61,23 @@ export default function SearchPage() {
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  const goToSubmit = async (path) => {
+    try {
+      const user = await requireLogin({
+        router,
+        nextPath: path,
+        message: '請先登入，才能發佈策展。',
+      });
+
+      if (user) {
+        router.push(path);
+      }
+    } catch (error) {
+      console.error('登入狀態檢查失敗:', error);
+      setMessage('登入狀態確認失敗，請稍後再試。');
+    }
+  };
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -135,7 +153,7 @@ export default function SearchPage() {
         <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>探索</div>
         <button
           type="button"
-          onClick={() => router.push('/submit')}
+          onClick={() => goToSubmit('/submit')}
           style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid #C2D6E6',
@@ -206,7 +224,7 @@ export default function SearchPage() {
             <div style={{ marginTop: '14px' }}>
               <button
                 type="button"
-                onClick={() => router.push('/submit')}
+                onClick={() => goToSubmit('/submit')}
                 style={{
                   backgroundColor: '#2A527A',
                   border: 'none',
@@ -284,7 +302,7 @@ export default function SearchPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => router.push(buildSubmitHref({ external_id: video.bvid, title: video.title }))}
+                    onClick={() => goToSubmit(buildSubmitHref({ external_id: video.bvid, title: video.title }))}
                     style={{
                       background: 'transparent',
                       border: 'none',

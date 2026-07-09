@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 export default function Home() {
@@ -89,6 +90,23 @@ export default function Home() {
     openDetailPage(video);
   };
 
+  const goToProtectedPage = async (path, message) => {
+    try {
+      const user = await requireLogin({
+        router,
+        nextPath: path,
+        message,
+      });
+
+      if (user) {
+        router.push(path);
+      }
+    } catch (error) {
+      console.error('登入狀態檢查失敗:', error);
+      alert('登入狀態確認失敗，請稍後再試。');
+    }
+  };
+
   const handleToggleLike = async (event, video) => {
     event.stopPropagation();
 
@@ -102,7 +120,11 @@ export default function Home() {
       const result = await togglePostLike(video.post_id);
 
       if (result.requiresLogin) {
-        router.push('/login');
+        await requireLogin({
+          router,
+          nextPath: router.asPath,
+          message: '請先登入，才能喜歡這條策展。',
+        });
         return;
       }
 
@@ -173,7 +195,7 @@ export default function Home() {
           <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A527A', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
 
           <div 
-            onClick={() => router.push('/login')} 
+            onClick={() => goToProtectedPage('/u/me', '請先登入，才能進入你的策展人頁。')} 
             style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
           >
             <img src="https://api.dicebear.com/7.x/notionists/svg?seed=shenmei" alt="avatar" />
@@ -270,7 +292,7 @@ export default function Home() {
       </main>
 
       {/* 懸浮通知入口：底部已經有發布按鈕，這裡先作為通知提醒入口。 */}
-      <div onClick={() => router.push('/notifications')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '48px', height: '48px', backgroundColor: '#FFFFFF', borderRadius: '50%', boxShadow: '0 4px 14px rgba(42, 82, 122, 0.15)', border: '1px solid #C2D6E6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2A527A', zIndex: 30, cursor: 'pointer' }}>
+      <div onClick={() => goToProtectedPage('/notifications', '請先登入，才能查看通知。')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '48px', height: '48px', backgroundColor: '#FFFFFF', borderRadius: '50%', boxShadow: '0 4px 14px rgba(42, 82, 122, 0.15)', border: '1px solid #C2D6E6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2A527A', zIndex: 30, cursor: 'pointer' }}>
         <svg style={{ width: '24px', height: '24px' }} fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
         <span style={{ position: 'absolute', top: 0, right: 0, width: '12px', height: '12px', backgroundColor: '#F4D8CD', border: '2px solid #FFFFFF', borderRadius: '50%' }}></span>
       </div>
@@ -286,14 +308,14 @@ export default function Home() {
           <span style={{ fontSize: '10px', fontWeight: '500' }}>探索</span>
         </div>
         {/* 核心加号按钮：矢车菊蓝悬浮 */}
-        <div onClick={() => router.push('/submit')} style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#6B99C3', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(107, 153, 195, 0.4)', transform: 'translateY(-16px)', border: '4px solid #FFFFFF', color: '#FFFFFF', cursor: 'pointer' }}>
+        <div onClick={() => goToProtectedPage('/submit', '請先登入，才能發佈策展。')} style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#6B99C3', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(107, 153, 195, 0.4)', transform: 'translateY(-16px)', border: '4px solid #FFFFFF', color: '#FFFFFF', cursor: 'pointer' }}>
           <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
         </div>
-        <div onClick={() => router.push('/messages')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
+        <div onClick={() => goToProtectedPage('/messages', '請先登入，才能查看訊息。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
           <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
           <span style={{ fontSize: '10px' }}>訊息</span>
         </div>
-        <div onClick={() => router.push('/u/me')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
+        <div onClick={() => goToProtectedPage('/u/me', '請先登入，才能進入你的策展人頁。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
           <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
           <span style={{ fontSize: '10px' }}>我的</span>
         </div>

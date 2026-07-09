@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
@@ -43,6 +44,9 @@ export default function PostPage() {
   const [liking, setLiking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentMessage, setCommentMessage] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -112,6 +116,9 @@ export default function PostPage() {
 
         const likedPostIds = await loadLikedPostIds([postData.id]);
         setLiked(likedPostIds.has(postData.id));
+
+        const user = await requireLogin({ silent: true });
+        setCurrentUser(user);
       } catch (error) {
         console.error('策展動態載入失敗:', error);
         setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
@@ -126,6 +133,53 @@ export default function PostPage() {
   const video = post?.videos || {};
   const displayName = getDisplayName(post, profile);
 
+  const goToSubmit = async () => {
+    try {
+      const user = await requireLogin({
+        router,
+        nextPath: '/submit',
+        message: '請先登入，才能發佈策展。',
+      });
+
+      if (user) {
+        router.push('/submit');
+      }
+    } catch (error) {
+      console.error('登入狀態檢查失敗:', error);
+      alert('登入狀態確認失敗，請稍後再試。');
+    }
+  };
+
+  const goToLoginForComment = async () => {
+    try {
+      await requireLogin({
+        router,
+        nextPath: router.asPath,
+        message: '請先登入，才能留言。',
+      });
+    } catch (error) {
+      console.error('登入狀態檢查失敗:', error);
+      setCommentMessage('登入狀態確認失敗，請稍後再試。');
+    }
+  };
+
+  const handleSubmitCommentPreview = async (event) => {
+    event.preventDefault();
+    setCommentMessage('');
+
+    if (!currentUser) {
+      await goToLoginForComment();
+      return;
+    }
+
+    if (commentDraft.trim().length < 2) {
+      setCommentMessage('留言至少需要 2 個字。');
+      return;
+    }
+
+    setCommentMessage('留言介面已準備好，下一步會接上資料庫保存。');
+  };
+
   const handleToggleLike = async () => {
     if (!post?.id || liking) {
       return;
@@ -137,7 +191,11 @@ export default function PostPage() {
       const result = await togglePostLike(post.id);
 
       if (result.requiresLogin) {
-        router.push('/login');
+        await requireLogin({
+          router,
+          nextPath: router.asPath,
+          message: '請先登入，才能喜歡這條策展。',
+        });
         return;
       }
 
@@ -190,7 +248,7 @@ export default function PostPage() {
         <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>策展動態</div>
         <button
           type="button"
-          onClick={() => router.push('/submit')}
+          onClick={goToSubmit}
           style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid #C2D6E6',
@@ -361,14 +419,104 @@ export default function PostPage() {
               </div>
             </section>
 
-            <section style={{
-              ...cardStyle,
-              color: '#87ACCA',
-              lineHeight: 1.8,
-              padding: '22px 18px',
-              textAlign: 'center',
-            }}>
-              留言區下一步接上。現在先把策展本身穩穩展示出來。
+            <section style={{ ...cardStyle, padding: '18px' }}>
+              <div style={{
+                alignItems: 'baseline',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '12px',
+                marginBottom: '14px',
+              }}>
+                <div>
+                  <h2 style={{ color: '#2A527A', fontSize: '17px', margin: 0 }}>留言</h2>
+                  <p style={{ color: '#87ACCA', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
+                    留下你對這條策展的回聲。
+                  </p>
+                </div>
+                <span style={{ color: '#87ACCA', fontSize: '12px', flex: '0 0 auto' }}>
+                  {post.comment_count || 0} 則
+                </span>
+              </div>
+
+              <form onSubmit={handleSubmitCommentPreview} style={{ display: 'grid', gap: '10px' }}>
+                <textarea
+                  value={commentDraft}
+                  onChange={(event) => setCommentDraft(event.target.value)}
+                  onFocus={() => {
+                    if (!currentUser) {
+                      setCommentMessage('登入後就能一起聊聊這條策展。');
+                    }
+                  }}
+                  placeholder={currentUser ? '寫下你的回聲...' : '登入後一起聊聊'}
+                  rows={3}
+                  style={{
+                    backgroundColor: '#F7FAFC',
+                    border: '1px solid rgba(135, 172, 202, 0.55)',
+                    borderRadius: '14px',
+                    boxSizing: 'border-box',
+                    color: '#2A527A',
+                    fontSize: '14px',
+                    lineHeight: 1.7,
+                    outline: 'none',
+                    padding: '12px 14px',
+                    resize: 'vertical',
+                    width: '100%',
+                  }}
+                />
+
+                <div style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  gap: '10px',
+                  justifyContent: 'space-between',
+                }}>
+                  <span style={{ color: '#87ACCA', fontSize: '12px' }}>
+                    {commentDraft.trim().length}/2
+                  </span>
+                  <button
+                    type={currentUser ? 'submit' : 'button'}
+                    onClick={currentUser ? undefined : goToLoginForComment}
+                    style={{
+                      backgroundColor: '#2A527A',
+                      border: 'none',
+                      borderRadius: '999px',
+                      color: '#FFFFFF',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      padding: '9px 14px',
+                    }}
+                  >
+                    {currentUser ? '送出留言' : '登入留言'}
+                  </button>
+                </div>
+              </form>
+
+              {commentMessage && (
+                <div style={{
+                  backgroundColor: '#F7FAFC',
+                  border: '1px solid rgba(194, 214, 230, 0.65)',
+                  borderRadius: '12px',
+                  color: '#6B99C3',
+                  fontSize: '13px',
+                  lineHeight: 1.7,
+                  marginTop: '12px',
+                  padding: '10px 12px',
+                }}>
+                  {commentMessage}
+                </div>
+              )}
+
+              <div style={{
+                borderTop: '1px solid rgba(194, 214, 230, 0.55)',
+                color: '#87ACCA',
+                lineHeight: 1.8,
+                marginTop: '16px',
+                paddingTop: '18px',
+                textAlign: 'center',
+              }}>
+                還沒有人留言。留下第一個回聲，之後會在這裡亮起來。
+              </div>
             </section>
           </article>
         )}
