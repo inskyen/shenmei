@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
+import { supabase } from '@/lib/supabase/client';
 
 export default function Home() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState(new Set());
   const [likingPostIds, setLikingPostIds] = useState(new Set());
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
@@ -37,6 +40,21 @@ export default function Home() {
         console.error(err);
         setLoading(false);
       });
+
+    // 獲取當前登入使用者與其 Profile
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('avatar_url, username')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setUserProfile(data);
+          });
+      }
+    });
   }, []);
 
   // 历史记录劫持：防侧滑退出魔法
@@ -194,12 +212,21 @@ export default function Home() {
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '4px', alignItems: 'center' }}>
           <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A527A', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
 
-          <div 
-            onClick={() => goToProtectedPage('/u/me', '請先登入，才能進入你的策展人頁。')} 
-            style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
-          >
-            <img src="https://api.dicebear.com/7.x/notionists/svg?seed=shenmei" alt="avatar" />
-          </div>
+          {currentUser ? (
+            <div 
+              onClick={() => router.push('/u/me')} 
+              style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
+            >
+              <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || 'shenmei'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ) : (
+            <div 
+              onClick={() => router.push('/login')} 
+              style={{ padding: '4px 12px', borderRadius: '16px', border: '1px solid rgba(194, 214, 230, 0.8)', color: '#6B99C3', fontSize: '13px', cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              登入
+            </div>
+          )}
         </div>
       </header>
 
