@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
+import { loadUnreadNotificationCount } from '@/lib/notifications/userNotifications';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
@@ -14,6 +15,7 @@ export default function Home() {
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   // 身份與 Profile 是兩個請求：在兩者都確認前保留載入狀態，
   // 避免右上角依序出現「訪客 -> 預設頭像 -> 真實頭像」的跳動。
   const [isIdentityLoading, setIsIdentityLoading] = useState(true);
@@ -56,6 +58,12 @@ export default function Home() {
         setCurrentUser(user || null);
 
         if (!user) return;
+
+        loadUnreadNotificationCount()
+          .then((count) => {
+            if (isActive) setUnreadNotificationCount(count);
+          })
+          .catch((error) => console.warn('讀取未讀通知失敗:', error));
 
         // 頭像與 username 都準備好後才結束載入，避免預設圖短暫閃過。
         const { data, error } = await supabase
@@ -414,7 +422,11 @@ export default function Home() {
       {/* 懸浮通知入口：底部已經有發布按鈕，這裡先作為通知提醒入口。 */}
       <div onClick={() => goToProtectedPage('/notifications', '請先登入，才能查看通知。')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '48px', height: '48px', backgroundColor: '#FFFFFF', borderRadius: '50%', boxShadow: '0 4px 14px rgba(42, 82, 122, 0.15)', border: '1px solid #C2D6E6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2A527A', zIndex: 30, cursor: 'pointer' }}>
         <svg style={{ width: '24px', height: '24px' }} fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
-        <span style={{ position: 'absolute', top: 0, right: 0, width: '12px', height: '12px', backgroundColor: '#F4D8CD', border: '2px solid #FFFFFF', borderRadius: '50%' }}></span>
+        {unreadNotificationCount > 0 && (
+          <span style={{ position: 'absolute', top: 0, right: 0, minWidth: '12px', height: '12px', backgroundColor: '#F4B9AE', border: '2px solid #FFFFFF', borderRadius: '999px', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: unreadNotificationCount > 9 ? '7px' : '8px', fontWeight: 700, padding: unreadNotificationCount > 9 ? '0 2px' : 0 }}>
+            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+          </span>
+        )}
       </div>
 
       {/* 底部主導航：首頁預設為啟用狀態，發布保留為視覺焦點。 */}
