@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { showToast } from '@/lib/ui/toast';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
@@ -162,7 +163,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('登入狀態檢查失敗:', error);
-      alert('登入狀態確認失敗，請稍後再試。');
+      showToast('登入狀態確認失敗，請稍後再試。');
     }
   };
 
@@ -205,8 +206,8 @@ export default function Home() {
           : item
       )));
     } catch (error) {
-      console.error('喜歡操作失敗:', error);
-      alert('喜歡操作失敗，請稍後再試。');
+      console.error('切換喜歡狀態失敗:', error);
+      showToast('喜歡操作失敗，請稍後再試。');
     } finally {
       setLikingPostIds((currentIds) => {
         const nextIds = new Set(currentIds);
