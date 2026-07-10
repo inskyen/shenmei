@@ -129,14 +129,16 @@ export default function UserPage() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', padding: '0 20px' }}>
-        <div className="app-detail-skeleton" style={{ height: '140px', margin: '0 -20px' }} />
-        <div style={{ display: 'grid', gap: '16px', marginTop: '-32px' }}>
-          <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '84px', width: '84px' }} />
-          <div className="app-detail-skeleton" style={{ height: '24px', width: '38%' }} />
-          <div className="app-detail-skeleton" style={{ height: '14px', width: '68%' }} />
-          <div className="app-detail-skeleton" style={{ height: '14px', width: '92%' }} />
-          <div className="app-detail-skeleton" style={{ height: '260px' }} />
+      <div className="app-detail-page" style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', width: '100%' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+          <div className="app-detail-skeleton" style={{ height: '140px', width: '100%', borderRadius: 0 }} />
+          <div style={{ padding: '0 20px', marginTop: '-36px', position: 'relative', display: 'grid', gap: '16px' }}>
+            <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '84px', width: '84px', border: '3px solid #F9FAFB' }} />
+            <div className="app-detail-skeleton" style={{ height: '24px', width: '38%' }} />
+            <div className="app-detail-skeleton" style={{ height: '14px', width: '68%' }} />
+            <div className="app-detail-skeleton" style={{ height: '14px', width: '92%' }} />
+            <div className="app-detail-skeleton" style={{ height: '260px' }} />
+          </div>
         </div>
       </div>
     );
