@@ -117,6 +117,18 @@ export default function Home() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [immersiveVideo, detailPageVideo]);
 
+  // 鎖定背景滾動
+  useEffect(() => {
+    if (immersiveVideo || detailPageVideo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [immersiveVideo, detailPageVideo]);
+
   const openImmersive = (video) => {
     window.history.pushState({ modal: true }, "");
     setImmersiveVideo(video);
