@@ -2,16 +2,23 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import PageShell from '@/components/PageShell';
 import { requireLogin } from '@/lib/auth/requireLogin';
-import { loadFollowedProfiles } from '@/lib/follows/profileFollows';
+import { loadFollowingFeed } from '@/lib/follows/profileFollows';
 
 function getInitial(profile) {
   const name = profile.display_name || profile.username || '審';
   return name.charAt(0).toUpperCase();
 }
 
+function formatDate(timestamp) {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export default function FollowingPage() {
   const router = useRouter();
   const [profiles, setProfiles] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -30,8 +37,9 @@ export default function FollowingPage() {
 
         if (!user) return;
 
-        const result = await loadFollowedProfiles();
+        const result = await loadFollowingFeed();
         setProfiles(result.profiles);
+        setPosts(result.posts);
       } catch (error) {
         console.error('關注名單載入失敗:', error);
         setErrorMessage('關注名單暫時無法顯示，請稍後再試。');
@@ -45,8 +53,8 @@ export default function FollowingPage() {
 
   return (
     <PageShell
-      title="關注"
-      subtitle="這裡收著你想持續留意的策展人。"
+      title="關注動態"
+      subtitle="只收下你想持續留意的人，剛剛發出的審美。"
     >
       {loading && (
         <div style={{ display: 'grid', gap: '12px' }}>
@@ -74,29 +82,70 @@ export default function FollowingPage() {
       )}
 
       {!loading && !errorMessage && profiles.length > 0 && (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {profiles.map((profile) => (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => router.push(`/u/${profile.username}`)}
-              style={{ alignItems: 'center', backgroundColor: '#F9FBFD', border: '1px solid #E3ECF4', borderRadius: '14px', cursor: 'pointer', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%' }}
-            >
-              <span
-                style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flexShrink: 0, fontSize: '18px', fontWeight: 800, height: '48px', justifyContent: 'center', width: '48px' }}
+        <div>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
+            {profiles.map((profile) => (
+              <button
+                key={profile.id}
+                type="button"
+                onClick={() => router.push(`/u/${profile.username}`)}
+                style={{ background: 'transparent', border: 'none', color: '#52769A', cursor: 'pointer', flex: '0 0 58px', padding: 0, textAlign: 'center' }}
               >
-                {!profile.avatar_url && getInitial(profile)}
-              </span>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ color: '#2A527A', display: 'block', fontSize: '15px', fontWeight: 700 }}>
+                <span
+                  style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', border: '2px solid #FFFFFF', borderRadius: '50%', boxShadow: '0 2px 8px rgba(42, 82, 122, 0.1)', color: '#6B99C3', display: 'flex', fontSize: '18px', fontWeight: 800, height: '48px', justifyContent: 'center', margin: '0 auto 5px', width: '48px' }}
+                >
+                  {!profile.avatar_url && getInitial(profile)}
+                </span>
+                <span style={{ display: 'block', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {profile.display_name || profile.username}
                 </span>
-                <span style={{ color: '#87ACCA', display: 'block', fontSize: '12px', marginTop: '3px' }}>
-                  {profile.bio || `審美號：${profile.username}`}
-                </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
+
+          {posts.length === 0 && (
+            <div style={{ color: '#87ACCA', lineHeight: 1.8, padding: '24px 8px', textAlign: 'center' }}>
+              你關注的策展人最近還沒有發布新動態。
+            </div>
+          )}
+
+          {posts.length > 0 && (
+            <div style={{ display: 'grid', gap: '14px' }}>
+              {posts.map((post) => {
+                const video = post.videos || {};
+                const profile = post.profile || {};
+
+                return (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onClick={() => router.push(`/p/${post.id}`)}
+                    style={{ backgroundColor: '#F9FBFD', border: '1px solid #E3ECF4', borderRadius: '16px', cursor: 'pointer', display: 'flex', gap: '12px', overflow: 'hidden', padding: '10px', textAlign: 'left', width: '100%' }}
+                  >
+                    <span style={{ backgroundColor: '#E1E9F0', backgroundImage: video.cover_url ? `url("${video.cover_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '10px', display: 'block', flex: '0 0 88px', height: '112px' }} />
+                    <span style={{ display: 'flex', flex: 1, flexDirection: 'column', minWidth: 0, padding: '2px 2px 1px 0' }}>
+                      <span style={{ alignItems: 'center', color: '#52769A', display: 'flex', fontSize: '12px', gap: '6px' }}>
+                        <span style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', display: 'flex', flex: '0 0 auto', fontSize: '9px', fontWeight: 700, height: '18px', justifyContent: 'center', width: '18px' }}>
+                          {!profile.avatar_url && getInitial(profile)}
+                        </span>
+                        {profile.display_name || profile.username || '策展人'}
+                        <span style={{ color: '#AAB8C5' }}>{formatDate(post.created_at)}</span>
+                      </span>
+                      <span style={{ color: '#2A527A', display: '-webkit-box', fontSize: '14px', fontWeight: 700, lineHeight: 1.45, marginTop: '8px', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2 }}>
+                        {video.title || '未命名影片'}
+                      </span>
+                      <span style={{ color: '#4A6984', display: '-webkit-box', fontSize: '13px', lineHeight: 1.55, marginTop: '5px', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2 }}>
+                        {post.note}
+                      </span>
+                      <span style={{ color: '#87ACCA', fontSize: '11px', marginTop: 'auto', paddingTop: '8px' }}>
+                        {post.like_count || 0} 讚 · {post.comment_count || 0} 留言
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </PageShell>

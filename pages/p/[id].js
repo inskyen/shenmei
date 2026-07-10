@@ -35,6 +35,29 @@ function getCommentDisplayName(comment) {
   return comment.profile?.display_name || comment.profile?.username || '審美者';
 }
 
+function groupComments(comments) {
+  const commentIds = new Set(comments.map((comment) => comment.id));
+  const repliesByParent = new Map();
+  const topLevelComments = [];
+
+  comments.forEach((comment) => {
+    if (!comment.parent_id || !commentIds.has(comment.parent_id)) {
+      topLevelComments.push(comment);
+      return;
+    }
+
+    const replies = repliesByParent.get(comment.parent_id) || [];
+    replies.push(comment);
+    repliesByParent.set(comment.parent_id, replies);
+  });
+
+  repliesByParent.forEach((replies) => {
+    replies.sort((first, second) => new Date(first.created_at) - new Date(second.created_at));
+  });
+
+  return { topLevelComments, repliesByParent };
+}
+
 export default function PostPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -51,6 +74,7 @@ export default function PostPage() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentMessage, setCommentMessage] = useState('');
+  const [replyTarget, setReplyTarget] = useState(null);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -149,6 +173,7 @@ export default function PostPage() {
 
   const video = post?.videos || {};
   const displayName = getDisplayName(post, profile);
+  const { topLevelComments, repliesByParent } = groupComments(comments);
 
   const goBack = () => {
     // 從首頁或影片頁點進來時回到原本的畫面；使用者直接開連結時才回首頁。
@@ -177,12 +202,12 @@ export default function PostPage() {
     }
   };
 
-  const goToLoginForComment = async () => {
+  const goToLoginForComment = async (message = '請先登入，才能留言。') => {
     try {
       await requireLogin({
         router,
         nextPath: router.asPath,
-        message: '請先登入，才能留言。',
+        message,
       });
     } catch (error) {
       console.error('登入狀態檢查失敗:', error);
@@ -214,6 +239,7 @@ export default function PostPage() {
       const result = await createPostComment({
         postId: post.id,
         content: commentDraft,
+        parentId: replyTarget?.id || null,
       });
 
       if (result.requiresLogin) {
@@ -222,19 +248,33 @@ export default function PostPage() {
         return;
       }
 
-      setComments((currentComments) => [result.comment, ...currentComments]);
+      setComments((currentComments) => (
+        replyTarget ? [...currentComments, result.comment] : [result.comment, ...currentComments]
+      ));
       setPost((currentPost) => ({
         ...currentPost,
         comment_count: (currentPost.comment_count || 0) + 1,
       }));
       setCommentDraft('');
-      showToast('留言已送出。');
+      setReplyTarget(null);
+      showToast(replyTarget ? '回覆已送出。' : '留言已送出。');
     } catch (error) {
       console.error('留言送出失敗:', error);
       setCommentMessage('留言送出失敗，請稍後再試。');
     } finally {
       setCommentSubmitting(false);
     }
+  };
+
+  const handleReply = async (comment) => {
+    if (!currentUser) {
+      await goToLoginForComment('請先登入，才能回覆留言。');
+      return;
+    }
+
+    setReplyTarget(comment);
+    setCommentMessage('');
+    window.setTimeout(() => document.getElementById('comment-input')?.focus(), 0);
   };
 
   const handleToggleLike = async () => {
@@ -539,42 +579,85 @@ export default function PostPage() {
 
               {!commentsLoading && comments.length > 0 && (
                 <div style={{ display: 'grid', gap: '22px', paddingBottom: '22px' }}>
-                  {comments.map((comment) => {
+                  {topLevelComments.map((comment) => {
                     const commentDisplayName = getCommentDisplayName(comment);
+                    const replies = repliesByParent.get(comment.id) || [];
 
                     return (
-                      <article key={comment.id} style={{ display: 'flex', gap: '10px' }}>
-                        <div
-                          aria-label={commentDisplayName}
-                          style={{
-                            alignItems: 'center',
-                            backgroundColor: '#D9E4F5',
-                            backgroundImage: comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
-                            backgroundPosition: 'center',
-                            backgroundSize: 'cover',
-                            borderRadius: '50%',
-                            color: '#6B99C3',
-                            display: 'flex',
-                            flex: '0 0 auto',
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            height: '34px',
-                            justifyContent: 'center',
-                            width: '34px',
-                          }}
-                        >
-                          {comment.profile?.avatar_url ? '' : getInitial(commentDisplayName)}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ alignItems: 'baseline', display: 'flex', gap: '8px' }}>
-                            <span style={{ color: '#52769A', fontSize: '13px', fontWeight: 700 }}>{commentDisplayName}</span>
-                            <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
+                      <div key={comment.id}>
+                        <article style={{ display: 'flex', gap: '10px' }}>
+                          <div
+                            aria-label={commentDisplayName}
+                            style={{
+                              alignItems: 'center',
+                              backgroundColor: '#D9E4F5',
+                              backgroundImage: comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
+                              backgroundPosition: 'center',
+                              backgroundSize: 'cover',
+                              borderRadius: '50%',
+                              color: '#6B99C3',
+                              display: 'flex',
+                              flex: '0 0 auto',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              height: '34px',
+                              justifyContent: 'center',
+                              width: '34px',
+                            }}
+                          >
+                            {comment.profile?.avatar_url ? '' : getInitial(commentDisplayName)}
                           </div>
-                          <p style={{ color: '#2A3F54', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
-                            {comment.content}
-                          </p>
-                        </div>
-                      </article>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ alignItems: 'baseline', display: 'flex', gap: '8px' }}>
+                              <span style={{ color: '#52769A', fontSize: '13px', fontWeight: 700 }}>{commentDisplayName}</span>
+                              <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
+                            </div>
+                            <p style={{ color: '#2A3F54', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
+                              {comment.content}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleReply(comment)}
+                              style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '12px', marginTop: '4px', padding: 0 }}
+                            >
+                              回覆
+                            </button>
+                          </div>
+                        </article>
+
+                        {replies.length > 0 && (
+                          <div style={{ borderLeft: '2px solid #E8EFF5', display: 'grid', gap: '14px', margin: '12px 0 0 43px', paddingLeft: '12px' }}>
+                            {replies.map((reply) => {
+                              const replyDisplayName = getCommentDisplayName(reply);
+
+                              return (
+                                <article key={reply.id} style={{ display: 'flex', gap: '8px' }}>
+                                  <div
+                                    aria-label={replyDisplayName}
+                                    style={{ alignItems: 'center', backgroundColor: '#E8EFF5', backgroundImage: reply.profile?.avatar_url ? `url(${reply.profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flex: '0 0 auto', fontSize: '11px', fontWeight: 700, height: '28px', justifyContent: 'center', width: '28px' }}
+                                  >
+                                    {reply.profile?.avatar_url ? '' : getInitial(replyDisplayName)}
+                                  </div>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ alignItems: 'baseline', display: 'flex', gap: '7px' }}>
+                                      <span style={{ color: '#52769A', fontSize: '12px', fontWeight: 700 }}>{replyDisplayName}</span>
+                                      <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(reply.created_at)}</span>
+                                    </div>
+                                    <p style={{ color: '#4A6984', fontSize: '13px', lineHeight: 1.7, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{reply.content}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReply(comment)}
+                                      style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '12px', marginTop: '3px', padding: 0 }}
+                                    >
+                                      回覆
+                                    </button>
+                                  </div>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -604,35 +687,51 @@ export default function PostPage() {
           zIndex: 40,
         }}>
           {/* 輸入框 */}
-          <div 
-            onClick={currentUser ? () => document.getElementById('comment-input')?.focus() : goToLoginForComment}
-            style={{
-              flex: 1,
-              backgroundColor: '#F4F7FA',
-              borderRadius: '99px',
-              padding: '8px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'text'
-            }}
-          >
-            <input 
-              id="comment-input"
-              type="text"
-              placeholder={currentUser ? '說點什麼...' : '登入後一起聊聊'}
-              value={commentDraft}
-              onChange={(e) => setCommentDraft(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment(e)}
-              disabled={commentSubmitting}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {replyTarget && (
+              <div style={{ alignItems: 'center', color: '#6B99C3', display: 'flex', fontSize: '12px', gap: '6px', margin: '0 4px 5px' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  回覆 @{getCommentDisplayName(replyTarget)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReplyTarget(null)}
+                  style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '15px', lineHeight: 1, padding: 0 }}
+                  aria-label="取消回覆"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <div
+              onClick={currentUser ? () => document.getElementById('comment-input')?.focus() : goToLoginForComment}
               style={{
-                border: 'none',
-                background: 'transparent',
-                outline: 'none',
-                width: '100%',
-                fontSize: '14px',
-                color: '#2A3F54'
+                alignItems: 'center',
+                backgroundColor: '#F4F7FA',
+                borderRadius: '99px',
+                cursor: 'text',
+                display: 'flex',
+                padding: '8px 16px',
               }}
-            />
+            >
+              <input
+                id="comment-input"
+                type="text"
+                placeholder={currentUser ? (replyTarget ? `回覆 @${getCommentDisplayName(replyTarget)}` : '說點什麼...') : '登入後一起聊聊'}
+                value={commentDraft}
+                onChange={(e) => setCommentDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment(e)}
+                disabled={commentSubmitting}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  width: '100%',
+                  fontSize: '14px',
+                  color: '#2A3F54'
+                }}
+              />
+            </div>
           </div>
 
           {/* 右側按鈕群 */}
