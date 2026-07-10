@@ -163,6 +163,8 @@ export default function UserPage() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       display: 'flex',
       flexDirection: 'column',
+      overflowX: 'hidden',
+      width: '100%',
     }}>
       <Head>
         <title>{displayName} · 審美者</title>
