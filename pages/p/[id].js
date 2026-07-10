@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
+import { createPostComment, loadPostComments } from '@/lib/comments/postComments';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 const pageStyle = {
@@ -29,6 +30,10 @@ function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : '審';
 }
 
+function getCommentDisplayName(comment) {
+  return comment.profile?.display_name || comment.profile?.username || '審美者';
+}
+
 export default function PostPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -40,6 +45,9 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentMessage, setCommentMessage] = useState('');
 
@@ -81,6 +89,7 @@ export default function PostPage() {
 
         setPost(postData);
         setLiked(false);
+        setCommentsLoading(true);
 
         // 推薦者、所屬小館、按讚狀態與登入身份彼此沒有依賴，
         // 同時讀取可縮短詳情頁從滑入到完整內容出現的等待時間。
@@ -92,7 +101,7 @@ export default function PostPage() {
             .maybeSingle()
           : Promise.resolve({ data: null, error: null });
 
-        const [profileResult, moduleResult, likedPostIds, user] = await Promise.all([
+        const [profileResult, moduleResult, likedPostIds, user, commentRows] = await Promise.all([
           profileRequest,
           supabase
             .from('post_modules')
@@ -100,6 +109,7 @@ export default function PostPage() {
             .eq('post_id', postData.id),
           loadLikedPostIds([postData.id]),
           requireLogin({ silent: true }),
+          loadPostComments(postData.id),
         ]);
 
         if (profileResult.error) {
@@ -114,10 +124,12 @@ export default function PostPage() {
         setModules((moduleResult.data || []).map((row) => row.modules).filter(Boolean));
         setLiked(likedPostIds.has(postData.id));
         setCurrentUser(user);
+        setComments(commentRows);
       } catch (error) {
         console.error('策展動態載入失敗:', error);
         setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
       } finally {
+        setCommentsLoading(false);
         setLoading(false);
       }
     }
@@ -168,7 +180,7 @@ export default function PostPage() {
     }
   };
 
-  const handleSubmitCommentPreview = async (event) => {
+  const handleSubmitComment = async (event) => {
     event.preventDefault();
     setCommentMessage('');
 
@@ -182,7 +194,37 @@ export default function PostPage() {
       return;
     }
 
-    setCommentMessage('留言介面已準備好，下一步會接上資料庫保存。');
+    if (!post?.id || commentSubmitting) {
+      return;
+    }
+
+    setCommentSubmitting(true);
+
+    try {
+      const result = await createPostComment({
+        postId: post.id,
+        content: commentDraft,
+      });
+
+      if (result.requiresLogin) {
+        setCurrentUser(null);
+        await goToLoginForComment();
+        return;
+      }
+
+      setComments((currentComments) => [result.comment, ...currentComments]);
+      setPost((currentPost) => ({
+        ...currentPost,
+        comment_count: (currentPost.comment_count || 0) + 1,
+      }));
+      setCommentDraft('');
+      showToast('留言已送出。');
+    } catch (error) {
+      console.error('留言送出失敗:', error);
+      setCommentMessage('留言送出失敗，請稍後再試。');
+    } finally {
+      setCommentSubmitting(false);
+    }
   };
 
   const handleToggleLike = async () => {
@@ -371,7 +413,18 @@ export default function PostPage() {
                     </div>
                   </div>
                 </div>
-                <button style={{ border: '1px solid #6B99C3', color: '#6B99C3', backgroundColor: 'transparent', borderRadius: '99px', padding: '4px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                <button 
+                  onClick={async () => {
+                    const user = await requireLogin({
+                      message: '請先登入以關注作者',
+                      title: '關注功能'
+                    });
+                    if (user) {
+                      showToast('關注功能開發中，敬請期待！');
+                    }
+                  }}
+                  style={{ border: '1px solid #6B99C3', color: '#6B99C3', backgroundColor: 'transparent', borderRadius: '99px', padding: '4px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                >
                   關注
                 </button>
               </div>
@@ -418,9 +471,69 @@ export default function PostPage() {
               <div style={{ color: '#9AA6B2', fontSize: '13px', marginBottom: '20px' }}>
                 共 {post.comment_count || 0} 條留言
               </div>
-              <div style={{ color: '#9AA6B2', textAlign: 'center', padding: '40px 0', fontSize: '14px' }}>
-                還沒有人留言，來做第一個發聲的人吧。
-              </div>
+
+              {commentsLoading && (
+                <div style={{ display: 'grid', gap: '18px', padding: '8px 0 26px' }}>
+                  {[0, 1].map((index) => (
+                    <div key={index} style={{ display: 'flex', gap: '10px' }}>
+                      <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '34px', width: '34px' }} />
+                      <div style={{ display: 'grid', flex: 1, gap: '8px' }}>
+                        <div className="app-detail-skeleton" style={{ height: '12px', width: '94px' }} />
+                        <div className="app-detail-skeleton" style={{ height: '13px', width: index === 0 ? '86%' : '62%' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!commentsLoading && comments.length === 0 && (
+                <div style={{ color: '#9AA6B2', textAlign: 'center', padding: '40px 0', fontSize: '14px' }}>
+                  還沒有人留言，來做第一個發聲的人吧。
+                </div>
+              )}
+
+              {!commentsLoading && comments.length > 0 && (
+                <div style={{ display: 'grid', gap: '22px', paddingBottom: '22px' }}>
+                  {comments.map((comment) => {
+                    const commentDisplayName = getCommentDisplayName(comment);
+
+                    return (
+                      <article key={comment.id} style={{ display: 'flex', gap: '10px' }}>
+                        <div
+                          aria-label={commentDisplayName}
+                          style={{
+                            alignItems: 'center',
+                            backgroundColor: '#D9E4F5',
+                            backgroundImage: comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
+                            backgroundPosition: 'center',
+                            backgroundSize: 'cover',
+                            borderRadius: '50%',
+                            color: '#6B99C3',
+                            display: 'flex',
+                            flex: '0 0 auto',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            height: '34px',
+                            justifyContent: 'center',
+                            width: '34px',
+                          }}
+                        >
+                          {comment.profile?.avatar_url ? '' : getInitial(commentDisplayName)}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ alignItems: 'baseline', display: 'flex', gap: '8px' }}>
+                            <span style={{ color: '#52769A', fontSize: '13px', fontWeight: 700 }}>{commentDisplayName}</span>
+                            <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
+                          </div>
+                          <p style={{ color: '#2A3F54', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
+                            {comment.content}
+                          </p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
 
             </section>
           </article>
@@ -461,10 +574,11 @@ export default function PostPage() {
             <input 
               id="comment-input"
               type="text"
-              placeholder="說點什麼..."
+              placeholder={currentUser ? '說點什麼...' : '登入後一起聊聊'}
               value={commentDraft}
               onChange={(e) => setCommentDraft(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmitCommentPreview(e)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment(e)}
+              disabled={commentSubmitting}
               style={{
                 border: 'none',
                 background: 'transparent',
@@ -486,7 +600,7 @@ export default function PostPage() {
               <span style={{ fontSize: '13px', fontWeight: 600 }}>{post.like_count || '讚'}</span>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+            <div onClick={currentUser ? () => document.getElementById('comment-input')?.focus() : goToLoginForComment} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
               <svg style={{ width: '28px', height: '28px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
               <span style={{ fontSize: '13px', fontWeight: 600 }}>{post.comment_count || '評論'}</span>
             </div>
