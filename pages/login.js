@@ -3,6 +3,12 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/client';
 import Head from 'next/head';
 
+const OTP_LENGTH = 6;
+
+function createEmptyOtp() {
+  return Array.from({ length: OTP_LENGTH }, () => '');
+}
+
 function getSafeNextPath(nextPath) {
   if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//')) {
     return '/';
@@ -39,7 +45,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   
   // OTP 狀態
-  const [otp, setOtp] = useState(['', '', '', '', '', '', '', '']);
+  const [otp, setOtp] = useState(createEmptyOtp);
   const otpRefs = useRef([]);
   const [countdown, setCountdown] = useState(0);
 
@@ -138,7 +144,7 @@ export default function Login() {
       setIsSuccess(false);
       setMessage(translateError(error.message));
       // 清空驗證碼重新輸入
-      setOtp(['', '', '', '', '', '', '', '']);
+      setOtp(createEmptyOtp());
       if (otpRefs.current[0]) otpRefs.current[0].focus();
     } finally {
       setSubmitting(false);
@@ -174,11 +180,11 @@ export default function Login() {
     newOtp[index] = value.substring(value.length - 1); // 只保留最後輸入的一位
     setOtp(newOtp);
 
-    // 檢查是否填滿 8 位
+    // 驗證碼填滿後立即送出。
     const code = newOtp.join('');
-    if (value && index < 7) {
+    if (value && index < OTP_LENGTH - 1) {
       otpRefs.current[index + 1].focus();
-    } else if (code.length === 8) {
+    } else if (code.length === OTP_LENGTH) {
       handleVerifyOtp(code);
     }
   };
@@ -191,7 +197,7 @@ export default function Login() {
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').slice(0, 8).replace(/\D/g, '');
+    const pastedData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, OTP_LENGTH);
     if (!pastedData) return;
     
     const newOtp = [...otp];
@@ -200,8 +206,8 @@ export default function Login() {
     }
     setOtp(newOtp);
     
-    if (pastedData.length === 8) {
-      otpRefs.current[7].focus();
+    if (pastedData.length === OTP_LENGTH) {
+      otpRefs.current[OTP_LENGTH - 1].focus();
       handleVerifyOtp(pastedData);
     } else {
       otpRefs.current[pastedData.length].focus();
@@ -319,7 +325,7 @@ export default function Login() {
                 <div>
                   <h2 style={{ margin: '0 0 8px', color: '#2A3F54', fontSize: '22px' }}>輸入驗證碼</h2>
                   <p style={{ margin: 0, color: '#87ACCA', fontSize: '14px', lineHeight: 1.6 }}>
-                    我們已發送 8 位數驗證碼至<br/>
+                    我們已發送 6 位數驗證碼至<br/>
                     <strong style={{ color: '#6B99C3' }}>{email}</strong>
                   </p>
                 </div>
@@ -331,6 +337,7 @@ export default function Login() {
                       ref={el => otpRefs.current[index] = el}
                       type="text"
                       inputMode="numeric"
+                      autoComplete={index === 0 ? 'one-time-code' : 'off'}
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
