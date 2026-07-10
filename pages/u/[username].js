@@ -3,6 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
+import { showToast } from '@/lib/ui/toast';
+import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
 
 function formatDate(timestamp) {
   if (!timestamp) return '';
@@ -22,6 +24,10 @@ export default function UserPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     if (!username) return;
@@ -74,35 +80,44 @@ export default function UserPage() {
 
         setProfile(profileData);
 
-        // Check if viewing own profile
         const currentUser = await requireLogin({ silent: true });
         setIsOwnProfile(Boolean(currentUser && currentUser.id === profileData.id));
 
-        // Fetch posts
-        const { data: postsData, error: postsError } = await supabase
+        const postsRequest = supabase
           .from('posts')
           .select(`
-            id,
-            note,
-            created_at,
-            like_count,
-            comment_count,
-            videos (
               id,
-              external_id,
-              title,
-              cover_url,
-              author_name
-            )
-          `)
+              note,
+              created_at,
+              like_count,
+              comment_count,
+              videos (
+                id,
+                external_id,
+                title,
+                cover_url,
+                author_name
+              )
+            `)
           .eq('user_id', profileData.id)
           .eq('status', 'published')
           .eq('visibility', 'public')
           .order('created_at', { ascending: false });
 
-        if (postsError) throw postsError;
+        const [postsResult, followState] = await Promise.all([
+          postsRequest,
+          loadProfileFollowState(profileData.id).catch((followError) => {
+            console.warn('追蹤狀態載入失敗:', followError);
+            return { followerCount: 0, followingCount: 0, isFollowing: false };
+          }),
+        ]);
 
-        setPosts(postsData || []);
+        if (postsResult.error) throw postsResult.error;
+
+        setPosts(postsResult.data || []);
+        setFollowerCount(followState.followerCount);
+        setFollowingCount(followState.followingCount);
+        setIsFollowing(followState.isFollowing);
       } catch (error) {
         console.error('使用者頁載入失敗:', error);
         setErrorMessage('這位策展人的資料暫時無法顯示。');
@@ -125,6 +140,34 @@ export default function UserPage() {
     }
 
     router.push('/');
+  };
+
+  const handleToggleFollow = async () => {
+    if (!profile || followLoading) return;
+
+    const user = await requireLogin({
+      router,
+      nextPath: router.asPath,
+      message: '請先登入以關注這位策展人。',
+    });
+
+    if (!user) return;
+
+    setFollowLoading(true);
+
+    try {
+      const result = await toggleProfileFollow(profile.id);
+      if (result.requiresLogin || result.isOwnProfile) return;
+
+      setIsFollowing(result.isFollowing);
+      setFollowerCount((count) => Math.max(0, count + (result.isFollowing ? 1 : -1)));
+      showToast(result.isFollowing ? '已關注這位策展人。' : '已取消關注。');
+    } catch (error) {
+      console.error('追蹤操作失敗:', error);
+      showToast('關注狀態暫時無法更新，請稍後再試。');
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   if (loading) {
@@ -249,19 +292,21 @@ export default function UserPage() {
               </div>
             ) : (
               <button 
-                disabled
+                onClick={handleToggleFollow}
+                disabled={followLoading}
                 style={{
-                  backgroundColor: '#EEF3F7',
-                  color: '#87ACCA',
-                  border: '1px solid #D9E4F5',
+                  backgroundColor: isFollowing ? '#EEF3F7' : '#6B99C3',
+                  color: isFollowing ? '#52769A' : '#FFFFFF',
+                  border: `1px solid ${isFollowing ? '#D9E4F5' : '#6B99C3'}`,
                   borderRadius: '99px',
                   padding: '6px 24px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: 'not-allowed',
+                  cursor: followLoading ? 'wait' : 'pointer',
+                  opacity: followLoading ? 0.7 : 1,
                 }}
               >
-                關注 · 準備中
+                {followLoading ? '處理中' : isFollowing ? '已關注' : '關注'}
               </button>
             )}
           </div>
@@ -302,7 +347,7 @@ export default function UserPage() {
           )}
 
           {/* Stats Row */}
-          <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', paddingBottom: '16px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{posts.length}</span>
               <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>策展</span>
@@ -310,6 +355,14 @@ export default function UserPage() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{totalLikes}</span>
               <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>獲讚</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{followerCount}</span>
+              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>粉絲</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{followingCount}</span>
+              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>關注</span>
             </div>
           </div>
 

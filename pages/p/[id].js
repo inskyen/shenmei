@@ -5,6 +5,7 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
 import { createPostComment, loadPostComments } from '@/lib/comments/postComments';
+import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 const pageStyle = {
@@ -50,6 +51,8 @@ export default function PostPage() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentMessage, setCommentMessage] = useState('');
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -96,7 +99,7 @@ export default function PostPage() {
         const profileRequest = postData.user_id
           ? supabase
             .from('profiles')
-            .select('id, username, avatar_url')
+            .select('id, username, display_name, avatar_url')
             .eq('id', postData.user_id)
             .maybeSingle()
           : Promise.resolve({ data: null, error: null });
@@ -125,6 +128,13 @@ export default function PostPage() {
         setLiked(likedPostIds.has(postData.id));
         setCurrentUser(user);
         setComments(commentRows);
+        setIsFollowingAuthor(false);
+
+        if (profileResult.data && profileResult.data.id !== user?.id) {
+          loadProfileFollowState(profileResult.data.id)
+            .then((followState) => setIsFollowingAuthor(followState.isFollowing))
+            .catch((followError) => console.warn('作者追蹤狀態載入失敗:', followError));
+        }
       } catch (error) {
         console.error('策展動態載入失敗:', error);
         setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
@@ -256,6 +266,35 @@ export default function PostPage() {
       showToast('喜歡操作失敗，請稍後再試。');
     } finally {
       setLiking(false);
+    }
+  };
+
+  const handleToggleAuthorFollow = async () => {
+    if (!profile?.id || followLoading || currentUser?.id === profile.id) {
+      return;
+    }
+
+    const user = await requireLogin({
+      router,
+      nextPath: router.asPath,
+      message: '請先登入以關注作者。',
+    });
+
+    if (!user) return;
+
+    setFollowLoading(true);
+
+    try {
+      const result = await toggleProfileFollow(profile.id);
+      if (result.requiresLogin || result.isOwnProfile) return;
+
+      setIsFollowingAuthor(result.isFollowing);
+      showToast(result.isFollowing ? '已關注作者。' : '已取消關注。');
+    } catch (error) {
+      console.error('關注作者失敗:', error);
+      showToast('關注狀態暫時無法更新，請稍後再試。');
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -413,20 +452,26 @@ export default function PostPage() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={async () => {
-                    const user = await requireLogin({
-                      message: '請先登入以關注作者',
-                      title: '關注功能'
-                    });
-                    if (user) {
-                      showToast('關注功能開發中，敬請期待！');
-                    }
-                  }}
-                  style={{ border: '1px solid #6B99C3', color: '#6B99C3', backgroundColor: 'transparent', borderRadius: '99px', padding: '4px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                >
-                  關注
-                </button>
+                {profile && currentUser?.id !== profile.id && (
+                  <button
+                    type="button"
+                    onClick={handleToggleAuthorFollow}
+                    disabled={followLoading}
+                    style={{
+                      border: `1px solid ${isFollowingAuthor ? '#D9E4F5' : '#6B99C3'}`,
+                      color: isFollowingAuthor ? '#52769A' : '#6B99C3',
+                      backgroundColor: isFollowingAuthor ? '#EEF3F7' : 'transparent',
+                      borderRadius: '99px',
+                      padding: '4px 16px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: followLoading ? 'wait' : 'pointer',
+                      opacity: followLoading ? 0.7 : 1,
+                    }}
+                  >
+                    {followLoading ? '處理中' : isFollowingAuthor ? '已關注' : '關注'}
+                  </button>
+                )}
               </div>
 
               {/* 标题 */}
