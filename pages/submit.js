@@ -325,7 +325,7 @@ export default function SubmitPage() {
            placeholder="寫下你想把它放進審美者的理由..."
            style={{
              width: '100%',
-             flex: 1,
+             height: '180px',
              border: 'none',
              background: 'transparent',
              outline: 'none',
@@ -333,8 +333,8 @@ export default function SubmitPage() {
              lineHeight: '1.6',
              color: '#2A527A',
              resize: 'none',
-             minHeight: '200px',
-             fontFamily: 'inherit'
+             fontFamily: 'inherit',
+             marginBottom: '24px'
            }}
          />
          <div style={{ display: 'none' }}></div>
