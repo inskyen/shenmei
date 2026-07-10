@@ -30,6 +30,8 @@ export default function SubmitPage() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [modulesLoading, setModulesLoading] = useState(true);
+  const [publishComplete, setPublishComplete] = useState(false);
 
   const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
   const prefilledTitle = router.isReady && typeof router.query.title === 'string' ? router.query.title : '';
@@ -92,14 +94,19 @@ export default function SubmitPage() {
 
   useEffect(() => {
     async function loadModules() {
-      const { data, error } = await supabase
-        .from('modules')
-        .select('id, name, slug')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('modules')
+          .select('id, name, slug')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
 
-      if (!error) {
+        if (error) throw error;
         setModules(data || []);
+      } catch (error) {
+        console.error('小館選項載入失敗:', error);
+      } finally {
+        setModulesLoading(false);
       }
     }
 
@@ -239,7 +246,10 @@ export default function SubmitPage() {
         if (moduleError) throw moduleError;
       }
 
-      router.push('/');
+      setPublishComplete(true);
+      window.setTimeout(() => {
+        router.push('/');
+      }, 520);
     } catch (error) {
       console.error('發布策展失敗:', error);
       setMessage(error.message || '發佈失敗，請稍後再試。');
@@ -251,8 +261,17 @@ export default function SubmitPage() {
   const hasParsedVideo = !!videoTitleValue || (sourceValue && !sourceValue.includes('http') && sourceValue.startsWith('BV'));
   const canPublish = hasParsedVideo && note.trim().length > 0 && !submitting;
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/');
+  };
+
   return (
-    <div style={{
+    <div className="app-detail-page" style={{
       backgroundColor: '#F9FAFB',
       minHeight: '100vh',
       color: '#2A527A',
@@ -275,9 +294,10 @@ export default function SubmitPage() {
         width: '100%',
         boxSizing: 'border-box'
       }}>
-         <button onClick={() => router.back()} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
            ×
          </button>
+         <div style={{ color: '#2A527A', fontSize: '17px', fontWeight: 600 }}>發佈策展</div>
          <button 
            onClick={handleSubmit} 
            disabled={!canPublish}
@@ -401,13 +421,16 @@ export default function SubmitPage() {
          )}
 
          {/* Tags / Rooms */}
-         {modules.length > 0 && (
+         {(modulesLoading || modules.length > 0) && (
            <div style={{ marginTop: '32px' }}>
              <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>
                你想把它放進哪個展間？<span style={{ fontWeight: 'normal', color: '#87ACCA', fontSize: '13px' }}>（選填）</span>
              </div>
              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-               {modules.map(m => {
+               {modulesLoading && [0, 1, 2].map((index) => (
+                 <div key={index} className="app-detail-skeleton" style={{ borderRadius: '999px', height: '32px', width: '74px' }} />
+               ))}
+               {!modulesLoading && modules.map(m => {
                  const isSelected = selectedModuleIds.includes(m.id);
                  return (
                    <button
@@ -433,6 +456,16 @@ export default function SubmitPage() {
            </div>
          )}
       </main>
+
+      {publishComplete && (
+        <div style={{ alignItems: 'center', backgroundColor: 'rgba(42, 63, 84, 0.38)', display: 'flex', inset: 0, justifyContent: 'center', position: 'fixed', zIndex: 80 }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', boxShadow: '0 16px 40px rgba(42, 82, 122, 0.2)', color: '#2A527A', padding: '24px 28px', textAlign: 'center' }}>
+            <div style={{ alignItems: 'center', backgroundColor: '#D9E4F5', borderRadius: '50%', color: '#2A527A', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
+            <div style={{ fontSize: '16px', fontWeight: 700 }}>已放進最新大廳</div>
+            <div style={{ color: '#87ACCA', fontSize: '13px', marginTop: '6px' }}>正在帶你回到剛剛發出的策展。</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

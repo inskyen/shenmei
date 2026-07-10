@@ -116,9 +116,30 @@ export default function UserPage() {
 
   const displayName = profile?.display_name || profile?.username || '策展人';
   const totalLikes = posts.reduce((sum, post) => sum + (post.like_count || 0), 0);
+  const aestheticTags = profile?.aesthetic_tags || [];
+
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/');
+  };
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>正在讀取資料...</div>;
+    return (
+      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', padding: '0 20px' }}>
+        <div className="app-detail-skeleton" style={{ height: '140px', margin: '0 -20px' }} />
+        <div style={{ display: 'grid', gap: '16px', marginTop: '-32px' }}>
+          <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '84px', width: '84px' }} />
+          <div className="app-detail-skeleton" style={{ height: '24px', width: '38%' }} />
+          <div className="app-detail-skeleton" style={{ height: '14px', width: '68%' }} />
+          <div className="app-detail-skeleton" style={{ height: '14px', width: '92%' }} />
+          <div className="app-detail-skeleton" style={{ height: '260px' }} />
+        </div>
+      </div>
+    );
   }
 
   if (errorMessage) {
@@ -135,7 +156,7 @@ export default function UserPage() {
   }
 
   return (
-    <div style={{
+    <div className="app-detail-page" style={{
       backgroundColor: '#F9FAFB',
       minHeight: '100vh',
       color: '#2A527A',
@@ -155,7 +176,7 @@ export default function UserPage() {
           width: '100%' 
         }}>
           <button 
-            onClick={() => router.push('/')}
+            onClick={goBack}
             style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(255,255,255,0.3)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2A527A', backdropFilter: 'blur(4px)' }}
           >
             ←
@@ -189,37 +210,54 @@ export default function UserPage() {
 
             {/* Action Button */}
             {isOwnProfile ? (
-              <button 
-                onClick={() => router.push('/settings')}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  color: '#2A527A',
-                  border: '1px solid rgba(194, 214, 230, 0.8)',
-                  borderRadius: '99px',
-                  padding: '6px 20px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(42,82,122,0.04)'
-                }}
-              >
-                編輯資料
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => router.push('/submit')}
+                  style={{
+                    backgroundColor: '#6B99C3',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '99px',
+                    padding: '6px 14px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  發佈策展
+                </button>
+                <button
+                  onClick={() => router.push('/settings')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: '#2A527A',
+                    border: '1px solid rgba(194, 214, 230, 0.8)',
+                    borderRadius: '99px',
+                    padding: '6px 14px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(42,82,122,0.04)'
+                  }}
+                >
+                  編輯資料
+                </button>
+              </div>
             ) : (
               <button 
+                disabled
                 style={{
-                  backgroundColor: '#6B99C3',
-                  color: '#FFFFFF',
-                  border: 'none',
+                  backgroundColor: '#EEF3F7',
+                  color: '#87ACCA',
+                  border: '1px solid #D9E4F5',
                   borderRadius: '99px',
                   padding: '6px 24px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(107,153,195,0.3)'
+                  cursor: 'not-allowed',
                 }}
               >
-                + 關注
+                關注 · 準備中
               </button>
             )}
           </div>
@@ -238,6 +276,26 @@ export default function UserPage() {
           <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: '#4A6984' }}>
             {profile.bio || '這個人很懶，什麼都沒寫。'}
           </p>
+
+          {aestheticTags.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '-6px 0 20px' }}>
+              {aestheticTags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    backgroundColor: '#EEF3F7',
+                    border: '1px solid #D9E4F5',
+                    borderRadius: '999px',
+                    color: '#52769A',
+                    fontSize: '12px',
+                    padding: '5px 10px',
+                  }}
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Stats Row */}
           <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', paddingBottom: '16px', marginBottom: '20px' }}>

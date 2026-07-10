@@ -15,6 +15,14 @@ const AVATAR_GROUPS = {
   notion: Array.from({length: 16}, (_, i) => `/avatars/notion_${i+1}.svg`)
 };
 
+const TAG_SUGGESTIONS = ['電影', '音樂', '攝影', '設計', '閱讀', '動畫', '遊戲', '舞蹈'];
+
+const MESSAGE_PERMISSION_OPTIONS = [
+  { value: 'everyone', label: '所有人', description: '任何人都能向你發起私訊。' },
+  { value: 'followers', label: '追蹤者', description: '追蹤關係開放後，僅限追蹤者。' },
+  { value: 'none', label: '暫不接收', description: '目前不接收新的私訊。' },
+];
+
 export default function SettingsPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
@@ -24,6 +32,8 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [messagePermission, setMessagePermission] = useState('followers');
   
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -45,7 +55,7 @@ export default function SettingsPage() {
 
         const { data, error } = await supabase
           .from('profiles')
-          .select('username, display_name, avatar_url, bio')
+          .select('username, display_name, avatar_url, bio, aesthetic_tags, message_permission')
           .eq('id', currentUser.id)
           .maybeSingle();
 
@@ -56,6 +66,8 @@ export default function SettingsPage() {
           setDisplayName(data.display_name || '');
           setAvatarUrl(data.avatar_url || '');
           setBio(data.bio || '');
+          setTagInput((data.aesthetic_tags || []).join('、'));
+          setMessagePermission(data.message_permission || 'followers');
         }
       } catch (error) {
         console.error('設定頁載入失敗:', error);
@@ -85,6 +97,24 @@ export default function SettingsPage() {
       return;
     }
 
+    // 標籤以頓號、逗號或換行分隔；先在前端收斂格式，資料庫保留為 text[]。
+    const aestheticTags = [...new Set(
+      tagInput
+        .split(/[、，,\n]/)
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )];
+
+    if (aestheticTags.length > 8) {
+      setMessage('審美標籤最多選擇 8 個。');
+      return;
+    }
+
+    if (aestheticTags.some((tag) => tag.length > 16)) {
+      setMessage('每個審美標籤最多 16 個字。');
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -94,6 +124,8 @@ export default function SettingsPage() {
           display_name: displayName.trim(),
           avatar_url: avatarUrl,
           bio: bio.trim(),
+          aesthetic_tags: aestheticTags,
+          message_permission: messagePermission,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -128,12 +160,33 @@ export default function SettingsPage() {
     }
   };
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/u/me');
+  };
+
   if (checking) {
-    return <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>正在讀取資料...</div>;
+    return (
+      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', padding: '24px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '34px', width: '34px' }} />
+          <div className="app-detail-skeleton" style={{ height: '34px', width: '82px' }} />
+        </div>
+        <div style={{ display: 'grid', gap: '18px', marginTop: '44px' }}>
+          <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '90px', justifySelf: 'center', width: '90px' }} />
+          <div className="app-detail-skeleton" style={{ height: '132px' }} />
+          <div className="app-detail-skeleton" style={{ height: '184px' }} />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{
+    <div className="app-detail-page" style={{
       backgroundColor: '#F9FAFB',
       minHeight: '100vh',
       color: '#2A527A',
@@ -156,7 +209,7 @@ export default function SettingsPage() {
         width: '100%',
         boxSizing: 'border-box'
       }}>
-         <button onClick={() => router.back()} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
            ×
          </button>
          <div style={{ fontSize: '17px', fontWeight: 600 }}>編輯資料</div>
@@ -287,6 +340,81 @@ export default function SettingsPage() {
               rows={3}
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent', resize: 'none', fontFamily: 'inherit' }}
             />
+          </div>
+
+          <div style={{ borderTop: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0' }}>
+            <div style={{ color: '#87ACCA', fontSize: '15px', marginBottom: '10px' }}>審美標籤</div>
+            <input
+              value={tagInput}
+              onChange={(event) => setTagInput(event.target.value)}
+              placeholder="例如：電影、音樂、攝影"
+              style={{ background: 'transparent', border: 'none', boxSizing: 'border-box', color: '#2A527A', fontSize: '15px', outline: 'none', width: '100%' }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+              {TAG_SUGGESTIONS.map((tag) => {
+                const selectedTags = tagInput.split(/[、，,\n]/).map((item) => item.trim()).filter(Boolean);
+                const isSelected = selectedTags.includes(tag);
+
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      const nextTags = isSelected
+                        ? selectedTags.filter((item) => item !== tag)
+                        : [...selectedTags, tag];
+                      setTagInput([...new Set(nextTags)].join('、'));
+                    }}
+                    style={{
+                      backgroundColor: isSelected ? '#D9E4F5' : '#F0F4F8',
+                      border: isSelected ? '1px solid #87ACCA' : '1px solid transparent',
+                      borderRadius: '999px',
+                      color: isSelected ? '#2A527A' : '#6B99C3',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      padding: '6px 10px',
+                    }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0 4px' }}>
+            <div style={{ color: '#87ACCA', fontSize: '15px', marginBottom: '10px' }}>私訊權限</div>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {MESSAGE_PERMISSION_OPTIONS.map((option) => {
+                const isSelected = messagePermission === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setMessagePermission(option.value)}
+                    style={{
+                      alignItems: 'center',
+                      backgroundColor: isSelected ? '#F0F4F8' : 'transparent',
+                      border: isSelected ? '1px solid #C2D6E6' : '1px solid transparent',
+                      borderRadius: '12px',
+                      color: '#2A527A',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span>
+                      <strong style={{ fontSize: '13px' }}>{option.label}</strong>
+                      <span style={{ color: '#87ACCA', display: 'block', fontSize: '12px', marginTop: '3px' }}>{option.description}</span>
+                    </span>
+                    <span style={{ color: isSelected ? '#2A527A' : '#C2D6E6', fontSize: '18px' }}>{isSelected ? '✓' : '○'}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
