@@ -447,8 +447,8 @@ export default function Home() {
       {immersiveVideo && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div onClick={closeImmersive} style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10000, width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', backdropFilter: 'blur(4px)', fontSize: '20px' }}>✕</div>
-          <div style={{ width: '100%', maxWidth: '800px', padding: '0 16px' }}>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+          <div style={{ width: '100%', maxWidth: '800px' }}>
+            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
               <iframe src={`//player.bilibili.com/player.html?bvid=${immersiveVideo.bvid}&page=1&autoplay=1&high_quality=1&danmaku=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
             </div>
             <div style={{ marginTop: '20px', color: '#FFFFFF', textAlign: 'center' }}>
@@ -466,14 +466,19 @@ export default function Home() {
             <div onClick={closeDetailPage} style={{ padding: '8px', cursor: 'pointer', color: '#6B99C3', fontWeight: '500' }}>← 返回</div>
             <div style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#2A527A', paddingRight: '40px' }}>動態詳情</div>
           </div>
-          <div style={{ padding: '20px', paddingBottom: '100px' }}>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid #C2D6E6' }}>
+          <div style={{ paddingBottom: '100px' }}>
+            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', border: '1px solid #C2D6E6' }}>
               <iframe src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
             </div>
-            <h2 style={{ fontSize: '18px', marginTop: '20px', color: '#2A527A', lineHeight: '1.6' }}>{detailPageVideo.title}</h2>
-            <div style={{ color: '#87ACCA', fontSize: '14px', marginTop: '10px' }}>UP 主：<span style={{ color: '#6B99C3' }}>{detailPageVideo.up_name}</span></div>
-            <div style={{ marginTop: '40px', padding: '30px 20px', textAlign: 'center', color: '#87ACCA', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px dashed #C2D6E6' }}>
-              留言區正在搭建中...
+            <div style={{ padding: '0 20px' }}>
+              <h2 style={{ fontSize: '18px', marginTop: '20px', color: '#2A527A', lineHeight: '1.6' }}>{detailPageVideo.title}</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <span style={{ fontSize: '14px', color: '#6B99C3', fontWeight: '500' }}>@{detailPageVideo.up_name}</span>
+                <span style={{ fontSize: '13px', color: '#87ACCA' }}>{detailPageVideo.play_count} 次觀看</span>
+              </div>
+              <div style={{ marginTop: '40px', padding: '30px 20px', textAlign: 'center', color: '#87ACCA', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px dashed #C2D6E6' }}>
+                這裡之後可以放評論區或更多推薦
+              </div>
             </div>
           </div>
         </div>
