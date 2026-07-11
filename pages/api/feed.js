@@ -9,12 +9,14 @@ export default async function handler(req, res) {
       .from('posts')
       .select(`
         id,
+        user_id,
         note,
         created_at,
         legacy_added_by,
         like_count,
         comment_count,
         profiles (
+          id,
           username,
           avatar_url
         ),
@@ -44,6 +46,7 @@ export default async function handler(req, res) {
 
       return {
         post_id: post.id,
+        user_id: post.user_id,
         id: video.id,
         video_id: video.id,
         bvid: video.external_id,
@@ -52,7 +55,9 @@ export default async function handler(req, res) {
         cover: video.cover_url,
         up_name: video.author_name,
         added_by: profile.username || post.legacy_added_by || '策展人',
+        legacy_added_by: post.legacy_added_by || null,
         profile_username: profile.username || null,
+        profile_id: profile.id || null,
         profile_avatar_url: profile.avatar_url || null,
         created_at: post.created_at,
         fav_time: video.fav_time,

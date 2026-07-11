@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import AppBottomNav from '@/components/AppBottomNav';
 import PageShell from '@/components/PageShell';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadFollowingFeed } from '@/lib/follows/profileFollows';
@@ -52,10 +53,11 @@ export default function FollowingPage() {
   }, [router]);
 
   return (
-    <PageShell
-      title="關注動態"
-      subtitle="只收下你想持續留意的人，剛剛發出的審美。"
-    >
+    <>
+      <PageShell
+        title="關注動態"
+        subtitle="只收下你想持續留意的人，剛剛發出的審美。"
+      >
       {loading && (
         <div style={{ display: 'grid', gap: '12px' }}>
           {[1, 2, 3].map((item) => (
@@ -148,6 +150,8 @@ export default function FollowingPage() {
           )}
         </div>
       )}
-    </PageShell>
+      </PageShell>
+      <AppBottomNav />
+    </>
   );
 }

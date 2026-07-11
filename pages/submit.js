@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { prefetchModulePage } from '@/lib/cache/modulePageCache';
 import { supabase } from '@/lib/supabase/client';
 
 function parseBvid(input) {
@@ -35,8 +36,11 @@ export default function SubmitPage() {
 
   const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
   const prefilledTitle = router.isReady && typeof router.query.title === 'string' ? router.query.title : '';
+  const forcedModuleSlug = router.isReady && typeof router.query.module === 'string' ? router.query.module : '';
   const sourceValue = sourceInput ?? prefilledBvid;
   const videoTitleValue = videoTitle ?? prefilledTitle;
+  const forcedModule = modules.find((module) => module.slug === forcedModuleSlug) || null;
+  const effectiveSelectedModuleIds = forcedModule ? [forcedModule.id] : selectedModuleIds;
 
   const handleSourceChange = (event) => {
     setSourceInput(event.target.value);
@@ -89,7 +93,7 @@ export default function SubmitPage() {
     setVideoTitle(null);
     setCoverUrl('');
     setAuthorName('');
-    router.replace('/submit', undefined, { shallow: true });
+    router.replace(forcedModuleSlug ? `/submit?module=${forcedModuleSlug}` : '/submit', undefined, { shallow: true });
   };
 
   useEffect(() => {
@@ -114,11 +118,7 @@ export default function SubmitPage() {
   }, []);
 
   const toggleModule = (moduleId) => {
-    setSelectedModuleIds((currentIds) => (
-      currentIds.includes(moduleId)
-        ? currentIds.filter((id) => id !== moduleId)
-        : [...currentIds, moduleId]
-    ));
+    setSelectedModuleIds((currentIds) => (currentIds.includes(moduleId) ? [] : [moduleId]));
   };
 
   const findExistingVideo = async (bvid) => {
@@ -201,6 +201,11 @@ export default function SubmitPage() {
       return;
     }
 
+    if (forcedModuleSlug && !forcedModule) {
+      setMessage('這座小館目前無法投稿，請回到小館頁後再試。');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -232,8 +237,8 @@ export default function SubmitPage() {
 
       if (postError) throw postError;
 
-      if (selectedModuleIds.length > 0) {
-        const rows = selectedModuleIds.map((moduleId) => ({
+      if (effectiveSelectedModuleIds.length > 0) {
+        const rows = effectiveSelectedModuleIds.map((moduleId) => ({
           post_id: post.id,
           module_id: moduleId,
           added_by: user.id,
@@ -246,9 +251,14 @@ export default function SubmitPage() {
         if (moduleError) throw moduleError;
       }
 
+      if (forcedModule) {
+        await prefetchModulePage(forcedModule.slug, { force: true })
+          .catch((error) => console.error('小館快取更新失敗:', error));
+      }
+
       setPublishComplete(true);
       window.setTimeout(() => {
-        router.push('/');
+        router.push(forcedModule ? `/m/${forcedModule.slug}` : '/');
       }, 520);
     } catch (error) {
       console.error('發布策展失敗:', error);
@@ -423,36 +433,48 @@ export default function SubmitPage() {
          {/* Tags / Rooms */}
          {(modulesLoading || modules.length > 0) && (
            <div style={{ marginTop: '32px' }}>
-             <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>
-               你想把它放進哪個展間？<span style={{ fontWeight: 'normal', color: '#87ACCA', fontSize: '13px' }}>（選填）</span>
-             </div>
-             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-               {modulesLoading && [0, 1, 2].map((index) => (
-                 <div key={index} className="app-detail-skeleton" style={{ borderRadius: '999px', height: '32px', width: '74px' }} />
-               ))}
-               {!modulesLoading && modules.map(m => {
-                 const isSelected = selectedModuleIds.includes(m.id);
-                 return (
-                   <button
-                     key={m.id}
-                     type="button"
-                     onClick={() => toggleModule(m.id)}
-                     style={{
-                       backgroundColor: isSelected ? '#6B99C3' : '#FFFFFF',
-                       color: isSelected ? '#FFFFFF' : '#6B99C3',
-                       border: isSelected ? '1px solid #6B99C3' : '1px solid rgba(135, 172, 202, 0.4)',
-                       borderRadius: '99px',
-                       padding: '8px 16px',
-                       fontSize: '14px',
-                       cursor: 'pointer',
-                       transition: 'all 0.2s'
-                     }}
-                   >
-                     # {m.name}
-                   </button>
-                 );
-               })}
-             </div>
+             {forcedModuleSlug ? (
+               <>
+                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>本次投遞</div>
+                 <div style={{ alignItems: 'center', backgroundColor: '#F3F8FC', border: '1px solid #C2D6E6', borderRadius: '14px', color: '#2A527A', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
+                   <span style={{ fontSize: '14px', fontWeight: 700 }}>{forcedModule ? forcedModule.name : '正在確認小館...'}</span>
+                   <span style={{ color: '#87ACCA', fontSize: '12px' }}>已鎖定</span>
+                 </div>
+               </>
+             ) : (
+               <>
+                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>
+                   你想把它放進哪個小館？<span style={{ fontWeight: 'normal', color: '#87ACCA', fontSize: '13px' }}>（選填，最多一座）</span>
+                 </div>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                   {modulesLoading && [0, 1, 2].map((index) => (
+                     <div key={index} className="app-detail-skeleton" style={{ borderRadius: '999px', height: '32px', width: '74px' }} />
+                   ))}
+                   {!modulesLoading && modules.map(m => {
+                     const isSelected = effectiveSelectedModuleIds.includes(m.id);
+                     return (
+                       <button
+                         key={m.id}
+                         type="button"
+                         onClick={() => toggleModule(m.id)}
+                         style={{
+                           backgroundColor: isSelected ? '#6B99C3' : '#FFFFFF',
+                           color: isSelected ? '#FFFFFF' : '#6B99C3',
+                           border: isSelected ? '1px solid #6B99C3' : '1px solid rgba(135, 172, 202, 0.4)',
+                           borderRadius: '99px',
+                           padding: '8px 16px',
+                           fontSize: '14px',
+                           cursor: 'pointer',
+                           transition: 'all 0.2s'
+                         }}
+                       >
+                         # {m.name}
+                       </button>
+                     );
+                   })}
+                 </div>
+               </>
+             )}
            </div>
          )}
       </main>
@@ -461,8 +483,8 @@ export default function SubmitPage() {
         <div style={{ alignItems: 'center', backgroundColor: 'rgba(42, 63, 84, 0.38)', display: 'flex', inset: 0, justifyContent: 'center', position: 'fixed', zIndex: 80 }}>
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', boxShadow: '0 16px 40px rgba(42, 82, 122, 0.2)', color: '#2A527A', padding: '24px 28px', textAlign: 'center' }}>
             <div style={{ alignItems: 'center', backgroundColor: '#D9E4F5', borderRadius: '50%', color: '#2A527A', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
-            <div style={{ fontSize: '16px', fontWeight: 700 }}>已放進最新大廳</div>
-            <div style={{ color: '#87ACCA', fontSize: '13px', marginTop: '6px' }}>正在帶你回到剛剛發出的策展。</div>
+            <div style={{ fontSize: '16px', fontWeight: 700 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
+            <div style={{ color: '#87ACCA', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這座小館。' : '正在帶你回到剛剛發出的策展。'}</div>
           </div>
         </div>
       )}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import AppBottomNav from '@/components/AppBottomNav';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
+import { cacheProfilePage, getCachedProfilePage } from '@/lib/cache/profilePageCache';
 import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
 
 function formatDate(timestamp) {
@@ -64,6 +66,15 @@ export default function UserPage() {
           }
         }
 
+        const currentUser = await requireLogin({ silent: true });
+        const cachedPage = getCachedProfilePage(targetUsername);
+        if (cachedPage) {
+          setProfile(cachedPage.profile);
+          setPosts(cachedPage.posts);
+          setIsOwnProfile(Boolean(currentUser && currentUser.id === cachedPage.profile.id));
+          setLoading(false);
+        }
+
         // Fetch target profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -80,7 +91,6 @@ export default function UserPage() {
 
         setProfile(profileData);
 
-        const currentUser = await requireLogin({ silent: true });
         setIsOwnProfile(Boolean(currentUser && currentUser.id === profileData.id));
 
         const postsRequest = supabase
@@ -115,6 +125,7 @@ export default function UserPage() {
         if (postsResult.error) throw postsResult.error;
 
         setPosts(postsResult.data || []);
+        cacheProfilePage(profileData, postsResult.data || []);
         setFollowerCount(followState.followerCount);
         setFollowingCount(followState.followingCount);
         setIsFollowing(followState.isFollowing);
@@ -201,7 +212,8 @@ export default function UserPage() {
   }
 
   return (
-    <div className="app-detail-page" style={{
+    <>
+      <div className="app-detail-page" style={{
       backgroundColor: '#F9FAFB',
       minHeight: '100vh',
       color: '#2A527A',
@@ -209,6 +221,7 @@ export default function UserPage() {
       display: 'flex',
       flexDirection: 'column',
       overflowX: 'hidden',
+      paddingBottom: '96px',
       width: '100%',
     }}>
       <Head>
@@ -443,6 +456,9 @@ export default function UserPage() {
 
         </div>
       </div>
-    </div>
+
+      </div>
+      <AppBottomNav active="profile" />
+    </>
   );
 }

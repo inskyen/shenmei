@@ -5,6 +5,7 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
 import { createPostComment, loadPostComments } from '@/lib/comments/postComments';
+import { cachePostDetail, getCachedPostDetail } from '@/lib/cache/postDetailCache';
 import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
@@ -82,7 +83,15 @@ export default function PostPage() {
     if (!id) return;
 
     async function loadPost() {
-      setLoading(true);
+      const cachedDetail = getCachedPostDetail(id);
+
+      if (cachedDetail) {
+        setPost(cachedDetail.post);
+        setProfile(cachedDetail.profile);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setErrorMessage('');
 
       try {
@@ -152,6 +161,7 @@ export default function PostPage() {
         setLiked(likedPostIds.has(postData.id));
         setCurrentUser(user);
         setComments(commentRows);
+        cachePostDetail(postData, profileResult.data || null);
         setIsFollowingAuthor(false);
 
         if (profileResult.data && profileResult.data.id !== user?.id) {
@@ -164,7 +174,9 @@ export default function PostPage() {
         setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
       } finally {
         setCommentsLoading(false);
-        setLoading(false);
+        if (!cachedDetail) {
+          setLoading(false);
+        }
       }
     }
 

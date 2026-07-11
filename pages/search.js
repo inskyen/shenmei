@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import AppBottomNav from '@/components/AppBottomNav';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
@@ -169,7 +170,7 @@ export default function SearchPage() {
         </button>
       </header>
 
-      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 88px' }}>
+      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 104px' }}>
         <section style={{ marginBottom: '18px' }}>
           <h1 style={{ color: '#2A527A', fontSize: '26px', lineHeight: 1.25, margin: 0 }}>
             探索影片
@@ -322,6 +323,7 @@ export default function SearchPage() {
           </section>
         )}
       </main>
+      <AppBottomNav />
     </div>
   );
 }

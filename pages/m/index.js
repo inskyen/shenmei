@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabase/client';
+import AppBottomNav from '@/components/AppBottomNav';
+import { getCachedModules, prefetchModulePage, prefetchModules } from '@/lib/cache/modulePageCache';
 
 const pageStyle = {
   backgroundColor: '#F0F4F8',
@@ -17,33 +18,19 @@ const cardStyle = {
   boxShadow: '0 1px 4px rgba(42, 82, 122, 0.06)',
 };
 
-function getModuleInitial(name) {
-  return name ? name.charAt(0).toUpperCase() : '館';
-}
-
 export default function ModulesPage() {
   const router = useRouter();
-  const [modules, setModules] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState(() => getCachedModules() || []);
+  const [loading, setLoading] = useState(() => !getCachedModules());
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     async function loadModules() {
-      setLoading(true);
       setErrorMessage('');
 
       try {
-        const { data, error } = await supabase
-          .from('modules')
-          .select('id, slug, name, description, cover_url, theme_color, created_at')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        setModules(data || []);
+        const data = await prefetchModules({ force: true });
+        setModules(data);
       } catch (error) {
         console.error('小館列表載入失敗:', error);
         setErrorMessage('小館列表暫時無法顯示，請稍後再試。');
@@ -54,6 +41,12 @@ export default function ModulesPage() {
 
     loadModules();
   }, []);
+
+  const openModule = (module) => {
+    router.prefetch(`/m/${module.slug}`);
+    prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error));
+    router.push(`/m/${module.slug}`);
+  };
 
   return (
     <div style={pageStyle}>
@@ -107,13 +100,13 @@ export default function ModulesPage() {
         </button>
       </header>
 
-      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 88px' }}>
+      <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 104px' }}>
         <section style={{ marginBottom: '18px' }}>
           <h1 style={{ color: '#2A527A', fontSize: '26px', lineHeight: 1.25, margin: 0 }}>
             小館
           </h1>
           <p style={{ color: '#87ACCA', fontSize: '14px', lineHeight: 1.8, margin: '8px 0 0' }}>
-            以主題收納審美。第一版小館由管理員建立，發布時可以選，也可以只留在大廳。
+            每座小館都有自己的收錄規則；你可以自由走進來，看看這裡正在留下什麼。
           </p>
         </section>
 
@@ -141,49 +134,36 @@ export default function ModulesPage() {
               <button
                 key={module.id}
                 type="button"
-                onClick={() => router.push(`/m/${module.slug}`)}
+                onClick={() => openModule(module)}
+                onMouseEnter={() => prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error))}
+                onTouchStart={() => prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error))}
                 style={{
                   ...cardStyle,
                   cursor: 'pointer',
                   display: 'grid',
                   gap: '14px',
-                  gridTemplateColumns: '64px 1fr',
-                  padding: '14px',
+                  padding: '16px',
                   textAlign: 'left',
                 }}
               >
-                <div style={{
-                  alignItems: 'center',
-                  backgroundColor: module.theme_color || '#C2D6E6',
-                  backgroundImage: module.cover_url ? `url(${module.cover_url})` : 'none',
-                  backgroundPosition: 'center',
-                  backgroundSize: 'cover',
-                  borderRadius: '16px',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  fontSize: '22px',
-                  fontWeight: 900,
-                  height: '64px',
-                  justifyContent: 'center',
-                  width: '64px',
-                }}>
-                  {module.cover_url ? '' : getModuleInitial(module.name)}
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: '#2A527A', fontSize: '17px', fontWeight: 800 }}>{module.name}</div>
-                  <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '3px' }}>
-                    /m/{module.slug}
+                <div style={{ alignItems: 'flex-start', display: 'flex', gap: '14px', justifyContent: 'space-between' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: '#2A527A', fontSize: '18px', fontWeight: 800 }}>{module.name}</div>
+                    <p style={{ color: '#6B99C3', fontSize: '13px', lineHeight: 1.7, margin: '8px 0 0' }}>
+                      {module.description || '這座小館還在等第一段介紹。'}
+                    </p>
                   </div>
-                  <p style={{ color: '#6B99C3', fontSize: '13px', lineHeight: 1.7, margin: '8px 0 0' }}>
-                    {module.description || '這座小館還在等第一段介紹。'}
-                  </p>
+                  <span style={{ color: '#87ACCA', fontSize: '20px', lineHeight: 1 }}>›</span>
+                </div>
+                <div style={{ borderTop: '1px solid #E8EFF5', color: '#87ACCA', fontSize: '12px', lineHeight: 1.6, paddingTop: '10px' }}>
+                  館規：{module.rule_text || '這座小館的收錄規則正在整理中。'}
                 </div>
               </button>
             ))}
           </section>
         )}
       </main>
+      <AppBottomNav active="modules" />
     </div>
   );
 }

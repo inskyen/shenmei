@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import AppBottomNav from '@/components/AppBottomNav';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
+import { cachePostPreview } from '@/lib/cache/postDetailCache';
+import { cacheHomeFeed, getCachedHomeFeed } from '@/lib/cache/homeFeedCache';
+import { prefetchProfilePage } from '@/lib/cache/profilePageCache';
 import { loadUnreadNotificationCount } from '@/lib/notifications/userNotifications';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
 export default function Home() {
   const router = useRouter();
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState(() => getCachedHomeFeed() || []);
+  const [loading, setLoading] = useState(() => !getCachedHomeFeed());
   const [likedPostIds, setLikedPostIds] = useState(new Set());
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [currentUser, setCurrentUser] = useState(null);
@@ -23,6 +27,7 @@ export default function Home() {
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
   const [detailPageVideo, setDetailPageVideo] = useState(null);
+  const myProfilePath = userProfile?.username ? `/u/${userProfile.username}` : '/u/me';
 
   // 初始化加载数据
   useEffect(() => {
@@ -33,6 +38,7 @@ export default function Home() {
       .then(data => {
         const items = data.items || [];
         setVideos(items);
+        cacheHomeFeed(items);
         setLoading(false);
 
         return loadLikedPostIds(items.map((item) => item.post_id));
@@ -68,7 +74,7 @@ export default function Home() {
         // 頭像與 username 都準備好後才結束載入，避免預設圖短暫閃過。
         const { data, error } = await supabase
           .from('profiles')
-          .select('avatar_url, username')
+          .select('id, username, display_name, avatar_url, bio, aesthetic_tags')
           .eq('id', user.id)
           .single();
 
@@ -78,6 +84,9 @@ export default function Home() {
           console.error('讀取個人資料失敗:', error);
         } else {
           setUserProfile(data || null);
+          prefetchProfilePage(data).catch((prefetchError) => {
+            console.warn('預先載入個人頁失敗:', prefetchError);
+          });
         }
       } catch (error) {
         // 即使身份確認失敗也結束骨架狀態，讓使用者仍可看到登入入口。
@@ -106,6 +115,14 @@ export default function Home() {
       window.scrollTo(0, Number(savedScrollY));
     });
   }, [loading]);
+
+  useEffect(() => {
+    videos.slice(0, 8).forEach((video) => {
+      if (video.post_id) {
+        router.prefetch(`/p/${video.post_id}`);
+      }
+    });
+  }, [router, videos]);
 
   // 历史记录劫持：防侧滑退出魔法
   useEffect(() => {
@@ -144,12 +161,23 @@ export default function Home() {
   const openDetailPage = (video) => {
     // 有 post_id 時進入正式策展詳情頁；沒有時才退回舊的本頁浮層。
     if (video.post_id) {
+      cachePostPreview(video);
+      router.prefetch(`/p/${video.post_id}`);
       router.push(`/p/${video.post_id}`);
       return;
     }
 
     window.history.pushState({ modal: true }, "");
     setDetailPageVideo(video);
+  };
+
+  const prefetchMyProfile = () => {
+    if (!userProfile) return;
+
+    router.prefetch(myProfilePath);
+    prefetchProfilePage(userProfile).catch((prefetchError) => {
+      console.warn('預先載入個人頁失敗:', prefetchError);
+    });
   };
 
   const openVideoPage = (video) => {
@@ -220,11 +248,16 @@ export default function Home() {
         return nextIds;
       });
 
-      setVideos((currentItems) => currentItems.map((item) => (
-        item.post_id === video.post_id
-          ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
-          : item
-      )));
+      setVideos((currentItems) => {
+        const nextItems = currentItems.map((item) => (
+          item.post_id === video.post_id
+            ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
+            : item
+        ));
+
+        cacheHomeFeed(nextItems);
+        return nextItems;
+      });
     } catch (error) {
       console.error('切換喜歡狀態失敗:', error);
       showToast('喜歡操作失敗，請稍後再試。');
@@ -260,8 +293,8 @@ export default function Home() {
       </Head>
 
       {/* 顶部导航栏 (复刻 UI 稿) */}
-      <header style={{ 
-        position: 'sticky', top: 0, zIndex: 20, 
+      <header style={{
+        boxSizing: 'border-box', left: 0, position: 'fixed', right: 0, top: 0, width: '100%', zIndex: 20,
         backgroundColor: 'rgba(244, 247, 250, 0.9)', backdropFilter: 'blur(12px)',
         padding: '48px 16px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
         borderBottom: '1px solid rgba(217, 228, 245, 0.5)'
@@ -281,7 +314,9 @@ export default function Home() {
             />
           ) : currentUser ? (
             <div 
-              onClick={() => router.push('/u/me')} 
+              onMouseEnter={prefetchMyProfile}
+              onTouchStart={prefetchMyProfile}
+              onClick={() => router.push(myProfilePath)}
               style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
             >
               <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="你的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -298,7 +333,7 @@ export default function Home() {
       </header>
 
       {/* 帖子信息流 */}
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '0' }}>
+      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '92px 0 0' }}>
         {loading ? (
           <div aria-label="正在載入最新策展" style={{ display: 'grid', gap: '8px', padding: '8px 0 18px' }}>
             {[0, 1, 2].map((index) => (
@@ -339,7 +374,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {videos.map((video) => (
               // 帖子卡片 (超紧凑 21:9 单列)
-              <article key={video.post_id || video.id || video.bvid} style={{ backgroundColor: '#FFFFFF', padding: '12px 0', borderBottom: '1px solid #E8EFF5' }}>
+              <article key={video.post_id || video.id || video.bvid} onMouseEnter={() => video.post_id && router.prefetch(`/p/${video.post_id}`)} style={{ backgroundColor: '#FFFFFF', padding: '12px 0', borderBottom: '1px solid #E8EFF5' }}>
                 
                 {/* 头部：用户信息区 (极限同行合并) */}
                 <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 16px', cursor: 'pointer' }}>
@@ -441,31 +476,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* 底部主導航：首頁預設為啟用狀態，發布保留為視覺焦點。 */}
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(194, 214, 230, 0.5)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '8px 8px 16px', zIndex: 20 }}>
-        <div onClick={() => router.push('/')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#2A527A', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10.5z"></path></svg>
-          <span style={{ fontSize: '10px', fontWeight: '700' }}>首頁</span>
-        </div>
-        <div onClick={() => router.push('/m')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M4 5.5A1.5 1.5 0 015.5 4H10v7H4V5.5zM14 4h4.5A1.5 1.5 0 0120 5.5V11h-6V4zM4 15h6v5H5.5A1.5 1.5 0 014 18.5V15zM14 15h6v3.5a1.5 1.5 0 01-1.5 1.5H14v-5z"></path></svg>
-          <span style={{ fontSize: '10px', fontWeight: '500' }}>小館</span>
-        </div>
-        <div onClick={() => goToProtectedPage('/submit', '請先登入，才能發佈策展。')} style={{ alignItems: 'center', color: '#6B99C3', cursor: 'pointer', display: 'flex', flexDirection: 'column', marginTop: '-22px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#6B99C3', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(107, 153, 195, 0.4)', border: '4px solid #FFFFFF', color: '#FFFFFF' }}>
-            <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          </div>
-          <span style={{ fontSize: '10px', fontWeight: '700', marginTop: '4px' }}>發布</span>
-        </div>
-        <div onClick={() => goToProtectedPage('/messages', '請先登入，才能查看訊息。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-          <span style={{ fontSize: '10px' }}>私訊</span>
-        </div>
-        <div onClick={() => goToProtectedPage('/u/me', '請先登入，才能進入你的策展人頁。')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#87ACCA', cursor: 'pointer' }}>
-          <svg style={{ width: '24px', height: '24px', marginBottom: '4px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          <span style={{ fontSize: '10px' }}>我的</span>
-        </div>
-      </nav>
+      <AppBottomNav active="home" />
 
       {/* 浮层 1：私人放映室 (保持暗黑幕布的高级感) */}
       {immersiveVideo && (
