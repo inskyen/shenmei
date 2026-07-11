@@ -18,6 +18,7 @@ export default async function handler(req, res) {
         profiles (
           id,
           username,
+          display_name,
           avatar_url
         ),
         videos (
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
         video_title: video.title,
         cover: video.cover_url,
         up_name: video.author_name,
-        added_by: profile.username || post.legacy_added_by || '策展人',
+        added_by: profile.display_name || profile.username || post.legacy_added_by || '策展人',
         legacy_added_by: post.legacy_added_by || null,
         profile_username: profile.username || null,
         profile_id: profile.id || null,
