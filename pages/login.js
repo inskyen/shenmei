@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/client';
 import Head from 'next/head';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const OTP_LENGTH = 6;
 
@@ -48,6 +49,10 @@ export default function Login() {
   const [otp, setOtp] = useState(createEmptyOtp);
   const otpRefs = useRef([]);
   const [countdown, setCountdown] = useState(0);
+  
+  // Turnstile 狀態
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef();
 
   const nextPath = getSafeNextPath(typeof router.query.next === 'string' ? router.query.next : '/');
 
@@ -92,17 +97,30 @@ export default function Login() {
 
     if (!validate()) return;
 
+    if (!captchaToken) {
+      setMessage('請等待安全驗證完成，或勾選驗證框。');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       if (isLogin) {
         // 登入
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password,
+          options: { captchaToken }
+        });
         if (error) throw error;
         router.push(nextPath);
       } else {
         // 註冊
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: { captchaToken }
+        });
         if (error) throw error;
         
         // 註冊成功，進入 OTP 驗證階段
@@ -119,6 +137,11 @@ export default function Login() {
     } catch (error) {
       console.error('操作失敗:', error);
       setMessage(translateError(error.message));
+      // 重置驗證碼
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      setCaptchaToken('');
     } finally {
       setSubmitting(false);
     }
@@ -159,6 +182,7 @@ export default function Login() {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
+        options: { captchaToken }
       });
       if (error) throw error;
       setCountdown(60);
@@ -459,6 +483,19 @@ export default function Login() {
                       <span>{message}</span>
                     </div>
                   )}
+
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0' }}>
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey="0x4AAAAAADz522cQnUolNqTk"
+                      onSuccess={(token) => setCaptchaToken(token)}
+                      onError={() => setCaptchaToken('')}
+                      onExpire={() => setCaptchaToken('')}
+                      options={{
+                        theme: 'light',
+                      }}
+                    />
+                  </div>
 
                   <button
                     type="submit"
