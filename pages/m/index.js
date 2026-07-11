@@ -148,7 +148,7 @@ export default function ModulesPage() {
               <div
                 key={i}
                 className="app-detail-skeleton"
-                style={{ aspectRatio: '1 / 1', borderRadius: '18px' }}
+                style={{ aspectRatio: '4 / 3', borderRadius: '18px' }}
               />
             ))}
           </div>
@@ -200,7 +200,7 @@ export default function ModulesPage() {
                   onTouchStart={() => prefetchModulePage(module.slug).catch(() => {})}
                   style={{
                     ...bgStyle,
-                    aspectRatio: '1 / 1',
+                    aspectRatio: '4 / 3',
                     border: 'none',
                     borderRadius: '18px',
                     boxShadow: '0 2px 12px rgba(42, 82, 122, 0.14)',
