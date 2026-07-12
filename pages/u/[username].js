@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
 import { cacheProfilePage, getCachedProfilePage } from '@/lib/cache/profilePageCache';
@@ -92,6 +93,9 @@ export default function UserPage() {
         setProfile(profileData);
 
         setIsOwnProfile(Boolean(currentUser && currentUser.id === profileData.id));
+        if (currentUser?.id === profileData.id) {
+          cacheProfileRoute(currentUser.id, profileData.username);
+        }
 
         const postsRequest = supabase
           .from('posts')
@@ -181,9 +185,23 @@ export default function UserPage() {
     }
   };
 
+  const handleStartMessage = async () => {
+    if (!profile?.username) return;
+
+    const user = await requireLogin({
+      router,
+      nextPath: router.asPath,
+      message: '請先登入，才能傳送私訊。',
+    });
+
+    if (user) {
+      router.push(`/messages/new?user=${profile.username}`);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="app-detail-page" style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', width: '100%' }}>
+      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', width: '100%' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
           <div className="app-detail-skeleton" style={{ height: '140px', width: '100%', borderRadius: 0 }} />
           <div style={{ padding: '0 20px', marginTop: '-36px', position: 'relative', display: 'grid', gap: '16px' }}>
@@ -213,7 +231,7 @@ export default function UserPage() {
 
   return (
     <>
-      <div className="app-detail-page" style={{
+      <div style={{
       backgroundColor: '#F9FAFB',
       minHeight: '100vh',
       color: '#2A527A',
@@ -304,23 +322,40 @@ export default function UserPage() {
                 </button>
               </div>
             ) : (
-              <button 
-                onClick={handleToggleFollow}
-                disabled={followLoading}
-                style={{
-                  backgroundColor: isFollowing ? '#EEF3F7' : '#6B99C3',
-                  color: isFollowing ? '#52769A' : '#FFFFFF',
-                  border: `1px solid ${isFollowing ? '#D9E4F5' : '#6B99C3'}`,
-                  borderRadius: '99px',
-                  padding: '6px 24px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: followLoading ? 'wait' : 'pointer',
-                  opacity: followLoading ? 0.7 : 1,
-                }}
-              >
-                {followLoading ? '處理中' : isFollowing ? '已關注' : '關注'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={handleStartMessage}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: '#52769A',
+                    border: '1px solid #C2D6E6',
+                    borderRadius: '99px',
+                    padding: '6px 14px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  私訊
+                </button>
+                <button
+                  onClick={handleToggleFollow}
+                  disabled={followLoading}
+                  style={{
+                    backgroundColor: isFollowing ? '#EEF3F7' : '#6B99C3',
+                    color: isFollowing ? '#52769A' : '#FFFFFF',
+                    border: `1px solid ${isFollowing ? '#D9E4F5' : '#6B99C3'}`,
+                    borderRadius: '99px',
+                    padding: '6px 18px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: followLoading ? 'wait' : 'pointer',
+                    opacity: followLoading ? 0.7 : 1,
+                  }}
+                >
+                  {followLoading ? '處理中' : isFollowing ? '已關注' : '關注'}
+                </button>
+              </div>
             )}
           </div>
 

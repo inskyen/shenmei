@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { supabase } from '@/lib/supabase/client';
 
 const AVATAR_GROUPS = {
@@ -33,7 +34,7 @@ export default function SettingsPage() {
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [messagePermission, setMessagePermission] = useState('followers');
+  const [messagePermission, setMessagePermission] = useState('everyone');
   
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -67,7 +68,7 @@ export default function SettingsPage() {
           setAvatarUrl(data.avatar_url || '');
           setBio(data.bio || '');
           setTagInput((data.aesthetic_tags || []).join('、'));
-          setMessagePermission(data.message_permission || 'followers');
+          setMessagePermission(data.message_permission || 'everyone');
         }
       } catch (error) {
         console.error('設定頁載入失敗:', error);
@@ -139,6 +140,7 @@ export default function SettingsPage() {
 
       setMessageType('success');
       setMessage('資料更新成功！即將回到個人主页...');
+      cacheProfileRoute(user.id, trimmedUsername);
       setTimeout(() => {
         router.push(`/u/${trimmedUsername}`);
       }, 1500);

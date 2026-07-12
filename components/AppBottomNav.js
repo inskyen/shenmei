@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCachedProfilePath } from '@/lib/auth/profileRoute';
 import { prefetchModules } from '@/lib/cache/modulePageCache';
-import { supabase } from '@/lib/supabase/client';
-import { showToast } from '@/lib/ui/toast';
+import { prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 
 const activeColor = '#2A527A';
 const inactiveColor = '#87ACCA';
@@ -24,24 +24,26 @@ export default function AppBottomNav({ active }) {
 
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error || !data?.username) {
-      showToast('暫時找不到你的個人頁，請稍後再試。');
+    const cachedPath = getCachedProfilePath(user.id);
+    if (cachedPath) {
+      router.prefetch(cachedPath);
+      router.push(cachedPath);
       return;
     }
 
-    router.push(`/u/${data.username}`);
+    router.push('/u/me');
   };
 
   const goToModules = () => {
     router.prefetch('/m');
     prefetchModules().catch((error) => console.error('小館列表預取失敗:', error));
     router.push('/m');
+  };
+
+  const goToMessages = () => {
+    router.prefetch('/messages');
+    prefetchMessageInbox().catch((error) => console.error('私訊列表預取失敗:', error));
+    goToProtectedPage('/messages', '請先登入，才能查看訊息。');
   };
 
   const itemStyle = (name) => ({
@@ -69,7 +71,7 @@ export default function AppBottomNav({ active }) {
         </div>
         <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '4px' }}>發布</span>
       </div>
-      <div onClick={() => goToProtectedPage('/messages', '請先登入，才能查看訊息。')} style={itemStyle('messages')}>
+      <div onClick={goToMessages} onMouseEnter={() => prefetchMessageInbox().catch((error) => console.error('私訊列表預取失敗:', error))} onTouchStart={() => prefetchMessageInbox().catch((error) => console.error('私訊列表預取失敗:', error))} style={itemStyle('messages')}>
         <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
         <span style={{ fontSize: '10px', fontWeight: active === 'messages' ? 700 : 500 }}>私訊</span>
       </div>

@@ -10,6 +10,7 @@ const notificationCopy = {
   comment: '在你的策展下留言。',
   reply: '回覆了你的留言。',
   follow: '關注了你。',
+  message: '傳來了一則私訊。',
 };
 
 function formatRelativeTime(timestamp) {
@@ -67,6 +68,11 @@ export default function NotificationsPage() {
   }, [router]);
 
   const openNotification = (notification) => {
+    if (notification.conversation_id) {
+      router.push(`/messages/${notification.conversation_id}`);
+      return;
+    }
+
     if (notification.post_id) {
       router.push(`/p/${notification.post_id}`);
       return;
@@ -108,7 +114,7 @@ export default function NotificationsPage() {
                 key={notification.id}
                 type="button"
                 onClick={() => openNotification(notification)}
-                style={{ alignItems: 'center', backgroundColor: notification.is_read ? '#FFFFFF' : '#F3F8FC', border: '1px solid #E3ECF4', borderRadius: '14px', cursor: notification.post_id || notification.actor?.username ? 'pointer' : 'default', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%' }}
+                style={{ alignItems: 'center', backgroundColor: notification.is_read ? '#FFFFFF' : '#F3F8FC', border: '1px solid #E3ECF4', borderRadius: '14px', cursor: notification.post_id || notification.conversation_id || notification.actor?.username ? 'pointer' : 'default', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%' }}
               >
                 <span
                   style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: notification.actor?.avatar_url ? `url("${notification.actor.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flexShrink: 0, fontSize: '17px', fontWeight: 800, height: '44px', justifyContent: 'center', width: '44px' }}

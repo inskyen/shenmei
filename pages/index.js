@@ -7,6 +7,7 @@ import { showToast } from '@/lib/ui/toast';
 import { cachePostPreview } from '@/lib/cache/postDetailCache';
 import { cacheHomeFeed, getCachedHomeFeed } from '@/lib/cache/homeFeedCache';
 import { prefetchProfilePage } from '@/lib/cache/profilePageCache';
+import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { loadUnreadNotificationCount } from '@/lib/notifications/userNotifications';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
@@ -84,6 +85,9 @@ export default function Home() {
           console.error('讀取個人資料失敗:', error);
         } else {
           setUserProfile(data || null);
+          if (data?.username) {
+            cacheProfileRoute(user.id, data.username);
+          }
           prefetchProfilePage(data).catch((prefetchError) => {
             console.warn('預先載入個人頁失敗:', prefetchError);
           });
