@@ -108,20 +108,20 @@ export default function ConversationPage() {
   const name = profile?.display_name || profile?.username || '私訊';
 
   return (
-    <div style={{ backgroundColor: '#F0F4F8', color: '#2A527A', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh' }}>
       <Head><title>{name} · 私訊 · 審美者</title></Head>
-      <header style={{ alignItems: 'center', backdropFilter: 'blur(14px)', backgroundColor: 'rgba(240, 244, 248, 0.92)', borderBottom: '1px solid rgba(194, 214, 230, 0.5)', display: 'flex', justifyContent: 'space-between', padding: '18px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <button type="button" onClick={() => router.push('/messages')} style={{ background: 'transparent', border: 'none', color: '#6B99C3', cursor: 'pointer', fontSize: '15px', fontWeight: 600, padding: 0 }}>← 私訊</button>
+      <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'sticky', top: 0, zIndex: 10 }}>
+        <button type="button" onClick={() => router.push('/messages')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 私訊</button>
         <div style={{ alignItems: 'center', display: 'flex', gap: '8px', minWidth: 0 }}>
-          <span style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flex: '0 0 auto', fontSize: '12px', fontWeight: 800, height: '26px', justifyContent: 'center', width: '26px' }}>{!profile?.avatar_url && getInitial(profile)}</span>
-          <span style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+          <span style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flex: '0 0 auto', fontSize: '12px', fontWeight: 500, height: '26px', justifyContent: 'center', width: '26px', border: '1px solid var(--border-light)' }}>{!profile?.avatar_url && getInitial(profile)}</span>
+          <span style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
         </div>
-        <button type="button" onClick={() => profile?.username && router.push(`/u/${profile.username}`)} style={{ background: 'transparent', border: 'none', color: '#6B99C3', cursor: 'pointer', fontSize: '13px', fontWeight: 600, padding: 0 }}>主頁</button>
+        <button type="button" onClick={() => profile?.username && router.push(`/u/${profile.username}`)} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>主頁</button>
       </header>
 
       <main style={{ margin: '0 auto', maxWidth: '680px', padding: '18px 16px 28px' }}>
-        {loading && <div style={{ color: '#87ACCA', padding: '48px 0', textAlign: 'center' }}>正在打開私訊...</div>}
-        {!loading && errorMessage && <p style={{ color: '#9F5E4C', lineHeight: 1.7 }}>{errorMessage}</p>}
+        {loading && <div style={{ color: 'var(--text-tertiary)', padding: '48px 0', textAlign: 'center' }}>正在打開私訊...</div>}
+        {!loading && errorMessage && <p style={{ color: '#FF4D4F', lineHeight: 1.7 }}>{errorMessage}</p>}
         {!loading && data && <DirectMessageThread currentUserId={data.currentUser.id} messages={data.messages} onSend={handleSend} sending={sending} />}
       </main>
     </div>

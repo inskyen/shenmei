@@ -222,26 +222,25 @@ export default function Login() {
 
   // 通用的 Input 樣式
   const inputStyle = {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    border: '1px solid rgba(255, 255, 255, 0.9)',
-    borderRadius: '16px',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-light)',
+    borderRadius: '6px',
     boxSizing: 'border-box',
-    color: '#2A527A',
+    color: 'var(--text-primary)',
     fontSize: '15px',
     outline: 'none',
     padding: '14px 16px 14px 46px',
     width: '100%',
-    boxShadow: 'inset 0 2px 4px rgba(42, 63, 84, 0.02)',
     transition: 'all 0.2s',
   };
 
   const inputFocusStyle = (e) => {
-    e.target.style.boxShadow = '0 0 0 3px rgba(107,153,195,0.2)'; 
-    e.target.style.backgroundColor = '#FFFFFF';
+    e.target.style.borderColor = 'var(--brand-blue)';
+    e.target.style.backgroundColor = 'var(--bg-surface)';
   };
   const inputBlurStyle = (e) => {
-    e.target.style.boxShadow = 'inset 0 2px 4px rgba(42, 63, 84, 0.02)'; 
-    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    e.target.style.borderColor = 'var(--border-light)';
+    e.target.style.backgroundColor = 'var(--bg-surface)';
   };
 
   return (
@@ -257,61 +256,44 @@ export default function Login() {
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         padding: '24px',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backgroundColor: 'var(--bg-base)'
       }}>
-        {/* 水彩流體背景 */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: '#F4F7FA', zIndex: -1, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70vw', height: '70vw', background: 'radial-gradient(circle, rgba(212,229,247,0.8) 0%, rgba(244,247,250,0) 70%)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
-          <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '80vw', height: '80vw', background: 'radial-gradient(circle, rgba(217,140,140,0.15) 0%, rgba(244,247,250,0) 70%)', borderRadius: '50%', filter: 'blur(80px)' }}></div>
-          <div style={{ position: 'absolute', top: '20%', right: '10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(135,172,202,0.3) 0%, rgba(244,247,250,0) 70%)', borderRadius: '50%', filter: 'blur(50px)' }}></div>
-        </div>
-
         <main style={{ maxWidth: '400px', width: '100%', position: 'relative', zIndex: 1 }}>
           <button
             type="button"
             onClick={() => isVerify ? setIsVerify(false) : router.push('/')}
             style={{
-              background: 'rgba(255, 255, 255, 0.4)',
-              border: '1px solid rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              borderRadius: '99px',
-              color: '#6B99C3',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '6px',
+              color: 'var(--text-primary)',
               cursor: 'pointer',
               fontSize: '13px',
-              fontWeight: '600',
+              fontWeight: 500,
               marginBottom: '24px',
               padding: '8px 16px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              boxShadow: '0 4px 12px rgba(42, 63, 84, 0.05)',
-              transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)'; }}
           >
             <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             {isVerify ? '返回修改信箱' : '返回大廳'}
           </button>
 
           <section style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.65)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255, 255, 255, 0.8)',
-            borderRadius: '28px',
-            boxShadow: '0 24px 60px rgba(42, 63, 84, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '8px',
             padding: '40px 32px',
           }}>
             
             {/* 頂部 Icon */}
             <div style={{
               alignItems: 'center',
-              background: 'linear-gradient(135deg, #E6EEF8 0%, #D4E5F7 100%)',
-              border: '1px solid #FFFFFF',
-              boxShadow: '0 8px 24px rgba(107, 153, 195, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.8)',
-              borderRadius: '22px',
+              background: 'var(--brand-blue-light)',
+              borderRadius: '6px',
               display: 'flex',
               height: '64px',
               justifyContent: 'center',
@@ -319,9 +301,9 @@ export default function Login() {
               width: '64px',
             }}>
               {isVerify ? (
-                <svg style={{ width: '32px', height: '32px', color: '#6B99C3' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <svg style={{ width: '32px', height: '32px', color: 'var(--brand-blue)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
               ) : (
-                <span style={{ color: '#6B99C3', fontSize: '28px', fontWeight: 900 }}>審</span>
+                <span style={{ color: 'var(--brand-blue)', fontSize: '28px', fontWeight: 600 }}>審</span>
               )}
             </div>
 
@@ -329,10 +311,10 @@ export default function Login() {
             {isVerify ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <h2 style={{ margin: '0 0 8px', color: '#2A3F54', fontSize: '22px' }}>輸入驗證碼</h2>
-                  <p style={{ margin: 0, color: '#87ACCA', fontSize: '14px', lineHeight: 1.6 }}>
+                  <h2 style={{ margin: '0 0 8px', color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600 }}>輸入驗證碼</h2>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
                     我們已發送 6 位數驗證碼至<br/>
-                    <strong style={{ color: '#6B99C3' }}>{email}</strong>
+                    <strong style={{ color: 'var(--brand-blue)' }}>{email}</strong>
                   </p>
                 </div>
 
@@ -352,15 +334,14 @@ export default function Login() {
                       style={{
                         width: '38px',
                         height: '52px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        border: '1px solid rgba(255, 255, 255, 0.9)',
-                        borderRadius: '10px',
-                        color: '#2A527A',
+                        backgroundColor: 'var(--bg-base)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '6px',
+                        color: 'var(--text-primary)',
                         fontSize: '20px',
-                        fontWeight: '700',
+                        fontWeight: '600',
                         textAlign: 'center',
                         outline: 'none',
-                        boxShadow: 'inset 0 2px 4px rgba(42, 63, 84, 0.02)',
                         transition: 'all 0.2s',
                       }}
                       onFocus={inputFocusStyle}
@@ -371,12 +352,12 @@ export default function Login() {
 
                 {message && (
                   <div style={{
-                    backgroundColor: isSuccess ? 'rgba(209, 237, 219, 0.5)' : 'rgba(244, 216, 205, 0.5)',
-                    border: `1px solid ${isSuccess ? 'rgba(125, 201, 152, 0.6)' : 'rgba(224, 154, 137, 0.6)'}`,
-                    borderRadius: '12px',
-                    color: isSuccess ? '#2E6B43' : '#9F5E4C',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    color: isSuccess ? '#2E6B43' : '#FF4D4F',
                     fontSize: '13px',
-                    fontWeight: '500',
+                    fontWeight: 500,
                     lineHeight: 1.6,
                     padding: '10px 14px',
                     display: 'flex',
@@ -394,10 +375,10 @@ export default function Login() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: countdown > 0 ? '#A0B9D0' : '#6B99C3',
+                      color: countdown > 0 ? 'var(--text-tertiary)' : 'var(--brand-blue)',
                       cursor: countdown > 0 ? 'not-allowed' : 'pointer',
                       fontSize: '14px',
-                      fontWeight: '600',
+                      fontWeight: '500',
                       transition: 'color 0.2s'
                     }}
                   >
@@ -409,19 +390,19 @@ export default function Login() {
               // 登入 / 註冊表單模式
               <>
                 {/* 膠囊切換器 */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid rgba(255, 255, 255, 0.8)', borderRadius: '99px', display: 'flex', marginBottom: '28px', padding: '4px', position: 'relative' }}>
+                <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '6px', display: 'flex', marginBottom: '28px', padding: '4px', position: 'relative' }}>
                   <div style={{
                     position: 'absolute', top: '4px', left: isLogin ? '4px' : 'calc(50% - 2px)', width: 'calc(50% - 2px)', height: 'calc(100% - 8px)',
-                    background: '#FFFFFF', borderRadius: '99px', boxShadow: '0 4px 12px rgba(42, 63, 84, 0.08)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
+                    background: 'var(--bg-surface)', borderRadius: '4px', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
                   }} />
-                  <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: isLogin ? '700' : '500', color: isLogin ? '#2A3F54' : '#87ACCA', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>登入</button>
-                  <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: !isLogin ? '700' : '500', color: !isLogin ? '#2A3F54' : '#87ACCA', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>註冊</button>
+                  <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: isLogin ? '600' : '400', color: isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>登入</button>
+                  <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: !isLogin ? '600' : '400', color: !isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>註冊</button>
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {/* Email */}
                   <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#87ACCA', display: 'flex' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex' }}>
                       <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     </div>
                     <input type="email" placeholder="信箱" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} onFocus={inputFocusStyle} onBlur={inputBlurStyle} />
@@ -429,11 +410,11 @@ export default function Login() {
 
                   {/* Password */}
                   <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#87ACCA', display: 'flex' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex' }}>
                       <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     </div>
                     <input type={showPassword ? "text" : "password"} placeholder="密碼" value={password} onChange={(e) => setPassword(e.target.value)} style={{...inputStyle, paddingRight: '46px'}} onFocus={inputFocusStyle} onBlur={inputBlurStyle} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#A0B9D0', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 0, display: 'flex' }}>
                       {showPassword ? (
                         <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                       ) : (
@@ -445,11 +426,11 @@ export default function Login() {
                   {/* Confirm Password (只在註冊模式顯示) */}
                   {!isLogin && (
                     <div style={{ position: 'relative' }}>
-                      <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#87ACCA', display: 'flex' }}>
+                      <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex' }}>
                         <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                       </div>
                       <input type={showConfirmPassword ? "text" : "password"} placeholder="確認密碼" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{...inputStyle, paddingRight: '46px'}} onFocus={inputFocusStyle} onBlur={inputBlurStyle} />
-                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#A0B9D0', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 0, display: 'flex' }}>
                         {showConfirmPassword ? (
                           <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         ) : (
@@ -460,7 +441,7 @@ export default function Login() {
                   )}
 
                   {message && (
-                    <div style={{ backgroundColor: 'rgba(244, 216, 205, 0.5)', border: '1px solid rgba(224, 154, 137, 0.6)', borderRadius: '12px', color: '#9F5E4C', fontSize: '13px', fontWeight: '500', lineHeight: 1.6, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: '#FF4D4F', fontSize: '13px', fontWeight: '500', lineHeight: 1.6, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                       <svg style={{ width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                       <span>{message}</span>
                     </div>
@@ -470,14 +451,13 @@ export default function Login() {
                     type="submit"
                     disabled={submitting}
                     style={{
-                      background: submitting ? 'rgba(107, 153, 195, 0.5)' : 'linear-gradient(135deg, #6B99C3 0%, #2A527A 100%)',
+                      background: submitting ? 'var(--border-light)' : 'var(--brand-blue)',
                       border: 'none',
-                      borderRadius: '16px',
-                      boxShadow: submitting ? 'none' : '0 8px 20px rgba(42, 82, 122, 0.15)',
-                      color: 'white',
+                      borderRadius: '6px',
+                      color: submitting ? 'var(--text-tertiary)' : 'white',
                       cursor: submitting ? 'not-allowed' : 'pointer',
-                      fontSize: '16px',
-                      fontWeight: 700,
+                      fontSize: '15px',
+                      fontWeight: 500,
                       padding: '14px',
                       marginTop: '8px',
                       display: 'flex',
@@ -486,9 +466,6 @@ export default function Login() {
                       gap: '8px',
                       transition: 'all 0.2s'
                     }}
-                    onMouseEnter={(e) => { if(!submitting) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={(e) => { if(!submitting) e.currentTarget.style.transform = 'translateY(0)'; }}
-                    onMouseDown={(e) => { if(!submitting) e.currentTarget.style.transform = 'translateY(1px)'; }}
                   >
                     {submitting ? (
                       <>

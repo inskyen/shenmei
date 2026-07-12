@@ -290,45 +290,45 @@ export default function Home() {
   };
 
   return (
-    // 主背景：落雪宣白
-    <div style={{ backgroundColor: '#F4F7FA', minHeight: '100vh', color: '#2A3F54', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
+    // 主背景：略帶冷灰的基礎色
+    <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
       <Head>
         <title>審美者 · AESTHETE</title>
       </Head>
 
-      {/* 顶部导航栏 (复刻 UI 稿) */}
+      {/* 顶部导航栏 */}
       <header style={{
         boxSizing: 'border-box', left: 0, position: 'fixed', right: 0, top: 0, width: '100%', zIndex: 20,
-        backgroundColor: 'rgba(244, 247, 250, 0.9)', backdropFilter: 'blur(12px)',
+        backgroundColor: 'var(--bg-surface)',
         padding: '48px 16px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-        borderBottom: '1px solid rgba(217, 228, 245, 0.5)'
+        borderBottom: '1px solid var(--border-light)'
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
-          <span onClick={() => router.push('/following')} style={{ color: '#87ACCA', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>追蹤</span>
-          <span style={{ color: '#2A3F54', fontSize: '24px', fontWeight: 'bold' }}>最新</span>
-          <span onClick={() => router.push('/m')} style={{ color: '#87ACCA', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>小館</span>
+          <span onClick={() => router.push('/following')} style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>追蹤</span>
+          <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600' }}>最新</span>
+          <span onClick={() => router.push('/m')} style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>小館</span>
         </div>
-        <div style={{ display: 'flex', gap: '16px', paddingBottom: '4px', alignItems: 'center' }}>
-          <svg onClick={() => router.push('/search')} style={{ width: '24px', height: '24px', color: '#2A3F54', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div style={{ display: 'flex', gap: '16px', paddingBottom: '2px', alignItems: 'center' }}>
+          <svg onClick={() => router.push('/search')} style={{ width: '22px', height: '22px', color: 'var(--text-primary)', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
 
           {isIdentityLoading ? (
             <div
               aria-label="正在載入帳號"
-              style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#D9E4F5', border: '1px solid #C2D6E6' }}
+              style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--border-light)' }}
             />
           ) : currentUser ? (
             <div 
               onMouseEnter={prefetchMyProfile}
               onTouchStart={prefetchMyProfile}
               onClick={() => router.push(myProfilePath)}
-              style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#6B99C3', border: '1px solid #2A527A', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--bg-base)', border: '1px solid var(--border-light)', overflow: 'hidden', cursor: 'pointer' }}
             >
               <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="你的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ) : (
             <div 
               onClick={() => router.push('/login')} 
-              style={{ padding: '4px 12px', borderRadius: '16px', border: '1px solid rgba(194, 214, 230, 0.8)', color: '#6B99C3', fontSize: '13px', cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: '500', cursor: 'pointer', backgroundColor: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               登入
             </div>
@@ -337,37 +337,38 @@ export default function Home() {
       </header>
 
       {/* 帖子信息流 */}
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '92px 0 0' }}>
+      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '90px 0 0' }}>
         {loading ? (
-          <div aria-label="正在載入最新策展" style={{ display: 'grid', gap: '8px', padding: '8px 0 18px' }}>
+          <div aria-label="正在載入最新策展" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
             {[0, 1, 2].map((index) => (
               <article
                 key={index}
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid rgba(217, 228, 245, 0.72)',
-                  display: 'grid',
-                  gap: '14px',
-                  padding: '16px',
+                  backgroundColor: 'var(--bg-surface)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '16px 0',
+                  borderBottom: '1px solid var(--border-light)'
                 }}
               >
-                <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
-                  <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '30px', width: '30px' }} />
-                  <div style={{ display: 'grid', gap: '7px' }}>
+                <div style={{ alignItems: 'center', display: 'flex', gap: '10px', padding: '0 16px' }}>
+                  <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '28px', width: '28px' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div className="app-detail-skeleton" style={{ height: '12px', width: '86px' }} />
-                    <div className="app-detail-skeleton" style={{ height: '10px', width: '54px' }} />
                   </div>
                 </div>
 
-                <div className="app-detail-skeleton" style={{ borderRadius: '12px', height: '220px' }} />
-
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  <div className="app-detail-skeleton" style={{ height: '15px', width: '72%' }} />
-                  <div className="app-detail-skeleton" style={{ height: '12px', width: '94%' }} />
-                  <div className="app-detail-skeleton" style={{ height: '12px', width: '58%' }} />
+                <div style={{ margin: '0 16px', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div className="app-detail-skeleton" style={{ height: '220px' }} />
                 </div>
 
-                <div style={{ display: 'flex', gap: '18px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
+                  <div className="app-detail-skeleton" style={{ height: '14px', width: '72%' }} />
+                  <div className="app-detail-skeleton" style={{ height: '14px', width: '58%' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '18px', padding: '0 16px' }}>
                   <div className="app-detail-skeleton" style={{ height: '12px', width: '32px' }} />
                   <div className="app-detail-skeleton" style={{ height: '12px', width: '32px' }} />
                 </div>
@@ -377,17 +378,17 @@ export default function Home() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {videos.map((video) => (
-              // 帖子卡片 (超紧凑 21:9 单列)
-              <article key={video.post_id || video.id || video.bvid} onMouseEnter={() => video.post_id && router.prefetch(`/p/${video.post_id}`)} style={{ backgroundColor: '#FFFFFF', padding: '12px 0', borderBottom: '1px solid #E8EFF5' }}>
+              // 帖子卡片
+              <article key={video.post_id || video.id || video.bvid} onMouseEnter={() => video.post_id && router.prefetch(`/p/${video.post_id}`)} style={{ backgroundColor: 'var(--bg-surface)', padding: '16px 0', borderBottom: '1px solid var(--border-light)' }}>
                 
-                {/* 头部：用户信息区 (极限同行合并) */}
-                <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 16px', cursor: 'pointer' }}>
+                {/* 头部：用户信息区 */}
+                <div onClick={() => openDetailPage(video)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 16px', cursor: 'pointer' }}>
                   <div onClick={(event) => openUserPage(event, video)} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <div style={{
                       width: '28px',
                       height: '28px',
                       borderRadius: '50%',
-                      backgroundColor: '#D9E4F5',
+                      backgroundColor: 'var(--bg-base)',
                       backgroundImage: video.profile_avatar_url ? `url(${video.profile_avatar_url})` : 'none',
                       backgroundPosition: 'center',
                       backgroundSize: 'cover',
@@ -395,42 +396,42 @@ export default function Home() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#6B99C3',
-                      fontWeight: 'bold',
+                      color: 'var(--text-secondary)',
+                      fontWeight: '500',
                       fontSize: '12px',
-                      border: '1px solid #E8EFF5'
+                      border: '1px solid var(--border-light)'
                     }}>
-                       {video.profile_avatar_url ? '' : (video.added_by ? video.added_by.charAt(0) : '天')}
+                       {video.profile_avatar_url ? '' : (video.added_by ? video.added_by.charAt(0) : '審')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ color: '#2A3F54', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
-                      <span style={{ backgroundColor: '#D9E4F5', color: '#6B99C3', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '99px' }}>INFP</span>
-                      <span style={{ color: '#9AA6B2', fontSize: '11px', fontWeight: '500' }}>· {formatDate(video.fav_time || video.created_at)}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· INFP</span>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· {formatDate(video.fav_time || video.created_at)}</span>
                     </div>
                   </div>
-                  <svg style={{ width: '18px', height: '18px', color: '#C2D6E6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                  <svg style={{ width: '18px', height: '18px', color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                 </div>
 
-                {/* 媒体区域 (21:9 电影画幅) */}
-                <div onClick={() => openImmersive(video)} style={{ width: '100%', position: 'relative', paddingTop: '42.8%', backgroundColor: '#F4F7FA', overflow: 'hidden', marginBottom: '8px', cursor: 'pointer' }}>
-                  <img src={video.cover} alt={video.title} referrerPolicy="no-referrer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                  {/* 悬浮播放icon (等比缩小) */}
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '42px', height: '42px', backgroundColor: 'rgba(255, 255, 255, 0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.7)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-                    <div style={{ width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: '12px solid #FFFFFF', marginLeft: '5px' }}></div>
-                  </div>
-                </div>
-
-                {/* 文字内容区 (折叠为2行) */}
-                <div onClick={() => openDetailPage(video)} style={{ padding: '0 16px', marginBottom: '8px', cursor: 'pointer' }}>
-                  <p style={{ color: '#2A3F54', fontSize: '14px', lineHeight: '1.5', margin: 0, wordBreak: 'break-word', letterSpacing: '0.3px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {/* 文字内容区 (折叠为3行) */}
+                <div onClick={() => openDetailPage(video)} style={{ padding: '0 16px', marginBottom: '12px', cursor: 'pointer' }}>
+                  <p style={{ color: 'var(--text-primary)', fontSize: '15px', lineHeight: '1.6', margin: 0, wordBreak: 'break-word', letterSpacing: '0.2px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {video.title}
                   </p>
                 </div>
 
-                {/* 美学标签 (原视频标题) 与互动图标在一行，极致压缩 */}
+                {/* 媒体区域 (带 16px 边距与圆角) */}
+                <div onClick={() => openImmersive(video)} style={{ position: 'relative', margin: '0 16px 12px', borderRadius: '8px', paddingTop: '42.8%', backgroundColor: 'var(--bg-base)', overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border-light)' }}>
+                  <img src={video.cover} alt={video.title} referrerPolicy="no-referrer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* 悬浮播放icon */}
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '42px', height: '42px', backgroundColor: 'rgba(255, 255, 255, 0.75)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ width: 0, height: 0, borderTop: '7px solid transparent', borderBottom: '7px solid transparent', borderLeft: '10px solid var(--text-primary)', marginLeft: '3px' }}></div>
+                  </div>
+                </div>
+
+                {/* 美学标签 (原视频标题) 与互动图标在一行 */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
                   {video.video_title ? (
-                    <div onClick={() => openVideoPage(video)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#F4F7FA', color: '#6B99C3', padding: '4px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: '500', cursor: 'pointer', maxWidth: '60%', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    <div onClick={() => openVideoPage(video)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--brand-blue-light)', color: 'var(--brand-blue)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500', cursor: 'pointer', maxWidth: '60%', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                       <svg style={{ width: '12px', height: '12px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.video_title}</span>
                     </div>
@@ -439,10 +440,10 @@ export default function Home() {
                   )}
 
                   {/* 右侧底部互动区 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', color: '#9AA6B2' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                      <span style={{ fontSize: '12px', fontWeight: '500' }}>{video.comment_count || 0}</span>
+                      <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                      <span style={{ fontSize: '12px', fontWeight: '400' }}>{video.comment_count || 0}</span>
                     </div>
                     <button
                       type="button"
@@ -452,15 +453,15 @@ export default function Home() {
                         alignItems: 'center',
                         background: 'transparent',
                         border: 'none',
-                        color: likedPostIds.has(video.post_id) ? '#D98C8C' : '#9AA6B2',
+                        color: likedPostIds.has(video.post_id) ? '#FF4D4F' : 'var(--text-secondary)',
                         cursor: likingPostIds.has(video.post_id) ? 'wait' : 'pointer',
                         display: 'flex',
                         gap: '4px',
                         padding: 0,
                       }}
                     >
-                      <svg style={{ width: '20px', height: '20px' }} fill={likedPostIds.has(video.post_id) ? 'currentColor' : 'none'} stroke={likedPostIds.has(video.post_id) ? '#D98C8C' : 'currentColor'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                      <span style={{ fontSize: '12px', fontWeight: '500' }}>{video.play_count || 0}</span>
+                      <svg style={{ width: '18px', height: '18px' }} fill={likedPostIds.has(video.post_id) ? 'currentColor' : 'none'} stroke={likedPostIds.has(video.post_id) ? '#FF4D4F' : 'currentColor'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                      <span style={{ fontSize: '12px', fontWeight: '400' }}>{video.play_count || 0}</span>
                     </button>
                   </div>
                 </div>
@@ -470,11 +471,11 @@ export default function Home() {
         )}
       </main>
 
-      {/* 懸浮通知入口：底部已經有發布按鈕，這裡先作為通知提醒入口。 */}
-      <div onClick={() => goToProtectedPage('/notifications', '請先登入，才能查看通知。')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '48px', height: '48px', backgroundColor: '#FFFFFF', borderRadius: '50%', boxShadow: '0 4px 14px rgba(42, 82, 122, 0.15)', border: '1px solid #C2D6E6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2A527A', zIndex: 30, cursor: 'pointer' }}>
-        <svg style={{ width: '24px', height: '24px' }} fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+      {/* 懸浮通知入口 */}
+      <div onClick={() => goToProtectedPage('/notifications', '請先登入，才能查看通知。')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '42px', height: '42px', backgroundColor: 'var(--bg-surface)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', zIndex: 30, cursor: 'pointer' }}>
+        <svg style={{ width: '20px', height: '20px' }} fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
         {unreadNotificationCount > 0 && (
-          <span style={{ position: 'absolute', top: 0, right: 0, minWidth: '12px', height: '12px', backgroundColor: '#F4B9AE', border: '2px solid #FFFFFF', borderRadius: '999px', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: unreadNotificationCount > 9 ? '7px' : '8px', fontWeight: 700, padding: unreadNotificationCount > 9 ? '0 2px' : 0 }}>
+          <span style={{ position: 'absolute', top: 0, right: 0, minWidth: '12px', height: '12px', backgroundColor: '#FF4D4F', borderRadius: '999px', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 600, padding: unreadNotificationCount > 9 ? '0 4px' : '0' }}>
             {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
           </span>
         )}
@@ -498,24 +499,24 @@ export default function Home() {
         </div>
       )}
 
-      {/* 浮层 2：文字单页详情式 (适配雾蓝系风格) */}
+      {/* 浮层 2：文字单页详情式 */}
       {detailPageVideo && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F0F4F8', zIndex: 999, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '16px', backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, borderBottom: '1px solid rgba(194, 214, 230, 0.5)' }}>
-            <div onClick={closeDetailPage} style={{ padding: '8px', cursor: 'pointer', color: '#6B99C3', fontWeight: '500' }}>← 返回</div>
-            <div style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#2A527A', paddingRight: '40px' }}>動態詳情</div>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-surface)', zIndex: 999, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '16px', backgroundColor: 'var(--bg-surface)', position: 'sticky', top: 0, borderBottom: '1px solid var(--border-light)' }}>
+            <div onClick={closeDetailPage} style={{ padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: '500' }}>← 返回</div>
+            <div style={{ flex: 1, textAlign: 'center', fontWeight: '600', color: 'var(--text-primary)', paddingRight: '40px' }}>動態詳情</div>
           </div>
           <div style={{ paddingBottom: '100px' }}>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', border: '1px solid #C2D6E6' }}>
+            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderBottom: '1px solid var(--border-light)' }}>
               <iframe src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
             </div>
             <div style={{ padding: '0 20px' }}>
-              <h2 style={{ fontSize: '18px', marginTop: '20px', color: '#2A527A', lineHeight: '1.6' }}>{detailPageVideo.title}</h2>
+              <h2 style={{ fontSize: '16px', marginTop: '20px', color: 'var(--text-primary)', lineHeight: '1.6', fontWeight: '600' }}>{detailPageVideo.title}</h2>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                <span style={{ fontSize: '14px', color: '#6B99C3', fontWeight: '500' }}>@{detailPageVideo.up_name}</span>
-                <span style={{ fontSize: '13px', color: '#87ACCA' }}>{detailPageVideo.play_count} 次觀看</span>
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>@{detailPageVideo.up_name}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>{detailPageVideo.play_count} 次觀看</span>
               </div>
-              <div style={{ marginTop: '40px', padding: '30px 20px', textAlign: 'center', color: '#87ACCA', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px dashed #C2D6E6' }}>
+              <div style={{ marginTop: '40px', padding: '30px 20px', textAlign: 'center', color: 'var(--text-tertiary)', backgroundColor: 'var(--bg-base)', borderRadius: '8px' }}>
                 這裡之後可以放評論區或更多推薦
               </div>
             </div>

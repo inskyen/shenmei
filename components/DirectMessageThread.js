@@ -21,22 +21,22 @@ export default function DirectMessageThread({ currentUserId, messages, onSend, s
     <>
       <div style={{ display: 'grid', gap: '10px', minHeight: '280px', padding: '4px 0 18px' }}>
         {messages.length === 0 && (
-          <p style={{ alignSelf: 'center', color: '#87ACCA', lineHeight: 1.8, margin: 0, textAlign: 'center' }}>從一句真誠的話開始吧。</p>
+          <p style={{ alignSelf: 'center', color: 'var(--text-tertiary)', lineHeight: 1.8, margin: 0, textAlign: 'center' }}>從一句真誠的話開始吧。</p>
         )}
         {messages.map((message) => {
           const isMine = message.sender_id === currentUserId;
           return (
             <div key={message.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
-              <div style={{ backgroundColor: isMine ? '#6B99C3' : '#FFFFFF', border: isMine ? 'none' : '1px solid #D9E4F5', borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px', color: isMine ? '#FFFFFF' : '#2A527A', fontSize: '14px', lineHeight: 1.65, maxWidth: '78%', padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              <div style={{ backgroundColor: isMine ? 'var(--brand-blue)' : 'var(--bg-surface)', border: isMine ? 'none' : '1px solid var(--border-light)', borderRadius: isMine ? '8px 8px 4px 8px' : '8px 8px 8px 4px', color: isMine ? '#FFFFFF' : 'var(--text-primary)', fontSize: '14px', lineHeight: 1.65, maxWidth: '78%', padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {message.content}
               </div>
-              <span style={{ color: '#A0B9D0', fontSize: '10px', marginTop: '4px' }}>{formatTime(message.created_at)}</span>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '10px', marginTop: '4px' }}>{formatTime(message.created_at)}</span>
             </div>
           );
         })}
       </div>
 
-      <form onSubmit={submit} style={{ borderTop: '1px solid #E3ECF4', display: 'flex', gap: '8px', paddingTop: '12px' }}>
+      <form onSubmit={submit} style={{ borderTop: '1px solid var(--border-light)', display: 'flex', gap: '8px', paddingTop: '12px' }}>
         <textarea
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -44,9 +44,9 @@ export default function DirectMessageThread({ currentUserId, messages, onSend, s
           maxLength={1000}
           placeholder={disabledMessage || '寫下想說的話...'}
           rows={1}
-          style={{ backgroundColor: '#F7FAFC', border: '1px solid #D9E4F5', borderRadius: '14px', boxSizing: 'border-box', color: '#2A527A', flex: 1, fontFamily: 'inherit', fontSize: '14px', lineHeight: 1.5, outline: 'none', padding: '10px 12px', resize: 'none' }}
+          style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '6px', boxSizing: 'border-box', color: 'var(--text-primary)', flex: 1, fontFamily: 'inherit', fontSize: '14px', lineHeight: 1.5, outline: 'none', padding: '10px 12px', resize: 'none' }}
         />
-        <button type="submit" disabled={!draft.trim() || sending || Boolean(disabledMessage)} style={{ backgroundColor: !draft.trim() || sending || disabledMessage ? '#C2D6E6' : '#6B99C3', border: 'none', borderRadius: '14px', color: '#FFFFFF', cursor: !draft.trim() || sending || disabledMessage ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 700, padding: '0 14px' }}>
+        <button type="submit" disabled={!draft.trim() || sending || Boolean(disabledMessage)} style={{ backgroundColor: !draft.trim() || sending || disabledMessage ? 'var(--border-light)' : 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: !draft.trim() || sending || disabledMessage ? 'var(--text-tertiary)' : '#FFFFFF', cursor: !draft.trim() || sending || disabledMessage ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 500, padding: '0 14px' }}>
           {sending ? '傳送中' : '傳送'}
         </button>
       </form>

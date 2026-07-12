@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
-import PageShell from '@/components/PageShell';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { getCachedMessageInbox, prefetchConversation, prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 import { supabase } from '@/lib/supabase/client';
@@ -10,14 +10,32 @@ function formatRelativeTime(timestamp) {
   if (!timestamp) return '';
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000));
   if (seconds < 60) return '剛剛';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分鐘前`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小時前`;
-  return `${Math.floor(seconds / 86400)} 天前`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 時`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} 天`;
+  const d = new Date(timestamp);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function getInitial(profile) {
   const name = profile?.display_name || profile?.username || '審';
   return name.charAt(0).toUpperCase();
+}
+
+// 根據名字生成穩定的漸層背景色（Soul 風格）
+function getAvatarGradient(name) {
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+    'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+  ];
+  const index = (name?.charCodeAt(0) || 0) % gradients.length;
+  return gradients[index];
 }
 
 export default function MessagesPage() {
@@ -81,50 +99,203 @@ export default function MessagesPage() {
 
   return (
     <>
-      <PageShell title="私訊" subtitle="因為一段審美而靠近的人，會留在這裡。">
-        {loading && <div style={{ color: '#87ACCA', padding: '20px 0', textAlign: 'center' }}>正在整理訊息...</div>}
+      <Head><title>私訊 · 審美者</title></Head>
 
-        {!loading && errorMessage && <p style={{ color: '#9F5E4C', lineHeight: 1.7, margin: 0 }}>{errorMessage}</p>}
+      <div style={{
+        backgroundColor: 'var(--bg-base)',
+        color: 'var(--text-primary)',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        minHeight: '100vh',
+      }}>
+        {/* 固定頂部欄 */}
+        <header style={{
+          alignItems: 'center',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-light)',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '48px 20px 14px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: '17px', fontWeight: 700, letterSpacing: '0.3px' }}>
+            私訊
+          </span>
+        </header>
 
-        {!loading && !errorMessage && conversations.length === 0 && (
-          <div style={{ color: '#87ACCA', lineHeight: 1.8, padding: '28px 8px', textAlign: 'center' }}>
-            還沒有私訊。到某位策展人的個人頁，和他說一句話吧。
+        {/* 加載骨架 */}
+        {loading && (
+          <div>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} style={{ alignItems: 'center', borderBottom: '1px solid var(--border-light)', display: 'flex', gap: '14px', padding: '14px 20px' }}>
+                <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '50%', flex: '0 0 52px', height: '52px', width: '52px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '4px', height: '14px', marginBottom: '10px', width: '38%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '4px', height: '12px', width: '62%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
+        {/* 錯誤狀態 */}
+        {!loading && errorMessage && (
+          <div style={{ color: '#FF4D4F', fontSize: '13px', padding: '48px 24px', textAlign: 'center' }}>
+            {errorMessage}
+          </div>
+        )}
+
+        {/* 空狀態 */}
+        {!loading && !errorMessage && conversations.length === 0 && (
+          <div style={{ alignItems: 'center', display: 'flex', flexDirection: 'column', gap: '16px', padding: '80px 32px', textAlign: 'center' }}>
+            <div style={{
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, var(--brand-blue) 0%, #818cf8 100%)',
+              borderRadius: '50%',
+              display: 'flex',
+              fontSize: '32px',
+              height: '72px',
+              justifyContent: 'center',
+              opacity: 0.15,
+              width: '72px',
+            }}>
+              💬
+            </div>
+            <div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500, margin: '0 0 8px' }}>還沒有訊息</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', lineHeight: 1.7, margin: 0 }}>
+                到某位策展人的個人頁，<br />和他說一句話吧。
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 對話列表 */}
         {!loading && !errorMessage && conversations.length > 0 && (
-          <div style={{ display: 'grid', gap: '8px' }}>
+          <ul style={{ listStyle: 'none', margin: 0, padding: '0 0 96px' }}>
             {conversations.map((conversation) => {
               const profile = conversation.otherProfile;
               const name = profile?.display_name || profile?.username || '一位審美者';
               const preview = conversation.latestMessage?.content || '開始這段對話吧。';
+              const timeStr = formatRelativeTime(conversation.latestMessage?.created_at || conversation.last_message_at);
+              const unread = conversation.unreadCount || 0;
+              const hasAvatar = !!profile?.avatar_url;
+              const gradient = getAvatarGradient(name);
 
               return (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => openConversation(conversation)}
-                  onMouseEnter={() => prefetchConversation(conversation.id).catch((error) => console.error('私訊預取失敗:', error))}
-                  onTouchStart={() => prefetchConversation(conversation.id).catch((error) => console.error('私訊預取失敗:', error))}
-                  style={{ alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', gap: '12px', padding: '10px 2px', textAlign: 'left', width: '100%' }}
-                >
-                  <span style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flex: '0 0 auto', fontSize: '17px', fontWeight: 800, height: '48px', justifyContent: 'center', width: '48px' }}>
-                    {!profile?.avatar_url && getInitial(profile)}
-                  </span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ color: '#2A527A', display: 'block', fontSize: '15px', fontWeight: 700 }}>{name}</span>
-                    <span style={{ color: '#6B99C3', display: 'block', fontSize: '13px', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview}</span>
-                  </span>
-                  <span style={{ alignItems: 'flex-end', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ color: '#A0B9D0', fontSize: '11px' }}>{formatRelativeTime(conversation.latestMessage?.created_at || conversation.last_message_at)}</span>
-                    {conversation.unreadCount > 0 && <span style={{ alignItems: 'center', backgroundColor: '#F4B9AE', borderRadius: '99px', color: '#FFFFFF', display: 'flex', fontSize: '10px', fontWeight: 700, height: '18px', justifyContent: 'center', minWidth: '18px', padding: '0 5px' }}>{conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}</span>}
-                  </span>
-                </button>
+                <li key={conversation.id}>
+                  <button
+                    type="button"
+                    onClick={() => openConversation(conversation)}
+                    onMouseEnter={() => prefetchConversation(conversation.id).catch(() => {})}
+                    onTouchStart={() => prefetchConversation(conversation.id).catch(() => {})}
+                    style={{
+                      alignItems: 'center',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--border-light)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      gap: '14px',
+                      padding: '14px 20px',
+                      textAlign: 'left',
+                      transition: 'background 0.15s',
+                      width: '100%',
+                    }}
+                    onMouseDown={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
+                    onMouseUp={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    onTouchEnd={(e) => { setTimeout(() => { if (e.currentTarget) e.currentTarget.style.background = 'transparent'; }, 200); }}
+                  >
+                    {/* 頭像 */}
+                    <div style={{ flex: '0 0 auto', position: 'relative' }}>
+                      <div style={{
+                        alignItems: 'center',
+                        background: hasAvatar ? 'transparent' : gradient,
+                        backgroundImage: hasAvatar ? `url(${profile.avatar_url})` : 'none',
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
+                        borderRadius: '50%',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        fontSize: '20px',
+                        fontWeight: 600,
+                        height: '52px',
+                        justifyContent: 'center',
+                        width: '52px',
+                        letterSpacing: '-0.5px',
+                      }}>
+                        {!hasAvatar && getInitial(profile)}
+                      </div>
+                      {/* 未讀紅點（圓形徽章 Soul 風格） */}
+                      {unread > 0 && (
+                        <span style={{
+                          alignItems: 'center',
+                          backgroundColor: '#FF4D4F',
+                          border: '2px solid var(--bg-base)',
+                          borderRadius: '99px',
+                          color: '#FFFFFF',
+                          display: 'flex',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          height: '20px',
+                          justifyContent: 'center',
+                          minWidth: '20px',
+                          padding: '0 5px',
+                          position: 'absolute',
+                          right: '-2px',
+                          top: '-2px',
+                        }}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 文字區域 */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span style={{
+                          color: unread > 0 ? 'var(--text-primary)' : 'var(--text-primary)',
+                          fontSize: '15px',
+                          fontWeight: unread > 0 ? 700 : 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '65%',
+                        }}>
+                          {name}
+                        </span>
+                        <span style={{
+                          color: unread > 0 ? 'var(--brand-blue)' : 'var(--text-tertiary)',
+                          flex: '0 0 auto',
+                          fontSize: '12px',
+                          fontWeight: unread > 0 ? 600 : 400,
+                        }}>
+                          {timeStr}
+                        </span>
+                      </div>
+                      <span style={{
+                        color: unread > 0 ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: unread > 0 ? 500 : 400,
+                        lineHeight: 1.4,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {preview}
+                      </span>
+                    </div>
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </PageShell>
+      </div>
+
       <AppBottomNav active="messages" />
     </>
   );

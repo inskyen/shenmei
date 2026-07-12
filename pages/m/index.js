@@ -73,8 +73,8 @@ export default function ModulesPage() {
 
   return (
     <div style={{
-      backgroundColor: '#F0F4F8',
-      color: '#2A527A',
+      backgroundColor: 'var(--bg-base)',
+      color: 'var(--text-primary)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       minHeight: '100vh',
       overflowX: 'hidden',
@@ -86,12 +86,11 @@ export default function ModulesPage() {
       {/* Sticky header */}
       <header style={{
         alignItems: 'center',
-        backgroundColor: 'rgba(240, 244, 248, 0.92)',
-        backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid rgba(194, 214, 230, 0.5)',
+        backgroundColor: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-light)',
         display: 'flex',
         justifyContent: 'space-between',
-        padding: '18px 18px 14px',
+        padding: '48px 18px 14px',
         position: 'sticky',
         top: 0,
         zIndex: 10,
@@ -102,28 +101,28 @@ export default function ModulesPage() {
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#6B99C3',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             fontSize: '15px',
-            fontWeight: 600,
+            fontWeight: 500,
             padding: 0,
           }}
         >
           ← 大廳
         </button>
-        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>小館</div>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>小館</div>
         <button
           type="button"
           onClick={() => router.push('/submit')}
           style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #C2D6E6',
-            borderRadius: '999px',
-            color: '#6B99C3',
+            backgroundColor: 'var(--brand-blue)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#FFFFFF',
             cursor: 'pointer',
             fontSize: '13px',
-            fontWeight: 700,
-            padding: '7px 10px',
+            fontWeight: 500,
+            padding: '6px 14px',
           }}
         >
           發佈
@@ -133,10 +132,10 @@ export default function ModulesPage() {
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '20px 14px 104px' }}>
         {/* Page header */}
         <section style={{ marginBottom: '20px' }}>
-          <h1 style={{ color: '#2A527A', fontSize: '24px', fontWeight: 800, lineHeight: 1.25, margin: 0 }}>
+          <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>
             小館
           </h1>
-          <p style={{ color: '#87ACCA', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
             每座小館都有自己的收錄規則；你可以自由走進來，看看這裡正在留下什麼。
           </p>
         </section>
@@ -148,7 +147,7 @@ export default function ModulesPage() {
               <div
                 key={i}
                 className="app-detail-skeleton"
-                style={{ aspectRatio: '4 / 3', borderRadius: '18px' }}
+                style={{ aspectRatio: '4 / 3', borderRadius: '8px' }}
               />
             ))}
           </div>
@@ -157,10 +156,10 @@ export default function ModulesPage() {
         {/* Error */}
         {!loading && errorMessage && (
           <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid rgba(194, 214, 230, 0.55)',
-            borderRadius: '18px',
-            color: '#87ACCA',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '8px',
+            color: 'var(--text-secondary)',
             lineHeight: 1.8,
             padding: '28px 20px',
             textAlign: 'center',
@@ -172,10 +171,10 @@ export default function ModulesPage() {
         {/* Empty state */}
         {!loading && !errorMessage && modules.length === 0 && (
           <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid rgba(194, 214, 230, 0.55)',
-            borderRadius: '18px',
-            color: '#87ACCA',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '8px',
+            color: 'var(--text-secondary)',
             lineHeight: 1.8,
             padding: '28px 20px',
             textAlign: 'center',
@@ -202,8 +201,8 @@ export default function ModulesPage() {
                     ...bgStyle,
                     aspectRatio: '4 / 3',
                     border: 'none',
-                    borderRadius: '18px',
-                    boxShadow: '0 2px 12px rgba(42, 82, 122, 0.14)',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -229,8 +228,8 @@ export default function ModulesPage() {
                   <div style={{
                     background: hasImage
                       ? 'linear-gradient(to top, rgba(10,20,35,0.82) 0%, rgba(10,20,35,0.3) 55%, transparent 100%)'
-                      : 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)',
-                    borderRadius: '18px',
+                      : 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)',
+                    borderRadius: '8px',
                     bottom: 0,
                     left: 0,
                     padding: '28px 14px 14px',
@@ -244,10 +243,9 @@ export default function ModulesPage() {
                     <div style={{
                       color: '#FFFFFF',
                       fontSize: '15px',
-                      fontWeight: 800,
+                      fontWeight: 600,
                       letterSpacing: '0.2px',
                       lineHeight: 1.3,
-                      textShadow: '0 1px 4px rgba(0,0,0,0.3)',
                     }}>
                       {module.name}
                     </div>
@@ -261,7 +259,6 @@ export default function ModulesPage() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        textShadow: '0 1px 3px rgba(0,0,0,0.25)',
                       }}>
                         {module.description}
                       </div>

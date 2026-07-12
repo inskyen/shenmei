@@ -201,11 +201,11 @@ export default function UserPage() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', width: '100%' }}>
+      <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', width: '100%' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
           <div className="app-detail-skeleton" style={{ height: '140px', width: '100%', borderRadius: 0 }} />
           <div style={{ padding: '0 20px', marginTop: '-36px', position: 'relative', display: 'grid', gap: '16px' }}>
-            <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '84px', width: '84px', border: '3px solid #F9FAFB' }} />
+            <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '84px', width: '84px', border: '3px solid var(--bg-base)' }} />
             <div className="app-detail-skeleton" style={{ height: '24px', width: '38%' }} />
             <div className="app-detail-skeleton" style={{ height: '14px', width: '68%' }} />
             <div className="app-detail-skeleton" style={{ height: '14px', width: '92%' }} />
@@ -218,9 +218,9 @@ export default function UserPage() {
 
   if (errorMessage) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#87ACCA' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
         <p>{errorMessage}</p>
-        <button onClick={() => router.push('/')} style={{ marginTop: '16px', padding: '8px 16px', backgroundColor: '#C2D6E6', border: 'none', borderRadius: '20px', color: '#2A527A', cursor: 'pointer' }}>回首頁</button>
+        <button onClick={() => router.push('/')} style={{ marginTop: '16px', padding: '8px 16px', backgroundColor: 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: 'pointer' }}>回首頁</button>
       </div>
     );
   }
@@ -232,9 +232,9 @@ export default function UserPage() {
   return (
     <>
       <div style={{
-      backgroundColor: '#F9FAFB',
+      backgroundColor: 'var(--bg-base)',
       minHeight: '100vh',
-      color: '#2A527A',
+      color: 'var(--text-primary)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       display: 'flex',
       flexDirection: 'column',
@@ -250,12 +250,12 @@ export default function UserPage() {
       <div style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
         <div style={{ 
           height: '140px', 
-          background: 'linear-gradient(135deg, #FFEDD8, #D8E2F8)',
+          backgroundColor: 'var(--border-light)',
           width: '100%' 
         }}>
           <button 
             onClick={goBack}
-            style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(255,255,255,0.3)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2A527A', backdropFilter: 'blur(4px)' }}
+            style={{ position: 'absolute', top: '16px', left: '16px', background: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-primary)' }}
           >
             ←
           </button>
@@ -270,19 +270,18 @@ export default function UserPage() {
               width: '84px',
               height: '84px',
               borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '3px solid #F9FAFB',
+              backgroundColor: 'var(--bg-surface)',
+              border: '3px solid var(--bg-base)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(42,82,122,0.08)',
               overflow: 'hidden',
               backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}>
               {!profile.avatar_url && (
-                <span style={{ fontSize: '32px', fontWeight: 800, color: '#C2D6E6' }}>{getInitial(displayName)}</span>
+                <span style={{ fontSize: '28px', fontWeight: 600, color: 'var(--text-tertiary)' }}>{getInitial(displayName)}</span>
               )}
             </div>
 
@@ -292,13 +291,13 @@ export default function UserPage() {
                 <button
                   onClick={() => router.push('/submit')}
                   style={{
-                    backgroundColor: '#6B99C3',
+                    backgroundColor: 'var(--brand-blue)',
                     color: '#FFFFFF',
                     border: 'none',
-                    borderRadius: '99px',
+                    borderRadius: '6px',
                     padding: '6px 14px',
                     fontSize: '13px',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
                   }}
                 >
@@ -307,15 +306,14 @@ export default function UserPage() {
                 <button
                   onClick={() => router.push('/settings')}
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    color: '#2A527A',
-                    border: '1px solid rgba(194, 214, 230, 0.8)',
-                    borderRadius: '99px',
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
                     padding: '6px 14px',
                     fontSize: '13px',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(42,82,122,0.04)'
                   }}
                 >
                   編輯資料
@@ -326,13 +324,13 @@ export default function UserPage() {
                 <button
                   onClick={handleStartMessage}
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    color: '#52769A',
-                    border: '1px solid #C2D6E6',
-                    borderRadius: '99px',
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
                     padding: '6px 14px',
-                    fontSize: '14px',
-                    fontWeight: 600,
+                    fontSize: '13px',
+                    fontWeight: 500,
                     cursor: 'pointer',
                   }}
                 >
@@ -342,13 +340,13 @@ export default function UserPage() {
                   onClick={handleToggleFollow}
                   disabled={followLoading}
                   style={{
-                    backgroundColor: isFollowing ? '#EEF3F7' : '#6B99C3',
-                    color: isFollowing ? '#52769A' : '#FFFFFF',
-                    border: `1px solid ${isFollowing ? '#D9E4F5' : '#6B99C3'}`,
-                    borderRadius: '99px',
+                    backgroundColor: isFollowing ? 'var(--brand-blue-light)' : 'var(--brand-blue)',
+                    color: isFollowing ? 'var(--text-secondary)' : '#FFFFFF',
+                    border: `1px solid ${isFollowing ? 'var(--border-light)' : 'var(--brand-blue)'}`,
+                    borderRadius: '6px',
                     padding: '6px 18px',
-                    fontSize: '14px',
-                    fontWeight: 600,
+                    fontSize: '13px',
+                    fontWeight: 500,
                     cursor: followLoading ? 'wait' : 'pointer',
                     opacity: followLoading ? 0.7 : 1,
                   }}
@@ -361,16 +359,16 @@ export default function UserPage() {
 
           {/* Info */}
           <div style={{ marginBottom: '16px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 4px 0', color: '#1A365D' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
               {displayName}
             </h1>
-            <div style={{ fontSize: '13px', color: '#87ACCA' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
               審美號：{profile.username}
             </div>
           </div>
 
           {/* Bio */}
-          <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: '#4A6984' }}>
+          <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-primary)' }}>
             {profile.bio || '這個人很懶，什麼都沒寫。'}
           </p>
 
@@ -380,12 +378,11 @@ export default function UserPage() {
                 <span
                   key={tag}
                   style={{
-                    backgroundColor: '#EEF3F7',
-                    border: '1px solid #D9E4F5',
-                    borderRadius: '999px',
-                    color: '#52769A',
+                    backgroundColor: 'var(--brand-blue-light)',
+                    color: 'var(--brand-blue)',
                     fontSize: '12px',
-                    padding: '5px 10px',
+                    padding: '4px 10px',
+                    borderRadius: '4px',
                   }}
                 >
                   #{tag}
@@ -395,32 +392,32 @@ export default function UserPage() {
           )}
 
           {/* Stats Row */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{posts.length}</span>
-              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>策展</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{posts.length}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>策展</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{totalLikes}</span>
-              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>獲讚</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalLikes}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>獲讚</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{followerCount}</span>
-              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>粉絲</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followerCount}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>粉絲</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A365D' }}>{followingCount}</span>
-              <span style={{ fontSize: '12px', color: '#87ACCA', marginTop: '2px' }}>關注</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followingCount}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>關注</span>
             </div>
           </div>
 
-          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', color: '#2A527A' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
             策展動態
           </h2>
 
           {/* Masonry Feed */}
           {posts.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#87ACCA', padding: '40px 0' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '40px 0' }}>
               這裡還沒有留下策展痕跡。
             </div>
           ) : (
@@ -432,17 +429,17 @@ export default function UserPage() {
                     <div 
                       onClick={() => router.push(`/p/${post.id}`)}
                       style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
+                        backgroundColor: 'var(--bg-surface)',
+                        borderRadius: '8px',
                         overflow: 'hidden',
                         cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(42,82,122,0.05)',
                         display: 'flex',
-                        flexDirection: 'column'
+                        flexDirection: 'column',
+                        border: '1px solid var(--border-light)'
                       }}
                     >
                       {/* Cover */}
-                      <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: '#E1E9F0' }}>
+                      <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: 'var(--bg-base)' }}>
                         {video.cover_url && (
                           <img 
                             src={video.cover_url} 
@@ -451,7 +448,7 @@ export default function UserPage() {
                           />
                         )}
                         {!video.cover_url && (
-                          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#87ACCA', fontSize: '12px' }}>無封面</div>
+                          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '12px' }}>無封面</div>
                         )}
                       </div>
 
@@ -459,8 +456,8 @@ export default function UserPage() {
                       <div style={{ padding: '10px 12px' }}>
                         <div style={{ 
                           fontSize: '13px', 
-                          fontWeight: 600, 
-                          color: '#2A527A',
+                          fontWeight: '600', 
+                          color: 'var(--text-primary)',
                           display: '-webkit-box', 
                           WebkitLineClamp: 2, 
                           WebkitBoxOrient: 'vertical', 
@@ -472,11 +469,11 @@ export default function UserPage() {
                         </div>
                         
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: '#87ACCA', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                             <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#C2D6E6', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                             <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--border-light)', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
                              {displayName.slice(0, 8)}{displayName.length > 8 ? '...' : ''}
                           </span>
-                          <span style={{ fontSize: '11px', color: '#87ACCA', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                             {post.like_count || 0}
                           </span>

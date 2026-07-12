@@ -10,8 +10,8 @@ import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profi
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 const pageStyle = {
-  backgroundColor: '#FFFFFF',
-  color: '#2A3F54',
+  backgroundColor: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   minHeight: '100vh',
   paddingBottom: '80px',
@@ -25,7 +25,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.username || post?.legacy_added_by || '策展人';
+  return profile?.display_name || profile?.username || post?.legacy_added_by || '策展人';
 }
 
 function getInitial(name) {
@@ -372,16 +372,15 @@ export default function PostPage() {
           onClick={goBack}
           style={{
             background: 'transparent',
-            border: 'none',
-            color: '#2A3F54',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-primary)',
             cursor: 'pointer',
             padding: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.65)',
+            backgroundColor: 'var(--bg-surface)',
             borderRadius: '50%',
-            backdropFilter: 'blur(10px)',
           }}
         >
           <svg style={{ width: '22px', height: '22px' }} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"></path></svg>
@@ -391,15 +390,14 @@ export default function PostPage() {
             type="button"
             onClick={goToSubmit}
             style={{
-              backgroundColor: '#6B99C3',
+              backgroundColor: 'var(--brand-blue)',
               border: 'none',
-              borderRadius: '999px',
+              borderRadius: '6px',
               color: '#FFFFFF',
               cursor: 'pointer',
               fontSize: '13px',
-              fontWeight: 700,
+              fontWeight: 500,
               padding: '6px 16px',
-              boxShadow: '0 2px 8px rgba(107, 153, 195, 0.3)',
             }}
           >
             發佈
@@ -410,20 +408,20 @@ export default function PostPage() {
       <main style={{ margin: '0 auto', maxWidth: '600px' }}>
         {loading && (
           <div style={{ display: 'grid', gap: '18px', padding: '84px 16px 28px' }}>
-            <div className="app-detail-skeleton" style={{ height: '260px', borderRadius: 0 }} />
+            <div className="app-detail-skeleton" style={{ height: '260px', borderRadius: '8px' }} />
             <div style={{ display: 'grid', gap: '10px' }}>
               <div className="app-detail-skeleton" style={{ height: '20px', width: '42%' }} />
               <div className="app-detail-skeleton" style={{ height: '14px', width: '76%' }} />
               <div className="app-detail-skeleton" style={{ height: '14px', width: '64%' }} />
             </div>
-            <div style={{ color: '#87ACCA', fontSize: '13px', paddingTop: '6px', textAlign: 'center' }}>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', paddingTop: '6px', textAlign: 'center' }}>
               正在打開這篇策展...
             </div>
           </div>
         )}
 
         {!loading && errorMessage && (
-          <div style={{ padding: '100px 20px', textAlign: 'center', color: '#87ACCA', lineHeight: 1.8 }}>
+          <div style={{ padding: '100px 20px', textAlign: 'center', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
             {errorMessage}
           </div>
         )}
@@ -432,7 +430,7 @@ export default function PostPage() {
           <article style={{ display: 'flex', flexDirection: 'column' }}>
             {/* 顶部满铺视频/图片区 */}
             <section style={{
-              backgroundColor: '#F4F7FA',
+              backgroundColor: 'var(--bg-base)',
               position: 'relative',
               width: '100%',
               paddingTop: '56.25%',
@@ -458,7 +456,7 @@ export default function PostPage() {
               ) : (
                 <div style={{
                   alignItems: 'center',
-                  color: '#9AA6B2',
+                  color: 'var(--text-tertiary)',
                   display: 'flex',
                   inset: 0,
                   justifyContent: 'center',
@@ -478,28 +476,28 @@ export default function PostPage() {
                     aria-label={displayName}
                     style={{
                       alignItems: 'center',
-                      backgroundColor: '#D9E4F5',
+                      backgroundColor: 'var(--bg-base)',
                       backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none',
                       backgroundPosition: 'center',
                       backgroundSize: 'cover',
                       borderRadius: '50%',
-                      color: '#6B99C3',
+                      color: 'var(--text-secondary)',
                       display: 'flex',
-                      fontWeight: 800,
+                      fontWeight: 500,
                       height: '42px',
                       justifyContent: 'center',
                       width: '42px',
-                      border: '1px solid #E8EFF5'
+                      border: '1px solid var(--border-light)'
                     }}
                   >
                     {profile?.avatar_url ? '' : getInitial(displayName)}
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: '#2A3F54', fontWeight: 600, fontSize: '15px' }}>{displayName}</span>
-                      <span style={{ backgroundColor: '#D9E4F5', color: '#6B99C3', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px' }}>INFP</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '15px' }}>{displayName}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '400' }}>· INFP</span>
                     </div>
-                    <div style={{ color: '#9AA6B2', fontSize: '12px', marginTop: '2px' }}>
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '2px' }}>
                       {formatDate(post.created_at)}
                     </div>
                   </div>
@@ -510,13 +508,13 @@ export default function PostPage() {
                     onClick={handleToggleAuthorFollow}
                     disabled={followLoading}
                     style={{
-                      border: `1px solid ${isFollowingAuthor ? '#D9E4F5' : '#6B99C3'}`,
-                      color: isFollowingAuthor ? '#52769A' : '#6B99C3',
-                      backgroundColor: isFollowingAuthor ? '#EEF3F7' : 'transparent',
-                      borderRadius: '99px',
+                      border: `1px solid ${isFollowingAuthor ? 'var(--border-light)' : 'var(--brand-blue)'}`,
+                      color: isFollowingAuthor ? 'var(--text-secondary)' : 'var(--brand-blue)',
+                      backgroundColor: isFollowingAuthor ? 'var(--brand-blue-light)' : 'transparent',
+                      borderRadius: '6px',
                       padding: '4px 16px',
                       fontSize: '13px',
-                      fontWeight: 600,
+                      fontWeight: 500,
                       cursor: followLoading ? 'wait' : 'pointer',
                       opacity: followLoading ? 0.7 : 1,
                     }}
@@ -526,46 +524,46 @@ export default function PostPage() {
                 )}
               </div>
 
-              {/* 标题 */}
-              <h1 style={{ color: '#2A3F54', fontSize: '20px', fontWeight: 'bold', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+              {/* 標題 */}
+              <h1 style={{ color: 'var(--text-primary)', fontSize: '18px', fontWeight: '600', lineHeight: 1.5, margin: '0 0 12px 0' }}>
                 {video.title || '未命名影片'}
               </h1>
 
               {/* 正文 */}
-              <p style={{ color: '#2A3F54', fontSize: '15px', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap', letterSpacing: '0.3px' }}>
+              <p style={{ color: 'var(--text-primary)', fontSize: '15px', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap', letterSpacing: '0.2px' }}>
                 {post.note}
               </p>
 
               {/* 模块标签 */}
               {modules.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '20px' }}>
                   {modules.map((module) => (
                     <div
                       key={module.id}
                       onClick={() => router.push(`/m/${module.slug}`)}
                       style={{
-                        backgroundColor: '#F4F7FA',
-                        color: '#6B99C3',
+                        backgroundColor: 'var(--brand-blue-light)',
+                        color: 'var(--brand-blue)',
                         cursor: 'pointer',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         fontWeight: 500,
-                        padding: '6px 14px',
-                        borderRadius: '99px',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
+                        gap: '2px'
                       }}
                     >
-                      <span style={{ color: '#6B99C3', opacity: 0.8 }}>#</span> {module.name}
+                      <span style={{ color: 'var(--brand-blue)', opacity: 0.8 }}>#</span> {module.name}
                     </div>
                   ))}
                 </div>
               )}
               
-              <div style={{ margin: '30px 0', height: '1px', backgroundColor: '#E8EFF5' }}></div>
+              <div style={{ margin: '30px 0', height: '1px', backgroundColor: 'var(--border-light)' }}></div>
 
               {/* 留言區頂部 */}
-              <div style={{ color: '#9AA6B2', fontSize: '13px', marginBottom: '20px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
                 共 {post.comment_count || 0} 條留言
               </div>
 
@@ -584,7 +582,7 @@ export default function PostPage() {
               )}
 
               {!commentsLoading && comments.length === 0 && (
-                <div style={{ color: '#9AA6B2', textAlign: 'center', padding: '40px 0', fontSize: '14px' }}>
+                <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0', fontSize: '14px' }}>
                   還沒有人留言，來做第一個發聲的人吧。
                 </div>
               )}
@@ -602,35 +600,36 @@ export default function PostPage() {
                             aria-label={commentDisplayName}
                             style={{
                               alignItems: 'center',
-                              backgroundColor: '#D9E4F5',
+                              backgroundColor: 'var(--bg-base)',
                               backgroundImage: comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
                               backgroundPosition: 'center',
                               backgroundSize: 'cover',
                               borderRadius: '50%',
-                              color: '#6B99C3',
+                              color: 'var(--text-secondary)',
                               display: 'flex',
                               flex: '0 0 auto',
                               fontSize: '13px',
-                              fontWeight: 700,
+                              fontWeight: 500,
                               height: '34px',
                               justifyContent: 'center',
                               width: '34px',
+                              border: '1px solid var(--border-light)'
                             }}
                           >
                             {comment.profile?.avatar_url ? '' : getInitial(commentDisplayName)}
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ alignItems: 'baseline', display: 'flex', gap: '8px' }}>
-                              <span style={{ color: '#52769A', fontSize: '13px', fontWeight: 700 }}>{commentDisplayName}</span>
-                              <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
+                              <span style={{ color: 'var(--brand-blue)', fontSize: '13px', fontWeight: '500' }}>{commentDisplayName}</span>
+                              <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
                             </div>
-                            <p style={{ color: '#2A3F54', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
+                            <p style={{ color: 'var(--text-primary)', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
                               {comment.content}
                             </p>
                             <button
                               type="button"
                               onClick={() => handleReply(comment)}
-                              style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '12px', marginTop: '4px', padding: 0 }}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', marginTop: '4px', padding: 0 }}
                             >
                               回覆
                             </button>
@@ -638,34 +637,34 @@ export default function PostPage() {
                         </article>
 
                         {replies.length > 0 && (
-                          <div style={{ borderLeft: '2px solid #E8EFF5', display: 'grid', gap: '14px', margin: '12px 0 0 43px', paddingLeft: '12px' }}>
+                          <div style={{ borderLeft: '2px solid var(--border-light)', display: 'grid', gap: '14px', margin: '12px 0 0 43px', paddingLeft: '12px' }}>
                             {replies.map((reply) => {
-                              const replyDisplayName = getCommentDisplayName(reply);
+                               const replyDisplayName = getCommentDisplayName(reply);
 
-                              return (
-                                <article key={reply.id} style={{ display: 'flex', gap: '8px' }}>
-                                  <div
-                                    aria-label={replyDisplayName}
-                                    style={{ alignItems: 'center', backgroundColor: '#E8EFF5', backgroundImage: reply.profile?.avatar_url ? `url(${reply.profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flex: '0 0 auto', fontSize: '11px', fontWeight: 700, height: '28px', justifyContent: 'center', width: '28px' }}
-                                  >
-                                    {reply.profile?.avatar_url ? '' : getInitial(replyDisplayName)}
-                                  </div>
-                                  <div style={{ minWidth: 0 }}>
-                                    <div style={{ alignItems: 'baseline', display: 'flex', gap: '7px' }}>
-                                      <span style={{ color: '#52769A', fontSize: '12px', fontWeight: 700 }}>{replyDisplayName}</span>
-                                      <span style={{ color: '#AAB8C5', fontSize: '11px' }}>{formatDate(reply.created_at)}</span>
-                                    </div>
-                                    <p style={{ color: '#4A6984', fontSize: '13px', lineHeight: 1.7, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{reply.content}</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleReply(comment)}
-                                      style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '12px', marginTop: '3px', padding: 0 }}
-                                    >
-                                      回覆
-                                    </button>
-                                  </div>
-                                </article>
-                              );
+                               return (
+                                 <article key={reply.id} style={{ display: 'flex', gap: '8px' }}>
+                                   <div
+                                     aria-label={replyDisplayName}
+                                     style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: reply.profile?.avatar_url ? `url(${reply.profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flex: '0 0 auto', fontSize: '11px', fontWeight: 500, height: '28px', justifyContent: 'center', width: '28px', border: '1px solid var(--border-light)' }}
+                                   >
+                                     {reply.profile?.avatar_url ? '' : getInitial(replyDisplayName)}
+                                   </div>
+                                   <div style={{ minWidth: 0 }}>
+                                     <div style={{ alignItems: 'baseline', display: 'flex', gap: '7px' }}>
+                                       <span style={{ color: 'var(--brand-blue)', fontSize: '12px', fontWeight: '500' }}>{replyDisplayName}</span>
+                                       <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{formatDate(reply.created_at)}</span>
+                                     </div>
+                                     <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{reply.content}</p>
+                                     <button
+                                       type="button"
+                                       onClick={() => handleReply(comment)}
+                                       style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', marginTop: '3px', padding: 0 }}
+                                     >
+                                       回覆
+                                     </button>
+                                   </div>
+                                 </article>
+                               );
                             })}
                           </div>
                         )}
@@ -687,9 +686,8 @@ export default function PostPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderTop: '1px solid #E8EFF5',
+          backgroundColor: 'var(--bg-surface)',
+          borderTop: '1px solid var(--border-light)',
           padding: '10px 16px',
           paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
           display: 'flex',
@@ -701,14 +699,14 @@ export default function PostPage() {
           {/* 輸入框 */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {replyTarget && (
-              <div style={{ alignItems: 'center', color: '#6B99C3', display: 'flex', fontSize: '12px', gap: '6px', margin: '0 4px 5px' }}>
+              <div style={{ alignItems: 'center', color: 'var(--brand-blue)', display: 'flex', fontSize: '12px', gap: '6px', margin: '0 4px 5px' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   回覆 @{getCommentDisplayName(replyTarget)}
                 </span>
                 <button
                   type="button"
                   onClick={() => setReplyTarget(null)}
-                  style={{ background: 'transparent', border: 'none', color: '#87ACCA', cursor: 'pointer', fontSize: '15px', lineHeight: 1, padding: 0 }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '15px', lineHeight: 1, padding: 0 }}
                   aria-label="取消回覆"
                 >
                   ×
@@ -719,8 +717,8 @@ export default function PostPage() {
               onClick={currentUser ? () => document.getElementById('comment-input')?.focus() : goToLoginForComment}
               style={{
                 alignItems: 'center',
-                backgroundColor: '#F4F7FA',
-                borderRadius: '99px',
+                backgroundColor: 'var(--bg-base)',
+                borderRadius: '6px',
                 cursor: 'text',
                 display: 'flex',
                 padding: '8px 16px',
@@ -740,29 +738,29 @@ export default function PostPage() {
                   outline: 'none',
                   width: '100%',
                   fontSize: '14px',
-                  color: '#2A3F54'
+                  color: 'var(--text-primary)'
                 }}
               />
             </div>
           </div>
 
           {/* 右側按鈕群 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: '#9AA6B2' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--text-secondary)' }}>
             <div 
               onClick={handleToggleLike}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: liking ? 'wait' : 'pointer', color: liked ? '#D98C8C' : '#9AA6B2' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: liking ? 'wait' : 'pointer', color: liked ? '#FF4D4F' : 'var(--text-secondary)' }}
             >
-              <svg style={{ width: '28px', height: '28px' }} fill={liked ? 'currentColor' : 'none'} stroke={liked ? '#D98C8C' : 'currentColor'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>{post.like_count || '讚'}</span>
+              <svg style={{ width: '24px', height: '24px' }} fill={liked ? 'currentColor' : 'none'} stroke={liked ? '#FF4D4F' : 'currentColor'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              <span style={{ fontSize: '13px', fontWeight: 500 }}>{post.like_count || '讚'}</span>
             </div>
             
             <div onClick={currentUser ? () => document.getElementById('comment-input')?.focus() : goToLoginForComment} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-              <svg style={{ width: '28px', height: '28px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>{post.comment_count || '評論'}</span>
+              <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+              <span style={{ fontSize: '13px', fontWeight: 500 }}>{post.comment_count || '評論'}</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-               <svg style={{ width: '28px', height: '28px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+               <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
             </div>
           </div>
         </div>
@@ -770,7 +768,7 @@ export default function PostPage() {
 
       {/* 提示訊息 */}
       {commentMessage && (
-        <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(42, 63, 84, 0.9)', color: '#FFF', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', zIndex: 60 }}>
+        <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--text-primary)', color: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', zIndex: 60 }}>
           {commentMessage}
         </div>
       )}

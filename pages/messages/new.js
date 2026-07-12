@@ -52,16 +52,16 @@ export default function NewMessagePage() {
   const disabledMessage = data?.profile?.message_permission === 'none' ? '對方目前不接收新的私訊。' : '';
 
   return (
-    <div style={{ backgroundColor: '#F0F4F8', color: '#2A527A', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh' }}>
       <Head><title>私訊 · 審美者</title></Head>
-      <header style={{ alignItems: 'center', backdropFilter: 'blur(14px)', backgroundColor: 'rgba(240, 244, 248, 0.92)', borderBottom: '1px solid rgba(194, 214, 230, 0.5)', display: 'flex', justifyContent: 'space-between', padding: '18px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <button type="button" onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: '#6B99C3', cursor: 'pointer', fontSize: '15px', fontWeight: 600, padding: 0 }}>← 返回</button>
-        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>私訊 {name}</div>
+      <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'sticky', top: 0, zIndex: 10 }}>
+        <button type="button" onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 返回</button>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>私訊 {name}</div>
         <span style={{ width: '32px' }} />
       </header>
       <main style={{ margin: '0 auto', maxWidth: '680px', padding: '18px 16px 28px' }}>
-        {loading && <div style={{ color: '#87ACCA', padding: '48px 0', textAlign: 'center' }}>正在準備私訊...</div>}
-        {!loading && errorMessage && <p style={{ color: '#9F5E4C', lineHeight: 1.7 }}>{errorMessage}</p>}
+        {loading && <div style={{ color: 'var(--text-tertiary)', padding: '48px 0', textAlign: 'center' }}>正在準備私訊...</div>}
+        {!loading && errorMessage && <p style={{ color: '#FF4D4F', lineHeight: 1.7 }}>{errorMessage}</p>}
         {!loading && data && <DirectMessageThread currentUserId={data.currentUser.id} messages={[]} onSend={handleSend} sending={sending} disabledMessage={disabledMessage} />}
       </main>
     </div>

@@ -6,29 +6,29 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
 const pageStyle = {
-  backgroundColor: '#F0F4F8',
-  color: '#2A527A',
+  backgroundColor: 'var(--bg-base)',
+  color: 'var(--text-primary)',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   minHeight: '100vh',
 };
 
 const cardStyle = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid rgba(194, 214, 230, 0.55)',
-  borderRadius: '18px',
-  boxShadow: '0 1px 4px rgba(42, 82, 122, 0.06)',
+  backgroundColor: 'var(--bg-surface)',
+  border: '1px solid var(--border-light)',
+  borderRadius: '8px',
 };
 
 const inputStyle = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid rgba(135, 172, 202, 0.65)',
-  borderRadius: '14px',
+  backgroundColor: 'var(--bg-base)',
+  border: '1px solid var(--border-light)',
+  borderRadius: '6px',
   boxSizing: 'border-box',
-  color: '#2A527A',
+  color: 'var(--text-primary)',
   fontSize: '15px',
   outline: 'none',
   padding: '13px 14px',
   width: '100%',
+  transition: 'all 0.2s',
 };
 
 function buildSubmitHref(video) {
@@ -126,12 +126,11 @@ export default function SearchPage() {
 
       <header style={{
         alignItems: 'center',
-        backgroundColor: 'rgba(240, 244, 248, 0.92)',
-        backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid rgba(194, 214, 230, 0.5)',
+        backgroundColor: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-light)',
         display: 'flex',
         justifyContent: 'space-between',
-        padding: '18px 18px 14px',
+        padding: '48px 18px 14px',
         position: 'sticky',
         top: 0,
         zIndex: 10,
@@ -142,28 +141,28 @@ export default function SearchPage() {
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#6B99C3',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             fontSize: '15px',
-            fontWeight: 600,
+            fontWeight: 500,
             padding: 0,
           }}
         >
           ← 大廳
         </button>
-        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>探索</div>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>探索</div>
         <button
           type="button"
           onClick={() => goToSubmit('/submit')}
           style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #C2D6E6',
-            borderRadius: '999px',
-            color: '#6B99C3',
+            backgroundColor: 'var(--brand-blue)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#FFFFFF',
             cursor: 'pointer',
             fontSize: '13px',
-            fontWeight: 700,
-            padding: '7px 10px',
+            fontWeight: 500,
+            padding: '6px 14px',
           }}
         >
           發佈
@@ -172,10 +171,10 @@ export default function SearchPage() {
 
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 104px' }}>
         <section style={{ marginBottom: '18px' }}>
-          <h1 style={{ color: '#2A527A', fontSize: '26px', lineHeight: 1.25, margin: 0 }}>
+          <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>
             探索影片
           </h1>
-          <p style={{ color: '#87ACCA', fontSize: '14px', lineHeight: 1.8, margin: '8px 0 0' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
             搜尋已收錄影片，進入影片主頁，或直接把它推薦到大廳。
           </p>
         </section>
@@ -192,14 +191,15 @@ export default function SearchPage() {
             type="submit"
             disabled={loading}
             style={{
-              backgroundColor: loading ? '#C2D6E6' : '#2A527A',
+              backgroundColor: loading ? 'var(--border-light)' : 'var(--brand-blue)',
               border: 'none',
-              borderRadius: '14px',
-              color: '#FFFFFF',
+              borderRadius: '6px',
+              color: loading ? 'var(--text-tertiary)' : '#FFFFFF',
               cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '15px',
-              fontWeight: 800,
+              fontSize: '14px',
+              fontWeight: 500,
               padding: '12px 14px',
+              transition: 'all 0.2s',
             }}
           >
             {loading ? '搜尋中...' : '搜尋'}
@@ -209,7 +209,9 @@ export default function SearchPage() {
         {message && (
           <section style={{
             ...cardStyle,
-            color: '#9F5E4C',
+            color: '#FF4D4F',
+            fontSize: '13px',
+            fontWeight: '500',
             lineHeight: 1.8,
             marginTop: '14px',
             padding: '16px',
@@ -220,21 +222,22 @@ export default function SearchPage() {
         )}
 
         {!loading && searched && results.length === 0 && !message && (
-          <section style={{ ...cardStyle, color: '#87ACCA', lineHeight: 1.8, marginTop: '14px', padding: '24px 18px', textAlign: 'center' }}>
+          <section style={{ ...cardStyle, color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.8, marginTop: '14px', padding: '24px 18px', textAlign: 'center' }}>
             站內還沒有收錄這支影片。
             <div style={{ marginTop: '14px' }}>
               <button
                 type="button"
                 onClick={() => goToSubmit('/submit')}
                 style={{
-                  backgroundColor: '#2A527A',
+                  backgroundColor: 'var(--brand-blue)',
                   border: 'none',
-                  borderRadius: '14px',
+                  borderRadius: '6px',
                   color: '#FFFFFF',
                   cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 800,
-                  padding: '11px 14px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  padding: '11px 20px',
+                  transition: 'all 0.2s',
                 }}
               >
                 用 BVID 發佈
@@ -263,26 +266,27 @@ export default function SearchPage() {
                   }}
                 >
                   <div style={{
-                    backgroundColor: '#C2D6E6',
+                    backgroundColor: 'var(--bg-base)',
                     backgroundImage: video.cover ? `url(${video.cover})` : 'none',
                     backgroundPosition: 'center',
                     backgroundSize: 'cover',
-                    borderRadius: '14px',
+                    borderRadius: '4px',
                     minHeight: '76px',
+                    border: '1px solid var(--border-light)'
                   }} />
 
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 800, lineHeight: 1.45 }}>
+                    <div style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, lineHeight: 1.45 }}>
                       {video.title || '未命名影片'}
                     </div>
-                    <div style={{ color: '#87ACCA', fontSize: '12px', lineHeight: 1.7, marginTop: '6px' }}>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.7, marginTop: '6px' }}>
                       {video.author} · {video.bvid || '無 BVID'}
                     </div>
                   </div>
                 </button>
 
                 <div style={{
-                  borderTop: '1px solid rgba(194, 214, 230, 0.45)',
+                  borderTop: '1px solid var(--border-light)',
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
                 }}>
@@ -292,10 +296,10 @@ export default function SearchPage() {
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#6B99C3',
+                      color: 'var(--text-secondary)',
                       cursor: 'pointer',
                       fontSize: '13px',
-                      fontWeight: 800,
+                      fontWeight: 500,
                       padding: '12px',
                     }}
                   >
@@ -307,11 +311,11 @@ export default function SearchPage() {
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      borderLeft: '1px solid rgba(194, 214, 230, 0.45)',
-                      color: '#2A527A',
+                      borderLeft: '1px solid var(--border-light)',
+                      color: 'var(--brand-blue)',
                       cursor: 'pointer',
                       fontSize: '13px',
-                      fontWeight: 800,
+                      fontWeight: 500,
                       padding: '12px',
                     }}
                   >
@@ -323,7 +327,7 @@ export default function SearchPage() {
           </section>
         )}
       </main>
-      <AppBottomNav />
+      <AppBottomNav active="search" />
     </div>
   );
 }

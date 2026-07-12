@@ -54,7 +54,7 @@ export default function NotificationsPage() {
         if (!user) return;
 
         const result = await loadNotifications();
-        setNotifications(result.notifications);
+        setNotifications((result.notifications || []).filter((n) => n.type !== 'message'));
         await markNotificationsRead();
       } catch (error) {
         console.error('通知頁載入失敗:', error);
@@ -92,17 +92,17 @@ export default function NotificationsPage() {
         {loading && (
           <div style={{ display: 'grid', gap: '12px' }}>
             {[1, 2, 3].map((item) => (
-              <div key={item} className="app-detail-skeleton" style={{ borderRadius: '14px', height: '72px' }} />
+              <div key={item} className="app-detail-skeleton" style={{ borderRadius: '6px', height: '72px' }} />
             ))}
           </div>
         )}
 
         {!loading && errorMessage && (
-          <p style={{ color: '#9F5E4C', lineHeight: 1.7, margin: 0 }}>{errorMessage}</p>
+          <p style={{ color: '#FF4D4F', lineHeight: 1.7, margin: 0 }}>{errorMessage}</p>
         )}
 
         {!loading && !errorMessage && notifications.length === 0 && (
-          <div style={{ color: '#87ACCA', lineHeight: 1.8, padding: '30px 8px', textAlign: 'center' }}>
+          <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '30px 8px', textAlign: 'center' }}>
             還沒有新的光點。有人喜歡、留言或關注你時，會出現在這裡。
           </div>
         )}
@@ -114,25 +114,25 @@ export default function NotificationsPage() {
                 key={notification.id}
                 type="button"
                 onClick={() => openNotification(notification)}
-                style={{ alignItems: 'center', backgroundColor: notification.is_read ? '#FFFFFF' : '#F3F8FC', border: '1px solid #E3ECF4', borderRadius: '14px', cursor: notification.post_id || notification.conversation_id || notification.actor?.username ? 'pointer' : 'default', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%' }}
+                style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '8px', cursor: notification.post_id || notification.conversation_id || notification.actor?.username ? 'pointer' : 'default', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%', position: 'relative' }}
               >
                 <span
-                  style={{ alignItems: 'center', backgroundColor: '#D9E4F5', backgroundImage: notification.actor?.avatar_url ? `url("${notification.actor.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: '#6B99C3', display: 'flex', flexShrink: 0, fontSize: '17px', fontWeight: 800, height: '44px', justifyContent: 'center', width: '44px' }}
+                  style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: notification.actor?.avatar_url ? `url("${notification.actor.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flexShrink: 0, fontSize: '15px', fontWeight: 600, height: '44px', justifyContent: 'center', width: '44px', border: '1px solid var(--border-light)' }}
                 >
                   {!notification.actor?.avatar_url && getInitial(notification)}
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ color: '#2A527A', fontSize: '14px', fontWeight: 700 }}>{getActorName(notification)}</span>
-                  <span style={{ color: '#4A6984', fontSize: '14px' }}> {notificationCopy[notification.type]}</span>
-                  <span style={{ color: '#A0B9D0', display: 'block', fontSize: '12px', marginTop: '4px' }}>{formatRelativeTime(notification.created_at)}</span>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>{getActorName(notification)}</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}> {notificationCopy[notification.type]}</span>
+                  <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '12px', marginTop: '4px' }}>{formatRelativeTime(notification.created_at)}</span>
                 </span>
-                {!notification.is_read && <span style={{ backgroundColor: '#F4B9AE', borderRadius: '50%', height: '8px', width: '8px' }} />}
+                {!notification.is_read && <span style={{ backgroundColor: '#FF4D4F', borderRadius: '50%', height: '8px', width: '8px' }} />}
               </button>
             ))}
           </div>
         )}
       </PageShell>
-      <AppBottomNav />
+      <AppBottomNav active="notifications" />
     </>
   );
 }

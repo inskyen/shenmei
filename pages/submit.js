@@ -282,9 +282,9 @@ export default function SubmitPage() {
 
   return (
     <div className="app-detail-page" style={{
-      backgroundColor: '#F9FAFB',
+      backgroundColor: 'var(--bg-base)',
       minHeight: '100vh',
-      color: '#2A527A',
+      color: 'var(--text-primary)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       display: 'flex',
       flexDirection: 'column',
@@ -298,27 +298,27 @@ export default function SubmitPage() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        padding: '16px 20px',
+        padding: '48px 20px 16px',
         maxWidth: '680px',
         margin: '0 auto',
         width: '100%',
         boxSizing: 'border-box'
       }}>
-         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-           ×
+         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            ×
          </button>
-         <div style={{ color: '#2A527A', fontSize: '17px', fontWeight: 600 }}>發佈策展</div>
+         <div style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>發佈策展</div>
          <button 
            onClick={handleSubmit} 
            disabled={!canPublish}
            style={{
-             backgroundColor: canPublish ? '#6B99C3' : '#E1E9F0',
-             color: canPublish ? '#FFFFFF' : '#87ACCA',
+             backgroundColor: canPublish ? 'var(--brand-blue)' : 'var(--border-light)',
+             color: canPublish ? '#FFFFFF' : 'var(--text-tertiary)',
              border: 'none',
-             borderRadius: '20px',
-             padding: '8px 24px',
-             fontSize: '15px',
-             fontWeight: 600,
+             borderRadius: '6px',
+             padding: '6px 20px',
+             fontSize: '14px',
+             fontWeight: 500,
              cursor: canPublish ? 'pointer' : 'not-allowed',
              transition: 'all 0.2s'
            }}
@@ -339,9 +339,9 @@ export default function SubmitPage() {
              border: 'none',
              background: 'transparent',
              outline: 'none',
-             fontSize: '17px',
+             fontSize: '16px',
              lineHeight: '1.6',
-             color: '#2A527A',
+             color: 'var(--text-primary)',
              resize: 'none',
              fontFamily: 'inherit',
              marginBottom: '24px'
@@ -352,26 +352,26 @@ export default function SubmitPage() {
          {/* Link Input or Rich Media Card */}
          {hasParsedVideo ? (
            <div style={{
-             backgroundColor: '#FFFFFF',
-             borderRadius: '16px',
+             backgroundColor: 'var(--bg-surface)',
+             borderRadius: '8px',
              padding: '14px',
              display: 'flex',
              gap: '14px',
-             boxShadow: '0 2px 12px rgba(42,82,122,0.06)',
              position: 'relative',
-             alignItems: 'center'
+             alignItems: 'center',
+             border: '1px solid var(--border-light)'
            }}>
               <button 
                 onClick={clearVideo}
-                style={{ position: 'absolute', top: '-10px', right: '-10px', background: '#FFFFFF', color: '#87ACCA', border: '1px solid #E1E9F0', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
+                style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'var(--bg-surface)', color: 'var(--text-tertiary)', border: '1px solid var(--border-light)', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 ×
               </button>
               
-              <div style={{ width: '110px', height: '70px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#E1E9F0', position: 'relative' }}>
+              <div style={{ width: '110px', height: '70px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, backgroundColor: 'var(--bg-base)', position: 'relative' }}>
                  {coverUrl ? (
                    <img src={coverUrl} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                  ) : (
-                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#87ACCA', fontSize: '12px' }}>無封面</div>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)', fontSize: '12px' }}>無封面</div>
                  )}
                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '28px', height: '28px', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M5 3l14 9-14 9V3z"/></svg>
@@ -379,43 +379,43 @@ export default function SubmitPage() {
               </div>
 
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                 <div style={{ fontWeight: 600, fontSize: '15px', color: '#2A527A', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                 <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                    {videoTitleValue || '未知標題影片'}
                  </div>
-                 <div style={{ color: '#87ACCA', fontSize: '13px' }}>
+                 <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
                    {authorName ? `@ ${authorName}` : sourceValue}
                  </div>
               </div>
            </div>
          ) : (
            <div style={{ 
-             border: '1px dashed #87ACCA', 
-             borderRadius: '99px', 
+             border: '1px solid var(--border-light)', 
+             borderRadius: '6px', 
              padding: '8px 8px 8px 16px', 
              display: 'flex', 
              alignItems: 'center',
-             backgroundColor: 'rgba(255,255,255,0.4)',
+             backgroundColor: 'var(--bg-surface)',
              transition: 'all 0.2s'
            }}>
-              <span style={{ marginRight: '8px', color: '#87ACCA' }}>🔗</span>
+              <span style={{ marginRight: '8px', color: 'var(--text-secondary)' }}>🔗</span>
               <input 
                 value={sourceValue}
                 onChange={handleSourceChange}
                 placeholder="貼上 B 站連結或 BV 號..."
-                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#2A527A', fontSize: '15px' }}
+                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: '15px' }}
               />
               <button
                 type="button"
                 onClick={handleParse}
                 disabled={isParsing || !sourceValue}
                 style={{
-                  backgroundColor: (isParsing || !sourceValue) ? '#E1E9F0' : '#87ACCA',
-                  color: 'white',
+                  backgroundColor: (isParsing || !sourceValue) ? 'var(--border-light)' : 'var(--brand-blue)',
+                  color: (isParsing || !sourceValue) ? 'var(--text-tertiary)' : '#FFFFFF',
                   border: 'none',
-                  borderRadius: '99px',
-                  padding: '8px 18px',
+                  borderRadius: '4px',
+                  padding: '6px 18px',
                   fontSize: '14px',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: (isParsing || !sourceValue) ? 'not-allowed' : 'pointer'
                 }}
               >
@@ -425,7 +425,16 @@ export default function SubmitPage() {
          )}
 
          {message && (
-            <div style={{ marginTop: '16px', color: '#9F5E4C', fontSize: '13px', backgroundColor: '#FFF7F4', padding: '10px 14px', borderRadius: '12px', border: '1px solid #F4D8CD' }}>
+            <div style={{ 
+              marginTop: '16px', 
+              color: '#FF4D4F', 
+              fontSize: '13px', 
+              fontWeight: '500',
+              backgroundColor: 'var(--bg-surface)', 
+              padding: '10px 14px', 
+              borderRadius: '6px', 
+              border: '1px solid var(--border-light)' 
+            }}>
               {message}
             </div>
          )}
@@ -435,20 +444,20 @@ export default function SubmitPage() {
            <div style={{ marginTop: '32px' }}>
              {forcedModuleSlug ? (
                <>
-                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>本次投遞</div>
-                 <div style={{ alignItems: 'center', backgroundColor: '#F3F8FC', border: '1px solid #C2D6E6', borderRadius: '14px', color: '#2A527A', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
-                   <span style={{ fontSize: '14px', fontWeight: 700 }}>{forcedModule ? forcedModule.name : '正在確認小館...'}</span>
-                   <span style={{ color: '#87ACCA', fontSize: '12px' }}>已鎖定</span>
+                 <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>本次投遞</div>
+                 <div style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
+                   <span style={{ fontSize: '14px', fontWeight: 600 }}>{forcedModule ? forcedModule.name : '正在確認小館...'}</span>
+                   <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>已鎖定</span>
                  </div>
                </>
              ) : (
                <>
-                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#2A527A', marginBottom: '12px' }}>
-                   你想把它放進哪個小館？<span style={{ fontWeight: 'normal', color: '#87ACCA', fontSize: '13px' }}>（選填，最多一座）</span>
+                 <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                   你想把它放進哪個小館？<span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '13px' }}>（選填，最多一座）</span>
                  </div>
-                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                    {modulesLoading && [0, 1, 2].map((index) => (
-                     <div key={index} className="app-detail-skeleton" style={{ borderRadius: '999px', height: '32px', width: '74px' }} />
+                     <div key={index} className="app-detail-skeleton" style={{ borderRadius: '4px', height: '32px', width: '74px' }} />
                    ))}
                    {!modulesLoading && modules.map(m => {
                      const isSelected = effectiveSelectedModuleIds.includes(m.id);
@@ -458,12 +467,12 @@ export default function SubmitPage() {
                          type="button"
                          onClick={() => toggleModule(m.id)}
                          style={{
-                           backgroundColor: isSelected ? '#6B99C3' : '#FFFFFF',
-                           color: isSelected ? '#FFFFFF' : '#6B99C3',
-                           border: isSelected ? '1px solid #6B99C3' : '1px solid rgba(135, 172, 202, 0.4)',
-                           borderRadius: '99px',
-                           padding: '8px 16px',
-                           fontSize: '14px',
+                           backgroundColor: isSelected ? 'var(--brand-blue-light)' : 'var(--bg-surface)',
+                           color: isSelected ? 'var(--brand-blue)' : 'var(--text-secondary)',
+                           border: isSelected ? '1px solid var(--brand-blue)' : '1px solid var(--border-light)',
+                           borderRadius: '4px',
+                           padding: '6px 14px',
+                           fontSize: '13px',
                            cursor: 'pointer',
                            transition: 'all 0.2s'
                          }}
@@ -480,11 +489,11 @@ export default function SubmitPage() {
       </main>
 
       {publishComplete && (
-        <div style={{ alignItems: 'center', backgroundColor: 'rgba(42, 63, 84, 0.38)', display: 'flex', inset: 0, justifyContent: 'center', position: 'fixed', zIndex: 80 }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', boxShadow: '0 16px 40px rgba(42, 82, 122, 0.2)', color: '#2A527A', padding: '24px 28px', textAlign: 'center' }}>
-            <div style={{ alignItems: 'center', backgroundColor: '#D9E4F5', borderRadius: '50%', color: '#2A527A', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
-            <div style={{ fontSize: '16px', fontWeight: 700 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
-            <div style={{ color: '#87ACCA', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這座小館。' : '正在帶你回到剛剛發出的策展。'}</div>
+        <div style={{ alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', inset: 0, justifyContent: 'center', position: 'fixed', zIndex: 80 }}>
+          <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', padding: '24px 28px', textAlign: 'center' }}>
+            <div style={{ alignItems: 'center', backgroundColor: 'var(--brand-blue-light)', borderRadius: '50%', color: 'var(--brand-blue)', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這座小館。' : '正在帶你回到剛剛發出的策展。'}</div>
           </div>
         </div>
       )}

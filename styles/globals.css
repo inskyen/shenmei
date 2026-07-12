@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Design System Colors */
+  --bg-base: #F7F9FA;
+  --bg-surface: #FFFFFF;
+  --text-primary: #1A1D20;
+  --text-secondary: #687684;
+  --text-tertiary: #AAB8C2;
+  --brand-blue: #2B5A83;
+  --brand-blue-light: #E8F0F6;
+  --border-light: #EBEEF0;
+  
+  --background: var(--bg-surface);
+  --foreground: var(--text-primary);
 }
 
 @theme inline {
@@ -14,8 +24,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg-base: #000000;
+    --bg-surface: #111111;
+    --text-primary: #EAEAEA;
+    --text-secondary: #8899A6;
+    --text-tertiary: #5C6E7E;
+    --brand-blue: #4A81B5;
+    --brand-blue-light: #1E2D3D;
+    --border-light: #222222;
+
+    --background: var(--bg-surface);
+    --foreground: var(--text-primary);
   }
 }
 
@@ -59,9 +78,8 @@ body {
 
 .app-detail-skeleton {
   animation: app-skeleton-pulse 1.25s ease-in-out infinite;
-  background: linear-gradient(110deg, #e8eff5 8%, #f7fafc 18%, #e8eff5 33%);
-  background-size: 200% 100%;
-  border-radius: 14px;
+  background-color: var(--border-light);
+  border-radius: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,17 +5,16 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
 const pageStyle = {
-  backgroundColor: '#F0F4F8',
-  color: '#2A527A',
+  backgroundColor: 'var(--bg-base)',
+  color: 'var(--text-primary)',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   minHeight: '100vh',
 };
 
 const cardStyle = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid rgba(194, 214, 230, 0.55)',
-  borderRadius: '18px',
-  boxShadow: '0 1px 4px rgba(42, 82, 122, 0.06)',
+  backgroundColor: 'var(--bg-surface)',
+  border: '1px solid var(--border-light)',
+  borderRadius: '8px',
 };
 
 function formatDate(timestamp) {
@@ -26,7 +25,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.username || post.legacy_added_by || '策展人';
+  return profile?.display_name || profile?.username || post.legacy_added_by || '策展人';
 }
 
 function getInitial(name) {
@@ -119,7 +118,7 @@ export default function VideoPage() {
 
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url')
+          .select('id, username, display_name, avatar_url')
           .in('id', profileIds);
 
         if (profilesError) {
@@ -161,12 +160,11 @@ export default function VideoPage() {
 
       <header style={{
         alignItems: 'center',
-        backgroundColor: 'rgba(240, 244, 248, 0.92)',
-        backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid rgba(194, 214, 230, 0.5)',
+        backgroundColor: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-light)',
         display: 'flex',
         justifyContent: 'space-between',
-        padding: '18px 18px 14px',
+        padding: '48px 18px 14px',
         position: 'sticky',
         top: 0,
         zIndex: 10,
@@ -177,28 +175,28 @@ export default function VideoPage() {
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#6B99C3',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             fontSize: '15px',
-            fontWeight: 600,
+            fontWeight: 500,
             padding: 0,
           }}
         >
           ← 返回
         </button>
-        <div style={{ color: '#2A527A', fontSize: '15px', fontWeight: 700 }}>影片主頁</div>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>影片主頁</div>
         <button
           type="button"
           onClick={goToSubmit}
           style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #C2D6E6',
-            borderRadius: '999px',
-            color: '#6B99C3',
+            backgroundColor: 'var(--brand-blue)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#FFFFFF',
             cursor: 'pointer',
             fontSize: '13px',
-            fontWeight: 700,
-            padding: '7px 10px',
+            fontWeight: 500,
+            padding: '6px 14px',
           }}
         >
           推薦
@@ -208,12 +206,12 @@ export default function VideoPage() {
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '18px 16px 88px' }}>
         {loading && (
           <div style={{ display: 'grid', gap: '16px', padding: '4px 0 28px' }}>
-            <div className="app-detail-skeleton" style={{ height: '190px' }} />
+            <div className="app-detail-skeleton" style={{ height: '190px', borderRadius: '8px' }} />
             <div style={{ display: 'grid', gap: '10px', padding: '0 4px' }}>
-              <div className="app-detail-skeleton" style={{ height: '20px', width: '52%' }} />
-              <div className="app-detail-skeleton" style={{ height: '14px', width: '34%' }} />
+              <div className="app-detail-skeleton" style={{ height: '20px', width: '52%', borderRadius: '4px' }} />
+              <div className="app-detail-skeleton" style={{ height: '14px', width: '34%', borderRadius: '4px' }} />
             </div>
-            <div style={{ color: '#87ACCA', fontSize: '13px', paddingTop: '4px', textAlign: 'center' }}>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', paddingTop: '4px', textAlign: 'center' }}>
               正在整理這支影片的審美痕跡...
             </div>
           </div>
@@ -221,7 +219,7 @@ export default function VideoPage() {
 
         {!loading && errorMessage && (
           <section style={{ ...cardStyle, padding: '28px 20px', textAlign: 'center' }}>
-            <div style={{ color: '#87ACCA', lineHeight: 1.8 }}>{errorMessage}</div>
+            <div style={{ color: '#FF4D4F', fontSize: '13px', fontWeight: '500', lineHeight: 1.8 }}>{errorMessage}</div>
           </section>
         )}
 
@@ -267,13 +265,13 @@ export default function VideoPage() {
               </div>
 
               <div style={{ padding: '18px' }}>
-                <h1 style={{ color: '#2A527A', fontSize: '21px', lineHeight: 1.45, margin: 0 }}>
+                <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.45, margin: 0 }}>
                   {video.title || '未命名影片'}
                 </h1>
-                <div style={{ color: '#87ACCA', fontSize: '13px', lineHeight: 1.7, marginTop: '8px' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginTop: '8px' }}>
                   UP 主：{video.author_name || '未知'}
                 </div>
-                <p style={{ color: '#6B99C3', fontSize: '13px', lineHeight: 1.7, margin: '12px 0 0' }}>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', lineHeight: 1.7, margin: '12px 0 0' }}>
                   這裡收錄這支影片在審美者留下的推薦；每一篇推薦，都有自己的對話。
                 </p>
               </div>
@@ -286,32 +284,33 @@ export default function VideoPage() {
               overflow: 'hidden',
             }}>
               <div style={{ padding: '16px', textAlign: 'center' }}>
-                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>{recommendations.length}</div>
-                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>推薦</div>
+                <div style={{ color: 'var(--text-primary)', fontSize: '22px', fontWeight: 600 }}>{recommendations.length}</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>推薦</div>
               </div>
-              <div style={{ borderLeft: '1px solid rgba(194, 214, 230, 0.55)', padding: '16px', textAlign: 'center' }}>
-                <div style={{ color: '#2A527A', fontSize: '22px', fontWeight: 800 }}>
+              <div style={{ borderLeft: '1px solid var(--border-light)', padding: '16px', textAlign: 'center' }}>
+                <div style={{ color: 'var(--text-primary)', fontSize: '22px', fontWeight: 600 }}>
                   {recommendations.reduce((sum, post) => sum + (post.like_count || 0), 0)}
                 </div>
-                <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '4px' }}>喜歡</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>喜歡</div>
               </div>
             </section>
 
             <section style={{ display: 'grid', gap: '12px' }}>
               <h2 style={{
-                color: '#2A527A',
-                fontSize: '17px',
+                color: 'var(--text-primary)',
+                fontSize: '16px',
+                fontWeight: 600,
                 margin: '6px 2px 0',
               }}>
                 所有推薦
               </h2>
 
-              <p style={{ color: '#87ACCA', fontSize: '13px', lineHeight: 1.7, margin: '-4px 2px 2px' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '-4px 2px 2px' }}>
                 想聊聊這支影片？走進一篇推薦，從那個人的觀看開始。
               </p>
 
               {recommendations.length === 0 && (
-                <div style={{ ...cardStyle, color: '#87ACCA', lineHeight: 1.8, padding: '22px 18px', textAlign: 'center' }}>
+                <div style={{ ...cardStyle, color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '22px 18px', textAlign: 'center', fontSize: '13px' }}>
                   還沒有人推薦這支影片。你可以成為第一個把它放進大廳的人。
                 </div>
               )}
@@ -338,35 +337,36 @@ export default function VideoPage() {
                         aria-label={displayName}
                         style={{
                           alignItems: 'center',
-                          backgroundColor: '#C2D6E6',
+                          backgroundColor: 'var(--bg-base)',
                           backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none',
                           backgroundPosition: 'center',
                           backgroundSize: 'cover',
                           borderRadius: '50%',
-                          color: '#FFFFFF',
+                          color: 'var(--text-secondary)',
                           display: 'flex',
                           flex: '0 0 auto',
-                          fontWeight: 800,
+                          fontWeight: 600,
                           height: '38px',
                           justifyContent: 'center',
                           width: '38px',
+                          border: '1px solid var(--border-light)'
                         }}
                       >
                         {profile?.avatar_url ? '' : getInitial(displayName)}
                       </div>
 
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ color: '#2A527A', fontSize: '14px', fontWeight: 700 }}>{displayName}</div>
-                        <div style={{ color: '#87ACCA', fontSize: '12px', marginTop: '3px' }}>
+                        <div style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>{displayName}</div>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '3px' }}>
                           {formatDate(post.created_at)}
                         </div>
                       </div>
                     </div>
 
                     <p style={{
-                      color: '#2A527A',
-                      fontSize: '15px',
-                      lineHeight: 1.75,
+                      color: 'var(--text-secondary)',
+                      fontSize: '14px',
+                      lineHeight: 1.7,
                       margin: 0,
                       whiteSpace: 'pre-wrap',
                     }}>
@@ -374,7 +374,7 @@ export default function VideoPage() {
                     </p>
 
                     <div style={{
-                      color: '#87ACCA',
+                      color: 'var(--text-tertiary)',
                       display: 'flex',
                       fontSize: '12px',
                       gap: '14px',

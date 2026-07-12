@@ -173,15 +173,15 @@ export default function SettingsPage() {
 
   if (checking) {
     return (
-      <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', padding: '24px 20px' }}>
+      <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', padding: '48px 20px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '34px', width: '34px' }} />
-          <div className="app-detail-skeleton" style={{ height: '34px', width: '82px' }} />
+          <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '34px', width: '34px' }} />
+          <div className="app-detail-skeleton" style={{ height: '34px', width: '82px', borderRadius: '4px' }} />
         </div>
         <div style={{ display: 'grid', gap: '18px', marginTop: '44px' }}>
           <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '90px', justifySelf: 'center', width: '90px' }} />
-          <div className="app-detail-skeleton" style={{ height: '132px' }} />
-          <div className="app-detail-skeleton" style={{ height: '184px' }} />
+          <div className="app-detail-skeleton" style={{ height: '132px', borderRadius: '8px' }} />
+          <div className="app-detail-skeleton" style={{ height: '184px', borderRadius: '8px' }} />
         </div>
       </div>
     );
@@ -189,9 +189,9 @@ export default function SettingsPage() {
 
   return (
     <div className="app-detail-page" style={{
-      backgroundColor: '#F9FAFB',
+      backgroundColor: 'var(--bg-base)',
       minHeight: '100vh',
-      color: '#2A527A',
+      color: 'var(--text-primary)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       display: 'flex',
       flexDirection: 'column',
@@ -205,27 +205,27 @@ export default function SettingsPage() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        padding: '16px 20px',
+        padding: '48px 20px 16px',
         maxWidth: '680px',
         margin: '0 auto',
         width: '100%',
         boxSizing: 'border-box'
       }}>
-         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: '#87ACCA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-           ×
+         <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            ×
          </button>
-         <div style={{ fontSize: '17px', fontWeight: 600 }}>編輯資料</div>
+         <div style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>編輯資料</div>
          <button 
            onClick={handleSave} 
            disabled={saving}
            style={{
-             backgroundColor: saving ? '#E1E9F0' : '#6B99C3',
-             color: saving ? '#87ACCA' : '#FFFFFF',
+             backgroundColor: saving ? 'var(--border-light)' : 'var(--brand-blue)',
+             color: saving ? 'var(--text-tertiary)' : '#FFFFFF',
              border: 'none',
-             borderRadius: '20px',
-             padding: '8px 24px',
-             fontSize: '15px',
-             fontWeight: 600,
+             borderRadius: '6px',
+             padding: '6px 20px',
+             fontSize: '14px',
+             fontWeight: 500,
              cursor: saving ? 'not-allowed' : 'pointer',
              transition: 'all 0.2s'
            }}
@@ -242,43 +242,40 @@ export default function SettingsPage() {
             width: '90px',
             height: '90px',
             borderRadius: '50%',
-            backgroundColor: '#E1E9F0',
+            backgroundColor: 'var(--bg-base)',
             backgroundImage: avatarUrl ? `url("${avatarUrl}")` : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             marginBottom: '16px',
-            boxShadow: '0 4px 12px rgba(42,82,122,0.1)'
+            border: '1px solid var(--border-light)'
           }} />
           
-          <div style={{ fontSize: '13px', color: '#87ACCA', marginBottom: '12px' }}>點擊選擇一個預設頭像</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>點擊選擇一個預設頭像</div>
           
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', backgroundColor: '#F0F4F8', padding: '4px', borderRadius: '99px', width: '100%' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', backgroundColor: 'var(--bg-base)', padding: '4px', borderRadius: '6px', width: '100%', border: '1px solid var(--border-light)' }}>
             <button 
               onClick={() => setActiveGroup('mbti')}
               type="button"
               style={{
-                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: activeGroup === 'mbti' ? '#FFFFFF' : 'transparent',
-                color: activeGroup === 'mbti' ? '#2A527A' : '#87ACCA',
-                boxShadow: activeGroup === 'mbti' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: activeGroup === 'mbti' ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'mbti' ? 'var(--bg-surface)' : 'transparent',
+                color: activeGroup === 'mbti' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}>16 型人格</button>
             <button 
               onClick={() => setActiveGroup('rings')}
               type="button"
               style={{
-                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: activeGroup === 'rings' ? '#FFFFFF' : 'transparent',
-                color: activeGroup === 'rings' ? '#2A527A' : '#87ACCA',
-                boxShadow: activeGroup === 'rings' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: activeGroup === 'rings' ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'rings' ? 'var(--bg-surface)' : 'transparent',
+                color: activeGroup === 'rings' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}>純粹光環</button>
             <button 
               onClick={() => setActiveGroup('notion')}
               type="button"
               style={{
-                flex: 1, padding: '8px 0', border: 'none', borderRadius: '99px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: activeGroup === 'notion' ? '#FFFFFF' : 'transparent',
-                color: activeGroup === 'notion' ? '#2A527A' : '#87ACCA',
-                boxShadow: activeGroup === 'notion' ? '0 2px 8px rgba(42,82,122,0.08)' : 'none'
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: activeGroup === 'notion' ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'notion' ? 'var(--bg-surface)' : 'transparent',
+                color: activeGroup === 'notion' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}>手繪線條</button>
           </div>
 
@@ -292,14 +289,13 @@ export default function SettingsPage() {
                   width: '60px',
                   height: '60px',
                   borderRadius: '12px',
-                  border: avatarUrl === svg ? '2px solid #6B99C3' : '2px solid transparent',
+                  border: avatarUrl === svg ? '2px solid var(--brand-blue)' : '2px solid transparent',
                   backgroundImage: `url("${svg}")`,
                   backgroundSize: 'contain',
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   cursor: 'pointer',
                   padding: 0,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                   transition: 'transform 0.1s',
                 }}
                 onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
@@ -311,46 +307,46 @@ export default function SettingsPage() {
         </section>
 
         {/* Inputs Section */}
-        <section style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0 20px', boxShadow: '0 2px 12px rgba(42,82,122,0.04)' }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0', alignItems: 'center' }}>
-            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA' }}>暱稱</div>
+        <section style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0 20px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', padding: '16px 0', alignItems: 'center' }}>
+            <div style={{ width: '80px', fontSize: '15px', color: 'var(--text-secondary)' }}>暱稱</div>
             <input 
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="輸入你的暱稱"
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent' }}
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent' }}
             />
           </div>
 
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0', alignItems: 'center' }}>
-            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA' }}>審美號</div>
-            <div style={{ color: '#2A527A', fontSize: '15px', marginRight: '4px' }}>@</div>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', padding: '16px 0', alignItems: 'center' }}>
+            <div style={{ width: '80px', fontSize: '15px', color: 'var(--text-secondary)' }}>審美號</div>
+            <div style={{ color: 'var(--text-primary)', fontSize: '15px', marginRight: '4px' }}>@</div>
             <input 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="3~32位英數组合"
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent' }}
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent' }}
             />
           </div>
 
           <div style={{ display: 'flex', padding: '16px 0', alignItems: 'flex-start' }}>
-            <div style={{ width: '80px', fontSize: '15px', color: '#87ACCA', paddingTop: '2px' }}>簡介</div>
+            <div style={{ width: '80px', fontSize: '15px', color: 'var(--text-secondary)', paddingTop: '2px' }}>簡介</div>
             <textarea 
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="介紹一下你自己，或是你的審美偏好..."
               rows={3}
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#2A527A', background: 'transparent', resize: 'none', fontFamily: 'inherit' }}
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent', resize: 'none', fontFamily: 'inherit' }}
             />
           </div>
 
-          <div style={{ borderTop: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0' }}>
-            <div style={{ color: '#87ACCA', fontSize: '15px', marginBottom: '10px' }}>審美標籤</div>
+          <div style={{ borderTop: '1px solid var(--border-light)', padding: '16px 0' }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '10px' }}>審美標籤</div>
             <input
               value={tagInput}
               onChange={(event) => setTagInput(event.target.value)}
               placeholder="例如：電影、音樂、攝影"
-              style={{ background: 'transparent', border: 'none', boxSizing: 'border-box', color: '#2A527A', fontSize: '15px', outline: 'none', width: '100%' }}
+              style={{ background: 'transparent', border: 'none', boxSizing: 'border-box', color: 'var(--text-primary)', fontSize: '15px', outline: 'none', width: '100%' }}
             />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
               {TAG_SUGGESTIONS.map((tag) => {
@@ -368,13 +364,14 @@ export default function SettingsPage() {
                       setTagInput([...new Set(nextTags)].join('、'));
                     }}
                     style={{
-                      backgroundColor: isSelected ? '#D9E4F5' : '#F0F4F8',
-                      border: isSelected ? '1px solid #87ACCA' : '1px solid transparent',
-                      borderRadius: '999px',
-                      color: isSelected ? '#2A527A' : '#6B99C3',
+                      backgroundColor: isSelected ? 'var(--brand-blue-light)' : 'var(--bg-base)',
+                      border: isSelected ? '1px solid var(--brand-blue)' : '1px solid var(--border-light)',
+                      borderRadius: '4px',
+                      color: isSelected ? 'var(--brand-blue)' : 'var(--text-secondary)',
                       cursor: 'pointer',
                       fontSize: '12px',
-                      padding: '6px 10px',
+                      padding: '6px 12px',
+                      transition: 'all 0.2s',
                     }}
                   >
                     {tag}
@@ -384,8 +381,8 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid rgba(194, 214, 230, 0.4)', padding: '16px 0 4px' }}>
-            <div style={{ color: '#87ACCA', fontSize: '15px', marginBottom: '10px' }}>私訊權限</div>
+          <div style={{ borderTop: '1px solid var(--border-light)', padding: '16px 0 4px' }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '10px' }}>私訊權限</div>
             <div style={{ display: 'grid', gap: '8px' }}>
               {MESSAGE_PERMISSION_OPTIONS.map((option) => {
                 const isSelected = messagePermission === option.value;
@@ -397,22 +394,23 @@ export default function SettingsPage() {
                     onClick={() => setMessagePermission(option.value)}
                     style={{
                       alignItems: 'center',
-                      backgroundColor: isSelected ? '#F0F4F8' : 'transparent',
-                      border: isSelected ? '1px solid #C2D6E6' : '1px solid transparent',
-                      borderRadius: '12px',
-                      color: '#2A527A',
+                      backgroundColor: isSelected ? 'var(--bg-base)' : 'transparent',
+                      border: isSelected ? '1px solid var(--brand-blue)' : '1px solid transparent',
+                      borderRadius: '6px',
+                      color: 'var(--text-primary)',
                       cursor: 'pointer',
                       display: 'flex',
                       justifyContent: 'space-between',
                       padding: '10px 12px',
                       textAlign: 'left',
+                      transition: 'all 0.2s',
                     }}
                   >
                     <span>
                       <strong style={{ fontSize: '13px' }}>{option.label}</strong>
-                      <span style={{ color: '#87ACCA', display: 'block', fontSize: '12px', marginTop: '3px' }}>{option.description}</span>
+                      <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '12px', marginTop: '3px' }}>{option.description}</span>
                     </span>
-                    <span style={{ color: isSelected ? '#2A527A' : '#C2D6E6', fontSize: '18px' }}>{isSelected ? '✓' : '○'}</span>
+                    <span style={{ color: isSelected ? 'var(--brand-blue)' : 'var(--text-tertiary)', fontSize: '18px' }}>{isSelected ? '✓' : '○'}</span>
                   </button>
                 );
               })}
@@ -424,11 +422,12 @@ export default function SettingsPage() {
           <div style={{ 
             marginTop: '20px', 
             padding: '12px 16px', 
-            borderRadius: '12px',
-            fontSize: '14px',
-            backgroundColor: messageType === 'success' ? '#F0FFF0' : '#FFF7F4',
-            color: messageType === 'success' ? '#2A7A42' : '#9F5E4C',
-            border: `1px solid ${messageType === 'success' ? '#A8E6CF' : '#F4D8CD'}`,
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: '500',
+            backgroundColor: 'var(--bg-surface)',
+            color: messageType === 'success' ? 'var(--brand-blue)' : '#FF4D4F',
+            border: `1px solid var(--border-light)`,
             textAlign: 'center'
           }}>
             {message}
@@ -441,12 +440,15 @@ export default function SettingsPage() {
             style={{ 
               background: 'transparent', 
               border: 'none', 
-              color: '#9F5E4C', 
-              fontSize: '15px', 
+              color: '#FF4D4F', 
+              fontSize: '14px', 
               cursor: 'pointer',
-              fontWeight: 600,
-              padding: '10px 20px'
+              fontWeight: 500,
+              padding: '10px 20px',
+              transition: 'opacity 0.2s'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = 0.8}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = 1}
           >
             登出當前帳號
           </button>
