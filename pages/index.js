@@ -293,7 +293,7 @@ export default function Home() {
     // 主背景：略帶冷灰的基礎色
     <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
       <Head>
-        <title>審美者 · AESTHETE</title>
+        <title>採樣器 • 審美者</title>
       </Head>
 
       {/* 顶部导航栏 */}
