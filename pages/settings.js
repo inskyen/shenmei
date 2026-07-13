@@ -86,13 +86,6 @@ export default function SettingsPage() {
     setMessage('');
     setMessageType('error');
 
-    // Frontend validation
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername.match(/^[a-zA-Z0-9_]{3,32}$/)) {
-      setMessage('審美號必須是 3~32 位的英文字母、數字或底線 ( _ )。');
-      return;
-    }
-    
     if (displayName.trim().length === 0) {
       setMessage('暱稱不能為空。');
       return;
@@ -121,7 +114,6 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: trimmedUsername,
           display_name: displayName.trim(),
           avatar_url: avatarUrl,
           bio: bio.trim(),
@@ -132,17 +124,14 @@ export default function SettingsPage() {
         .eq('id', user.id);
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
-          throw new Error(`這個審美號 (@${trimmedUsername}) 已經被註冊了，換一個試試吧！`);
-        }
         throw error;
       }
 
       setMessageType('success');
       setMessage('資料更新成功！即將回到個人主页...');
-      cacheProfileRoute(user.id, trimmedUsername);
+      cacheProfileRoute(user.id, username);
       setTimeout(() => {
-        router.push(`/u/${trimmedUsername}`);
+        router.push(`/u/${username}`);
       }, 1500);
 
     } catch (error) {
@@ -320,13 +309,8 @@ export default function SettingsPage() {
 
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', padding: '16px 0', alignItems: 'center' }}>
             <div style={{ width: '80px', fontSize: '15px', color: 'var(--text-secondary)' }}>審美號</div>
-            <div style={{ color: 'var(--text-primary)', fontSize: '15px', marginRight: '4px' }}>@</div>
-            <input 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="3~32位英數组合"
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent' }}
-            />
+            <div style={{ color: 'var(--text-primary)', fontSize: '15px', marginRight: '4px' }}>@{username}</div>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginLeft: 'auto' }}>暫不支援修改</div>
           </div>
 
           <div style={{ display: 'flex', padding: '16px 0', alignItems: 'flex-start' }}>

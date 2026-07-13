@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
+import AestheteBadge from '@/components/AestheteBadge';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { supabase } from '@/lib/supabase/client';
 
@@ -59,6 +60,8 @@ export default function SearchPage() {
   const router = useRouter();
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState([]);
+  const [userResults, setUserResults] = useState([]);
+  const [activeTab, setActiveTab] = useState('videos');
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -89,7 +92,8 @@ export default function SearchPage() {
     if (!query) {
       setResults([]);
       setSearched(false);
-      setMessage('請輸入影片標題、UP 主或 BVID。');
+      setUserResults([]);
+      setMessage('請輸入影片、UP 主、BVID 或審美號。');
       return;
     }
 
@@ -98,18 +102,27 @@ export default function SearchPage() {
 
     try {
       const pattern = `%${query}%`;
-      const { data, error } = await supabase
+      const videoRequest = supabase
         .from('videos')
         .select('id, bvid, external_id, title, cover, cover_url, up_name, author_name')
         .or(`title.ilike.${pattern},author_name.ilike.${pattern},up_name.ilike.${pattern},external_id.ilike.${pattern},bvid.ilike.${pattern}`)
         .order('created_at', { ascending: false })
         .limit(24);
 
-      if (error) {
-        throw error;
-      }
+      const userRequest = supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, bio, role')
+        .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+        .order('created_at', { ascending: false })
+        .limit(24);
 
-      setResults((data || []).map(normalizeVideo));
+      const [videoResult, profileResult] = await Promise.all([videoRequest, userRequest]);
+
+      if (videoResult.error) throw videoResult.error;
+      if (profileResult.error) throw profileResult.error;
+
+      setResults((videoResult.data || []).map(normalizeVideo));
+      setUserResults(profileResult.data || []);
     } catch (error) {
       console.error('搜尋影片失敗:', error);
       setMessage('搜尋暫時失敗，請稍後再試。');
@@ -172,10 +185,10 @@ export default function SearchPage() {
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '22px 16px 104px' }}>
         <section style={{ marginBottom: '18px' }}>
           <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>
-            探索影片
+            探索
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
-            搜尋已收錄影片，進入影片主頁，或直接把它推薦到大廳。
+            搜尋已收錄影片，或用審美號找到一位策展人。
           </p>
         </section>
 
@@ -183,7 +196,7 @@ export default function SearchPage() {
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜尋影片標題、UP 主、BVID"
+            placeholder="搜尋影片、UP 主、BVID 或審美號"
             style={inputStyle}
           />
 
@@ -206,6 +219,13 @@ export default function SearchPage() {
           </button>
         </form>
 
+        {searched && !loading && (
+          <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', display: 'flex', marginTop: '14px', padding: '3px' }}>
+            <button type="button" onClick={() => setActiveTab('videos')} style={{ backgroundColor: activeTab === 'videos' ? 'var(--brand-blue-light)' : 'transparent', border: 'none', borderRadius: '4px', color: activeTab === 'videos' ? 'var(--brand-blue)' : 'var(--text-secondary)', cursor: 'pointer', flex: 1, fontSize: '13px', fontWeight: 600, padding: '8px 10px' }}>影片 {results.length}</button>
+            <button type="button" onClick={() => setActiveTab('users')} style={{ backgroundColor: activeTab === 'users' ? 'var(--brand-blue-light)' : 'transparent', border: 'none', borderRadius: '4px', color: activeTab === 'users' ? 'var(--brand-blue)' : 'var(--text-secondary)', cursor: 'pointer', flex: 1, fontSize: '13px', fontWeight: 600, padding: '8px 10px' }}>使用者 {userResults.length}</button>
+          </div>
+        )}
+
         {message && (
           <section style={{
             ...cardStyle,
@@ -221,7 +241,7 @@ export default function SearchPage() {
           </section>
         )}
 
-        {!loading && searched && results.length === 0 && !message && (
+        {!loading && searched && activeTab === 'videos' && results.length === 0 && !message && (
           <section style={{ ...cardStyle, color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.8, marginTop: '14px', padding: '24px 18px', textAlign: 'center' }}>
             站內還沒有收錄這支影片。
             <div style={{ marginTop: '14px' }}>
@@ -246,7 +266,7 @@ export default function SearchPage() {
           </section>
         )}
 
-        {results.length > 0 && (
+        {activeTab === 'videos' && results.length > 0 && (
           <section style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
             {results.map((video) => (
               <article key={video.id} style={{ ...cardStyle, overflow: 'hidden' }}>
@@ -324,6 +344,41 @@ export default function SearchPage() {
                 </div>
               </article>
             ))}
+          </section>
+        )}
+
+        {!loading && searched && activeTab === 'users' && userResults.length === 0 && !message && (
+          <section style={{ ...cardStyle, color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.8, marginTop: '14px', padding: '24px 18px', textAlign: 'center' }}>
+            沒有找到這位策展人。請確認審美號或名稱。
+          </section>
+        )}
+
+        {activeTab === 'users' && userResults.length > 0 && (
+          <section style={{ display: 'grid', gap: '10px', marginTop: '16px' }}>
+            {userResults.map((profile) => {
+              const displayName = profile.display_name || profile.username || '策展人';
+
+              return (
+                <button
+                  key={profile.id}
+                  type="button"
+                  onClick={() => router.push(`/u/${profile.username}`)}
+                  style={{ ...cardStyle, alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '12px', padding: '13px', textAlign: 'left', width: '100%' }}
+                >
+                  <span style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: profile.avatar_url ? `url(${profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', border: '1px solid var(--border-light)', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flex: '0 0 auto', fontSize: '16px', fontWeight: 600, height: '46px', justifyContent: 'center', overflow: 'hidden', width: '46px' }}>
+                    {!profile.avatar_url && displayName.charAt(0).toUpperCase()}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ alignItems: 'center', color: 'var(--text-primary)', display: 'flex', fontSize: '15px', fontWeight: 600, gap: '7px', minWidth: 0 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+                      <AestheteBadge role={profile.role} />
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '12px', marginTop: '4px' }}>審美號：{profile.username}</span>
+                    {profile.bio && <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '12px', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.bio}</span>}
+                  </span>
+                </button>
+              );
+            })}
           </section>
         )}
       </main>
