@@ -19,7 +19,8 @@ export default async function handler(req, res) {
           id,
           username,
           display_name,
-          avatar_url
+          avatar_url,
+          role
         ),
         videos (
           id,
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
         profile_username: profile.username || null,
         profile_id: profile.id || null,
         profile_avatar_url: profile.avatar_url || null,
+        profile_role: profile.role || 'member',
         created_at: post.created_at,
         fav_time: video.fav_time,
         play_count: post.like_count,

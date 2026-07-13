@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
+import AestheteBadge from '@/components/AestheteBadge';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { supabase } from '@/lib/supabase/client';
@@ -55,7 +56,7 @@ export default function UserPage() {
 
           const { data: myProfile, error: myProfileError } = await supabase
             .from('profiles')
-            .select('username')
+            .select('username, role')
             .eq('id', user.id)
             .maybeSingle();
 
@@ -79,7 +80,7 @@ export default function UserPage() {
         // Fetch target profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, display_name, avatar_url, bio, aesthetic_tags')
+          .select('id, username, display_name, avatar_url, bio, aesthetic_tags, role')
           .eq('username', targetUsername)
           .maybeSingle();
 
@@ -359,9 +360,12 @@ export default function UserPage() {
 
           {/* Info */}
           <div style={{ marginBottom: '16px' }}>
-            <h1 style={{ fontSize: '20px', fontWeight: 600, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
-              {displayName}
-            </h1>
+            <div style={{ alignItems: 'center', display: 'flex', gap: '7px', marginBottom: '4px' }}>
+              <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, margin: 0 }}>
+                {displayName}
+              </h1>
+              <AestheteBadge role={profile.role} />
+            </div>
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
               審美號：{profile.username}
             </div>

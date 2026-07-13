@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
+import AestheteBadge from '@/components/AestheteBadge';
+import { requireLogin } from '@/lib/auth/requireLogin';
+import { canCurateInModules, loadProfileRole } from '@/lib/auth/roles';
 import { getCachedModulePage, prefetchModulePage } from '@/lib/cache/modulePageCache';
+import { showToast } from '@/lib/ui/toast';
 
 const pageStyle = {
   backgroundColor: 'var(--bg-base)',
@@ -48,6 +52,7 @@ function ModulePostCard({ post, profile, router }) {
           </span>
           <span style={{ alignItems: 'center', display: 'flex', gap: '6px', minWidth: 0 }}>
             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+            <AestheteBadge role={profile?.role} />
             <span style={{ color: 'var(--text-tertiary)', flex: '0 0 auto', fontSize: '11px' }}>· {formatDate(post.created_at)}</span>
           </span>
         </span>
@@ -138,6 +143,34 @@ export default function ModuleDetailPage() {
     loadModulePage();
   }, [slug]);
 
+  const goToModuleSubmit = async () => {
+    if (module?.status === 'archived') {
+      showToast('這座小館已關閉，現在只保留歷史內容。');
+      return;
+    }
+
+    const user = await requireLogin({
+      router,
+      nextPath: `/m/${slug}`,
+      message: '請先登入，才能投遞小館。',
+    });
+
+    if (!user) return;
+
+    try {
+      const role = await loadProfileRole(user.id);
+      if (!canCurateInModules(role)) {
+        showToast('成為審美者後，即可投遞至小館。');
+        return;
+      }
+
+      router.push(`/submit?module=${slug}`);
+    } catch (error) {
+      console.error('讀取小館投遞權限失敗:', error);
+      showToast('目前無法確認投遞權限，請稍後再試。');
+    }
+  };
+
   return (
     <div style={pageStyle}>
       <Head>
@@ -147,7 +180,7 @@ export default function ModuleDetailPage() {
       <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'sticky', top: 0, zIndex: 10 }}>
         <button type="button" onClick={() => router.push('/m')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 小館</button>
         <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>{module?.name || '小館'}</div>
-        <button type="button" onClick={() => router.push(`/submit?module=${slug}`)} style={{ backgroundColor: 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: '6px 14px' }}>投稿</button>
+        {module?.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ backgroundColor: 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: '6px 14px' }}>投遞</button>}
       </header>
 
       <main style={{ margin: '0 auto', maxWidth: '600px', padding: '18px 0 104px' }}>
@@ -163,11 +196,12 @@ export default function ModuleDetailPage() {
               <div style={{ backgroundColor: 'var(--bg-base)', borderLeft: '3px solid var(--brand-blue)', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginTop: '14px', padding: '9px 11px', borderRadius: '4px' }}>
                 館規：{module.rule_text || '這座小館的收錄規則正在整理中。'}
               </div>
+              {module.status === 'archived' && <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '10px' }}>這座小館已關閉，僅保留歷史內容。</div>}
             </section>
 
             <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', padding: '18px 16px 10px' }}>
               <h2 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600, margin: 0 }}>最新策展</h2>
-              <button type="button" onClick={() => router.push(`/submit?module=${module.slug}`)} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>投遞到此小館</button>
+              {module.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>投遞到此小館</button>}
             </div>
 
             {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這座小館還沒有策展。等第一束光被放進來。</div>}

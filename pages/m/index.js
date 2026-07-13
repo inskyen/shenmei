@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
+import { loadProfileRole, USER_ROLES } from '@/lib/auth/roles';
 import { getCachedModules, prefetchModulePage, prefetchModules } from '@/lib/cache/modulePageCache';
+import { supabase } from '@/lib/supabase/client';
+import { showToast } from '@/lib/ui/toast';
 
 // Deterministic gradient palette based on slug hash
 const GRADIENT_PALETTES = [
@@ -48,6 +51,12 @@ export default function ModulesPage() {
   const [modules, setModules] = useState(() => getCachedModules() || []);
   const [loading, setLoading] = useState(() => !getCachedModules());
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creatingModule, setCreatingModule] = useState(false);
+  const [moduleName, setModuleName] = useState('');
+  const [moduleDescription, setModuleDescription] = useState('');
+  const [moduleRuleText, setModuleRuleText] = useState('');
 
   useEffect(() => {
     async function loadModules() {
@@ -65,10 +74,91 @@ export default function ModulesPage() {
     loadModules();
   }, []);
 
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadAdminState() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const role = await loadProfileRole(session?.user?.id);
+        if (isActive) setIsSuperAdmin(role === USER_ROLES.SUPER_ADMIN);
+      } catch (error) {
+        console.warn('讀取小館管理權限失敗:', error);
+      }
+    }
+
+    loadAdminState();
+    return () => { isActive = false; };
+  }, []);
+
   const openModule = (module) => {
     router.prefetch(`/m/${module.slug}`);
     prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error));
     router.push(`/m/${module.slug}`);
+  };
+
+  const createModule = async (event) => {
+    event.preventDefault();
+    const name = moduleName.trim();
+
+    if (!name) {
+      showToast('請先填寫小館名稱。');
+      return;
+    }
+
+    setCreatingModule(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('請先登入超管帳號。');
+
+      const generatedSlug = `module-${Date.now().toString(36)}`;
+      const { error } = await supabase
+        .from('modules')
+        .insert({
+          name,
+          slug: generatedSlug,
+          description: moduleDescription.trim() || null,
+          rule_text: moduleRuleText.trim(),
+          owner_id: session.user.id,
+          status: 'active',
+        });
+
+      if (error) throw error;
+
+      const nextModules = await prefetchModules({ force: true });
+      setModules(nextModules);
+      setModuleName('');
+      setModuleDescription('');
+      setModuleRuleText('');
+      setShowCreateForm(false);
+      showToast('小館已建立。', 'success');
+    } catch (error) {
+      console.error('建立小館失敗:', error);
+      showToast(error.message || '建立小館失敗，請稍後再試。');
+    } finally {
+      setCreatingModule(false);
+    }
+  };
+
+  const archiveModule = async (module) => {
+    if (!window.confirm(`確定要關閉「${module.name}」嗎？\n舊內容會保留，但之後不能再投遞。`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('modules')
+        .update({ status: 'archived' })
+        .eq('id', module.id);
+
+      if (error) throw error;
+
+      const nextModules = await prefetchModules({ force: true });
+      setModules(nextModules);
+      showToast('小館已關閉，歷史內容仍可保留瀏覽。', 'success');
+    } catch (error) {
+      console.error('關閉小館失敗:', error);
+      showToast(error.message || '關閉小館失敗，請稍後再試。');
+    }
   };
 
   return (
@@ -138,7 +228,18 @@ export default function ModulesPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
             每座小館都有自己的收錄規則；你可以自由走進來，看看這裡正在留下什麼。
           </p>
+          {isSuperAdmin && <button type="button" onClick={() => setShowCreateForm((visible) => !visible)} style={{ background: 'transparent', border: '1px solid var(--brand-blue)', borderRadius: '6px', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, marginTop: '14px', padding: '7px 11px' }}>{showCreateForm ? '收起建立表單' : '+ 建立小館'}</button>}
         </section>
+
+        {isSuperAdmin && showCreateForm && (
+          <form onSubmit={createModule} style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '8px', display: 'grid', gap: '12px', marginBottom: '20px', padding: '16px' }}>
+            <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>建立小館</div>
+            <input value={moduleName} onChange={(event) => setModuleName(event.target.value)} maxLength={40} placeholder="小館名稱，例如：2022 小館" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
+            <input value={moduleDescription} onChange={(event) => setModuleDescription(event.target.value)} maxLength={120} placeholder="一句小館簡介（選填）" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
+            <textarea value={moduleRuleText} onChange={(event) => setModuleRuleText(event.target.value)} maxLength={300} placeholder="收錄規則（選填）" rows={3} style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', lineHeight: 1.5, outline: 'none', padding: '10px 11px', resize: 'vertical' }} />
+            <button type="submit" disabled={creatingModule} style={{ backgroundColor: creatingModule ? 'var(--border-light)' : 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: creatingModule ? 'wait' : 'pointer', fontSize: '14px', fontWeight: 600, padding: '10px 14px' }}>{creatingModule ? '建立中...' : '建立小館'}</button>
+          </form>
+        )}
 
         {/* Loading skeleton */}
         {loading && (
@@ -267,6 +368,20 @@ export default function ModulesPage() {
                 </button>
               );
             })}
+          </section>
+        )}
+
+        {isSuperAdmin && !loading && modules.length > 0 && (
+          <section style={{ borderTop: '1px solid var(--border-light)', marginTop: '28px', paddingTop: '18px' }}>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, margin: '0 0 10px' }}>小館管理</h2>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {modules.map((module) => (
+                <div key={module.id} style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', display: 'flex', gap: '12px', justifyContent: 'space-between', padding: '10px 12px' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{module.name}</span>
+                  <button type="button" onClick={() => archiveModule(module)} style={{ background: 'transparent', border: 'none', color: '#B85B6B', cursor: 'pointer', flex: '0 0 auto', fontSize: '12px', padding: '3px 0' }}>關閉</button>
+                </div>
+              ))}
+            </div>
           </section>
         )}
       </main>

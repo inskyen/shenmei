@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { canCurateInModules, loadProfileRole, USER_ROLES } from '@/lib/auth/roles';
 import { prefetchModulePage } from '@/lib/cache/modulePageCache';
 import { supabase } from '@/lib/supabase/client';
 
@@ -32,6 +33,8 @@ export default function SubmitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [modulesLoading, setModulesLoading] = useState(true);
+  const [currentRole, setCurrentRole] = useState(USER_ROLES.MEMBER);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [publishComplete, setPublishComplete] = useState(false);
 
   const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
@@ -41,6 +44,7 @@ export default function SubmitPage() {
   const videoTitleValue = videoTitle ?? prefilledTitle;
   const forcedModule = modules.find((module) => module.slug === forcedModuleSlug) || null;
   const effectiveSelectedModuleIds = forcedModule ? [forcedModule.id] : selectedModuleIds;
+  const canChooseModule = canCurateInModules(currentRole);
 
   const handleSourceChange = (event) => {
     setSourceInput(event.target.value);
@@ -115,6 +119,25 @@ export default function SubmitPage() {
     }
 
     loadModules();
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadCurrentRole() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const role = await loadProfileRole(session?.user?.id);
+        if (isActive) setCurrentRole(role);
+      } catch (error) {
+        console.warn('讀取採樣權限失敗，暫以普通使用者處理:', error);
+      } finally {
+        if (isActive) setRoleLoading(false);
+      }
+    }
+
+    loadCurrentRole();
+    return () => { isActive = false; };
   }, []);
 
   const toggleModule = (moduleId) => {
@@ -217,6 +240,14 @@ export default function SubmitPage() {
 
       if (!user) return;
       await ensureProfile(user);
+
+      const latestRole = await loadProfileRole(user.id);
+      setCurrentRole(latestRole);
+
+      if (effectiveSelectedModuleIds.length > 0 && !canCurateInModules(latestRole)) {
+        setMessage('只有審美者可以投遞至小館；這次採樣可發佈到大廳。');
+        return;
+      }
 
       let video = await findExistingVideo(bvid);
       if (!video) {
@@ -440,9 +471,15 @@ export default function SubmitPage() {
          )}
 
          {/* Tags / Rooms */}
-         {(modulesLoading || modules.length > 0) && (
+         {(modulesLoading || roleLoading || modules.length > 0) && (
            <div style={{ marginTop: '32px' }}>
-             {forcedModuleSlug ? (
+             {roleLoading ? (
+               <div className="app-detail-skeleton" style={{ borderRadius: '6px', height: '58px', width: '100%' }} />
+             ) : forcedModuleSlug && !canChooseModule ? (
+               <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
+                 這座小館開放給審美者投遞；你仍可將這次採樣發佈到大廳。
+               </div>
+             ) : forcedModuleSlug ? (
                <>
                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>本次投遞</div>
                  <div style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
@@ -450,6 +487,10 @@ export default function SubmitPage() {
                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>已鎖定</span>
                  </div>
                </>
+             ) : !canChooseModule ? (
+               <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
+                 本次採樣會發佈至大廳。成為審美者後，即可選擇投遞到小館。
+               </div>
              ) : (
                <>
                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>

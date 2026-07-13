@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
+import AestheteBadge from '@/components/AestheteBadge';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
 import { cachePostPreview } from '@/lib/cache/postDetailCache';
@@ -75,7 +76,7 @@ export default function Home() {
         // 頭像與 username 都準備好後才結束載入，避免預設圖短暫閃過。
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, username, display_name, avatar_url, bio, aesthetic_tags')
+          .select('id, username, display_name, avatar_url, bio, aesthetic_tags, role')
           .eq('id', user.id)
           .single();
 
@@ -405,6 +406,7 @@ export default function Home() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
+                      <AestheteBadge role={video.profile_role} />
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· INFP</span>
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· {formatDate(video.fav_time || video.created_at)}</span>
                     </div>
