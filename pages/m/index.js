@@ -125,7 +125,7 @@ export default function ModulesPage() {
             padding: '6px 14px',
           }}
         >
-          發佈
+          採樣
         </button>
       </header>
 

@@ -68,7 +68,7 @@ export default function SearchPage() {
       const user = await requireLogin({
         router,
         nextPath: path,
-        message: '請先登入，才能發佈策展。',
+        message: '請先登入，才能採樣。',
       });
 
       if (user) {
@@ -165,7 +165,7 @@ export default function SearchPage() {
             padding: '6px 14px',
           }}
         >
-          發佈
+          採樣
         </button>
       </header>
 
@@ -240,7 +240,7 @@ export default function SearchPage() {
                   transition: 'all 0.2s',
                 }}
               >
-                用 BVID 發佈
+                用 BVID 採樣
               </button>
             </div>
           </section>

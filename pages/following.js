@@ -128,7 +128,7 @@ export default function FollowingPage() {
 
           {posts.length === 0 && (
             <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '24px 8px', textAlign: 'center' }}>
-              你關注的策展人最近還沒有發布新動態。
+              你關注的策展人最近還沒有新的採樣。
             </div>
           )}
 

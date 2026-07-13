@@ -86,6 +86,10 @@ export default function AppBottomNav({ active }) {
     justifyContent: 'center',
     flex: 1,
     height: '100%',
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
   });
 
   return (
@@ -101,18 +105,22 @@ export default function AppBottomNav({ active }) {
       maxWidth: 'none', 
       padding: '4px 8px 16px', 
       position: 'fixed', 
+      touchAction: 'manipulation',
+      userSelect: 'none',
+      WebkitTouchCallout: 'none',
+      WebkitUserSelect: 'none',
       width: '100%', 
       zIndex: 100 
     }}>
       <div onClick={goToHome} style={itemStyle('home')}>
         <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10.5z" /></svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400' }}>採樣</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400' }}>發現</span>
       </div>
       <div onClick={goToModules} style={itemStyle('modules')}>
         <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M4 5.5A1.5 1.5 0 015.5 4H10v7H4V5.5zM14 4h4.5A1.5 1.5 0 0120 5.5V11h-6V4zM4 15h6v5H5.5A1.5 1.5 0 014 18.5V15zM14 15h6v3.5a1.5 1.5 0 01-1.5 1.5H14v-5z" /></svg>
         <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400' }}>小館</span>
       </div>
-      <div onClick={() => goToProtectedPage('/submit', '請先登入，才能發佈策展。')} style={itemStyle('submit')}>
+      <div onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} style={itemStyle('submit')}>
         <div style={{ 
           alignItems: 'center', 
           backgroundColor: 'var(--brand-blue)', 
@@ -126,7 +134,7 @@ export default function AppBottomNav({ active }) {
         }}>
           <svg style={{ height: '16px', width: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
         </div>
-        <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400' }}>發布</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400' }}>採樣</span>
       </div>
       <div onClick={goToMessages} style={itemStyle('messages')}>
         <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>

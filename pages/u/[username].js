@@ -301,7 +301,7 @@ export default function UserPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  發佈策展
+                  採樣
                 </button>
                 <button
                   onClick={() => router.push('/settings')}

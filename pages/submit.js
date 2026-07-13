@@ -212,7 +212,7 @@ export default function SubmitPage() {
       const user = await requireLogin({
         router,
         nextPath: router.asPath,
-        message: '請先登入，才能發佈策展。',
+        message: '請先登入，才能採樣。',
       });
 
       if (!user) return;
@@ -261,8 +261,8 @@ export default function SubmitPage() {
         router.push(forcedModule ? `/m/${forcedModule.slug}` : '/');
       }, 520);
     } catch (error) {
-      console.error('發布策展失敗:', error);
-      setMessage(error.message || '發佈失敗，請稍後再試。');
+      console.error('採樣失敗:', error);
+      setMessage(error.message || '採樣失敗，請稍後再試。');
     } finally {
       setSubmitting(false);
     }
@@ -290,7 +290,7 @@ export default function SubmitPage() {
       flexDirection: 'column',
     }}>
       <Head>
-        <title>發佈策展 · 審美者</title>
+        <title>採樣 · 審美者</title>
       </Head>
 
       {/* App Header */}
@@ -307,7 +307,7 @@ export default function SubmitPage() {
          <button onClick={goBack} style={{ border: 'none', background: 'none', fontSize: '26px', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             ×
          </button>
-         <div style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>發佈策展</div>
+         <div style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>採樣</div>
          <button 
            onClick={handleSubmit} 
            disabled={!canPublish}
@@ -323,7 +323,7 @@ export default function SubmitPage() {
              transition: 'all 0.2s'
            }}
          >
-           {submitting ? '發佈中...' : '發佈'}
+           {submitting ? '採樣中...' : '採樣'}
          </button>
       </header>
 

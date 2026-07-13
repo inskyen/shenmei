@@ -202,7 +202,7 @@ export default function PostPage() {
       const user = await requireLogin({
         router,
         nextPath: '/submit',
-        message: '請先登入，才能發佈策展。',
+        message: '請先登入，才能採樣。',
       });
 
       if (user) {
@@ -400,7 +400,7 @@ export default function PostPage() {
               padding: '6px 16px',
             }}
           >
-            發佈
+            採樣
           </button>
         </div>
       </header>
