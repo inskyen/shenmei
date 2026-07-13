@@ -113,7 +113,7 @@ export default function SearchPage() {
         .from('profiles')
         .select('id, username, display_name, avatar_url, bio, role')
         .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(24);
 
       const [videoResult, profileResult] = await Promise.all([videoRequest, userRequest]);

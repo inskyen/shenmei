@@ -1,15 +1,70 @@
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCurrentUser, requireLogin } from '@/lib/auth/requireLogin';
 import { getCachedProfilePath } from '@/lib/auth/profileRoute';
 import { prefetchModules } from '@/lib/cache/modulePageCache';
 import { prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 import { prefetchFollowingFeed } from '@/lib/cache/followingFeedCache';
+import { supabase } from '@/lib/supabase/client';
 
 const activeColor = 'var(--brand-blue)';
 const inactiveColor = 'var(--text-secondary)';
 
 export default function AppBottomNav({ active }) {
   const router = useRouter();
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+    let currentUserId = '';
+
+    const refreshUnreadMessages = async () => {
+      try {
+        const user = await getCurrentUser();
+
+        if (!user) {
+          if (isActive) setHasUnreadMessages(false);
+          return;
+        }
+
+        currentUserId = user.id;
+        const { count, error } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .is('read_at', null);
+
+        if (error) throw error;
+        if (isActive) setHasUnreadMessages((count || 0) > 0);
+      } catch (error) {
+        // 未讀提示失敗不應阻斷底部導航本身的使用。
+        console.error('讀取私訊未讀狀態失敗:', error);
+      }
+    };
+
+    refreshUnreadMessages();
+
+    // INSERT 收到新訊息、UPDATE 標為已讀後，都重新核對一次未讀狀態。
+    const channel = supabase
+      .channel('bottom-nav-unread-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+        const message = payload.new || payload.old;
+        if (currentUserId && (message?.receiver_id === currentUserId || message?.sender_id === currentUserId)) {
+          refreshUnreadMessages();
+        }
+      })
+      .subscribe();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      refreshUnreadMessages();
+    });
+
+    return () => {
+      isActive = false;
+      supabase.removeChannel(channel);
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const goToProtectedPage = async (path, message) => {
     const user = await requireLogin({ router, nextPath: path, message });
@@ -137,7 +192,24 @@ export default function AppBottomNav({ active }) {
         <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400' }}>採樣</span>
       </div>
       <div onClick={goToMessages} style={itemStyle('messages')}>
-        <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        <span style={{ display: 'inline-flex', marginBottom: '3px', position: 'relative' }}>
+          <svg style={{ height: '22px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          {hasUnreadMessages && (
+            <span
+              aria-label="有未讀私訊"
+              style={{
+                backgroundColor: '#FF4D4F',
+                border: '2px solid var(--bg-surface)',
+                borderRadius: '50%',
+                height: '8px',
+                position: 'absolute',
+                right: '-4px',
+                top: '-3px',
+                width: '8px',
+              }}
+            />
+          )}
+        </span>
         <span style={{ fontSize: '10px', fontWeight: active === 'messages' ? '600' : '400' }}>私訊</span>
       </div>
       <div onClick={goToMyProfile} style={itemStyle('profile')}>
