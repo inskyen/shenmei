@@ -102,6 +102,32 @@ function ModulePostCard({ post, profile, router, onPlay }) {
   );
 }
 
+function ModulePageSkeleton() {
+  return (
+    <>
+      <section style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '18px 16px' }}>
+        <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '24px', width: '34%' }} />
+        <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '14px', marginTop: '12px', width: '82%' }} />
+        <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '14px', marginTop: '8px', width: '58%' }} />
+        <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '44px', marginTop: '16px', width: '100%' }} />
+      </section>
+      <div style={{ padding: '18px 16px 10px' }}>
+        <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '16px', width: '86px' }} />
+      </div>
+      {[0, 1].map((item) => (
+        <article key={item} style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '16px' }}>
+          <div style={{ alignItems: 'center', display: 'flex', gap: '8px' }}>
+            <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '28px', width: '28px' }} />
+            <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '13px', width: item === 0 ? '110px' : '86px' }} />
+          </div>
+          <div className="app-detail-skeleton" style={{ borderRadius: '8px', height: '205px', marginTop: '14px' }} />
+          <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '14px', marginTop: '14px', width: '74%' }} />
+        </article>
+      ))}
+    </>
+  );
+}
+
 export default function ModuleDetailPage() {
   const router = useRouter();
   const { slug } = router.query;
@@ -130,7 +156,7 @@ export default function ModuleDetailPage() {
       }
 
       try {
-        const pageData = await prefetchModulePage(slug, { force: true });
+        const pageData = await prefetchModulePage(slug);
         setModule(pageData.module);
         setPosts(pageData.posts);
         setProfilesById(pageData.profilesById);
@@ -202,7 +228,7 @@ export default function ModuleDetailPage() {
       </header>
 
       <main style={{ margin: '0 auto', maxWidth: '600px', padding: '18px 0 104px' }}>
-        {loading && <div style={{ color: 'var(--text-tertiary)', padding: '44px 18px', textAlign: 'center' }}>正在打開小館...</div>}
+        {loading && <ModulePageSkeleton />}
 
         {!loading && errorMessage && <div style={{ color: '#FF4D4F', lineHeight: 1.8, padding: '32px 18px', textAlign: 'center' }}>{errorMessage}</div>}
 

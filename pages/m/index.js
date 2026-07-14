@@ -91,6 +91,31 @@ export default function ModulesPage() {
     return () => { isActive = false; };
   }, []);
 
+  useEffect(() => {
+    if (!modules.length || typeof window === 'undefined') return undefined;
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return undefined;
+
+    const warmModulePages = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      // 小館目前數量很少，預熱前八座即可覆蓋常用入口，同時避免未來館數增加時過度取數。
+      modules.slice(0, 8).forEach((module) => {
+        router.prefetch(`/m/${module.slug}`).catch(() => {});
+        prefetchModulePage(module.slug).catch((error) => console.warn('小館詳情預熱失敗:', error));
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleCallbackId = window.requestIdleCallback(warmModulePages, { timeout: 1400 });
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = window.setTimeout(warmModulePages, 500);
+    return () => window.clearTimeout(timeoutId);
+  }, [modules, router]);
+
   const openModule = (module) => {
     router.prefetch(`/m/${module.slug}`);
     prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error));
