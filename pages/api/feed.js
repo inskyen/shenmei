@@ -5,6 +5,13 @@ import { supabase } from '@/lib/supabase/client';
 // 這裡先把 post + video 組合成首頁容易消費的形狀，等元件拆分後再改成更正式的資料模型。
 export default async function handler(req, res) {
   try {
+    // 首页每次只取一小批，额外多取一条用来判断后面是否还有数据。
+    // limit 设上限可避免客户端误传大数值时重新退化成一次拉取全部。
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const requestedOffset = Number.parseInt(req.query.offset, 10);
+    const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 10, 1), 20);
+    const offset = Math.max(Number.isFinite(requestedOffset) ? requestedOffset : 0, 0);
+
     const { data, error } = await supabase
       .from('posts')
       .select(`
@@ -34,7 +41,8 @@ export default async function handler(req, res) {
       `)
       .eq('status', 'published')
       .eq('visibility', 'public')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit);
 
     if (error) {
       throw error;
@@ -42,7 +50,8 @@ export default async function handler(req, res) {
 
     // 將新資料模型映射成首頁現有卡片能直接使用的欄位。
     // post_id 用來進入 /p/[id]，id/video_id 用來進入 /v/[id]。
-    const items = (data || []).map((post) => {
+    const pageRows = (data || []).slice(0, limit);
+    const items = pageRows.map((post) => {
       const video = post.videos || {};
       const profile = post.profiles || {};
 
@@ -69,7 +78,11 @@ export default async function handler(req, res) {
       };
     });
 
-    res.status(200).json({ items });
+    res.status(200).json({
+      items,
+      has_more: (data || []).length > limit,
+      next_offset: offset + items.length,
+    });
   } catch (err) {
     console.error('大廳資料載入錯誤:', err);
     res.status(500).json({ error: '大廳資料載入失敗' });

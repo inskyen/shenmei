@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
@@ -7,19 +7,118 @@ import ImmersiveVideoPlayer from '@/components/ImmersiveVideoPlayer';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
 import { cachePostPreview } from '@/lib/cache/postDetailCache';
+import { getCachedFollowingFeed, prefetchFollowingFeed } from '@/lib/cache/followingFeedCache';
 import { cacheHomeFeed, getCachedHomeFeed } from '@/lib/cache/homeFeedCache';
 import { prefetchMessageInbox } from '@/lib/cache/messagePageCache';
-import { prefetchModules } from '@/lib/cache/modulePageCache';
+import { getCachedModules, prefetchModulePage, prefetchModules } from '@/lib/cache/modulePageCache';
 import { prefetchProfilePage } from '@/lib/cache/profilePageCache';
 import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { loadUnreadNotificationCount } from '@/lib/notifications/userNotifications';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
+const FEED_PAGE_SIZE = 10;
+const HOME_SECTIONS = ['following', 'latest', 'modules'];
+
+const MODULE_GRADIENTS = [
+  ['#C1693A', '#E8A87C'],
+  ['#3A2D6B', '#7B5EA7'],
+  ['#1A4A3A', '#3D8B6E'],
+  ['#2C4A6B', '#5B8DB8'],
+  ['#6B2D3A', '#B85B6B'],
+  ['#3A4A2D', '#7A8B5E'],
+  ['#4A3A1A', '#8B7A3D'],
+  ['#1A3A5C', '#3D7AB8'],
+];
+
+function normalizeCachedFeed(cachedFeed) {
+  if (Array.isArray(cachedFeed)) {
+    return {
+      items: cachedFeed,
+      hasMore: true,
+      nextOffset: cachedFeed.length,
+    };
+  }
+
+  return cachedFeed;
+}
+
+function mergeFeedItems(primaryItems, secondaryItems) {
+  const itemsById = new Map();
+
+  [...primaryItems, ...secondaryItems].forEach((item) => {
+    const itemKey = item.post_id || item.id || item.bvid;
+    if (itemKey && !itemsById.has(itemKey)) {
+      itemsById.set(itemKey, item);
+    }
+  });
+
+  return [...itemsById.values()];
+}
+
+async function fetchFeedPage(offset) {
+  const response = await fetch(`/api/feed?offset=${offset}&limit=${FEED_PAGE_SIZE}`);
+  if (!response.ok) throw new Error('最新策展載入失敗');
+  return response.json();
+}
+
+function normalizeFollowingPosts(feed) {
+  return (feed?.posts || []).map((post) => ({
+    post_id: post.id,
+    video_id: post.videos?.id,
+    bvid: post.videos?.external_id,
+    title: post.note,
+    video_title: post.videos?.title,
+    cover: post.videos?.cover_url,
+    up_name: post.videos?.author_name,
+    play_count: post.like_count || 0,
+    comment_count: post.comment_count || 0,
+    fav_time: post.created_at,
+    created_at: post.created_at,
+    added_by: post.profile?.display_name || post.profile?.username || '策展人',
+    profile_avatar_url: post.profile?.avatar_url || null,
+    profile_username: post.profile?.username || null,
+    profile_role: post.profile?.role || null,
+  }));
+}
+
+function getModuleCardBackground(module) {
+  const coverUrl = module.cover_url || module.latest_cover_url;
+  if (coverUrl) {
+    return {
+      backgroundImage: `url(${coverUrl})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    };
+  }
+
+  if (module.theme_color) {
+    return { background: `linear-gradient(145deg, ${module.theme_color}CC, ${module.theme_color}66)` };
+  }
+
+  const slug = module.slug || module.name || '';
+  const hash = [...slug].reduce((value, character) => character.charCodeAt(0) + ((value << 5) - value), 0);
+  const [from, to] = MODULE_GRADIENTS[Math.abs(hash) % MODULE_GRADIENTS.length];
+  return { background: `linear-gradient(145deg, ${from}, ${to})` };
+}
+
 export default function Home() {
   const router = useRouter();
-  const [videos, setVideos] = useState(() => getCachedHomeFeed() || []);
-  const [loading, setLoading] = useState(() => !getCachedHomeFeed());
+  const [initialFollowingFeed] = useState(() => getCachedFollowingFeed());
+  const [initialFeed] = useState(() => normalizeCachedFeed(getCachedHomeFeed()));
+  const initialFeedRef = useRef(initialFeed);
+  const [videos, setVideos] = useState(() => initialFeed?.items || []);
+  const [loading, setLoading] = useState(() => !initialFeed?.items?.length);
+  const [hasMoreFeed, setHasMoreFeed] = useState(() => initialFeed?.hasMore ?? true);
+  const [nextFeedOffset, setNextFeedOffset] = useState(() => initialFeed?.nextOffset || 0);
+  const [loadingMoreFeed, setLoadingMoreFeed] = useState(false);
+  const [activeSection, setActiveSection] = useState('latest');
+  const [sectionMotion, setSectionMotion] = useState('none');
+  const [followingVideos, setFollowingVideos] = useState(() => normalizeFollowingPosts(initialFollowingFeed));
+  const [followingLoading, setFollowingLoading] = useState(() => !initialFollowingFeed);
+  const [followingRequiresLogin, setFollowingRequiresLogin] = useState(() => Boolean(initialFollowingFeed?.requiresLogin));
+  const [modules, setModules] = useState(() => getCachedModules() || []);
+  const [modulesLoading, setModulesLoading] = useState(() => !getCachedModules());
   const [likedPostIds, setLikedPostIds] = useState(new Set());
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [currentUser, setCurrentUser] = useState(null);
@@ -33,33 +132,54 @@ export default function Home() {
   const [immersiveVideo, setImmersiveVideo] = useState(null);
   const [detailPageVideo, setDetailPageVideo] = useState(null);
   const warmedUpIdentityRef = useRef('');
+  const feedSentinelRef = useRef(null);
+  const feedRequestRef = useRef(false);
+  const swipeStartRef = useRef(null);
+  const sectionScrollRef = useRef({ following: 0, latest: 0, modules: 0 });
   const myProfilePath = userProfile?.username ? `/u/${userProfile.username}` : '/u/me';
 
   // 初始化加载数据
   useEffect(() => {
-    // 大廳現在先讀 posts + videos 的過渡 feed。
-    // API 會把新資料模型映射成首頁舊卡片能使用的欄位，避免一次重寫整個 UI。
-    fetch('/api/feed')
-      .then(res => res.json())
-      .then(data => {
-        const items = data.items || [];
-        setVideos(items);
-        cacheHomeFeed(items);
-        setLoading(false);
+    let isActive = true;
 
-        return loadLikedPostIds(items.map((item) => item.post_id));
-      })
-      .then((nextLikedPostIds) => {
-        if (nextLikedPostIds) {
+    async function loadInitialFeed() {
+      feedRequestRef.current = true;
+
+      try {
+        // 即使已有記憶體快取，也在背景刷新第一批；畫面保留舊內容，不重新閃骨架。
+        const data = await fetchFeedPage(0);
+        if (!isActive) return;
+
+        const firstPageItems = data.items || [];
+        const cachedFeed = initialFeedRef.current;
+        const nextItems = cachedFeed?.items?.length
+          ? mergeFeedItems(firstPageItems, cachedFeed.items)
+          : firstPageItems;
+        const resolvedOffset = cachedFeed?.items?.length
+          ? Math.max(cachedFeed.nextOffset || 0, data.next_offset || firstPageItems.length)
+          : (data.next_offset || firstPageItems.length);
+        const resolvedHasMore = cachedFeed?.items?.length
+          ? Boolean(cachedFeed.hasMore || data.has_more)
+          : Boolean(data.has_more);
+
+        setVideos(nextItems);
+        setNextFeedOffset(resolvedOffset);
+        setHasMoreFeed(resolvedHasMore);
+        cacheHomeFeed(nextItems, { hasMore: resolvedHasMore, nextOffset: resolvedOffset });
+
+        const nextLikedPostIds = await loadLikedPostIds(nextItems.map((item) => item.post_id));
+        if (isActive && nextLikedPostIds) {
           setLikedPostIds(nextLikedPostIds);
         }
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      } catch (error) {
+        console.error('讀取最新策展失敗:', error);
+      } finally {
+        feedRequestRef.current = false;
+        if (isActive) setLoading(false);
+      }
+    }
 
-    let isActive = true;
+    loadInitialFeed();
 
     async function loadIdentity() {
       try {
@@ -111,6 +231,103 @@ export default function Home() {
       isActive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function warmHomeSections() {
+      const [followingResult, modulesResult] = await Promise.allSettled([
+        prefetchFollowingFeed({ force: true }),
+        prefetchModules({ force: true }),
+      ]);
+
+      if (!isActive) return;
+
+      if (followingResult.status === 'fulfilled') {
+        const feed = followingResult.value;
+        const nextFollowingVideos = normalizeFollowingPosts(feed);
+        setFollowingVideos(nextFollowingVideos);
+        setFollowingRequiresLogin(Boolean(feed?.requiresLogin));
+
+        if (nextFollowingVideos.length > 0) {
+          try {
+            const nextLikedPostIds = await loadLikedPostIds(nextFollowingVideos.map((item) => item.post_id));
+            if (isActive && nextLikedPostIds) {
+              setLikedPostIds((currentIds) => new Set([...currentIds, ...nextLikedPostIds]));
+            }
+          } catch (error) {
+            console.warn('追蹤動態喜歡狀態預載失敗:', error);
+          }
+        }
+      } else {
+        console.warn('追蹤動態預載失敗:', followingResult.reason);
+      }
+
+      if (modulesResult.status === 'fulfilled') {
+        setModules(modulesResult.value || []);
+      } else {
+        console.warn('小館列表預載失敗:', modulesResult.reason);
+      }
+
+      setFollowingLoading(false);
+      setModulesLoading(false);
+    }
+
+    warmHomeSections();
+    return () => { isActive = false; };
+  }, []);
+
+  const loadMoreFeed = useCallback(async () => {
+    if (!hasMoreFeed || feedRequestRef.current) return;
+
+    feedRequestRef.current = true;
+    setLoadingMoreFeed(true);
+
+    try {
+      const data = await fetchFeedPage(nextFeedOffset);
+      const nextPageItems = data.items || [];
+      const resolvedOffset = data.next_offset ?? (nextFeedOffset + nextPageItems.length);
+      const resolvedHasMore = Boolean(data.has_more);
+
+      setVideos((currentItems) => {
+        const mergedItems = mergeFeedItems(currentItems, nextPageItems);
+        cacheHomeFeed(mergedItems, { hasMore: resolvedHasMore, nextOffset: resolvedOffset });
+        return mergedItems;
+      });
+      setNextFeedOffset(resolvedOffset);
+      setHasMoreFeed(resolvedHasMore);
+
+      // 下一批資料出現前先預取最靠前幾張詳情頁程式碼，點擊時不再臨時等待。
+      nextPageItems.slice(0, 4).forEach((item) => {
+        if (item.post_id) router.prefetch(`/p/${item.post_id}`).catch(() => {});
+      });
+
+      const nextLikedPostIds = await loadLikedPostIds(nextPageItems.map((item) => item.post_id));
+      if (nextLikedPostIds) {
+        setLikedPostIds((currentIds) => new Set([...currentIds, ...nextLikedPostIds]));
+      }
+    } catch (error) {
+      console.error('預先載入下一批策展失敗:', error);
+    } finally {
+      feedRequestRef.current = false;
+      setLoadingMoreFeed(false);
+    }
+  }, [hasMoreFeed, nextFeedOffset, router]);
+
+  useEffect(() => {
+    if (activeSection !== 'latest' || loading || !hasMoreFeed || typeof window === 'undefined' || !feedSentinelRef.current) return undefined;
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const preloadDistance = connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)
+      ? '180px 0px'
+      : '900px 0px';
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMoreFeed();
+    }, { rootMargin: preloadDistance });
+
+    observer.observe(feedSentinelRef.current);
+    return () => observer.disconnect();
+  }, [activeSection, hasMoreFeed, loadMoreFeed, loading]);
 
   useEffect(() => {
     if (loading || typeof window === 'undefined') return;
@@ -237,6 +454,41 @@ export default function Home() {
     }
   };
 
+  const switchHomeSection = useCallback((nextSection, motion = 'none') => {
+    if (!HOME_SECTIONS.includes(nextSection) || nextSection === activeSection) return;
+
+    sectionScrollRef.current[activeSection] = window.scrollY;
+    setSectionMotion(motion);
+    setActiveSection(nextSection);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: sectionScrollRef.current[nextSection] || 0, behavior: 'auto' });
+      });
+    });
+  }, [activeSection]);
+
+  const handleSectionTouchStart = (event) => {
+    const touch = event.touches[0];
+    swipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  };
+
+  const handleSectionTouchEnd = (event) => {
+    const start = swipeStartRef.current;
+    const touch = event.changedTouches[0];
+    swipeStartRef.current = null;
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 56 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+
+    const currentIndex = HOME_SECTIONS.indexOf(activeSection);
+    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
+    const nextSection = HOME_SECTIONS[nextIndex];
+    if (nextSection) switchHomeSection(nextSection, deltaX < 0 ? 'left' : 'right');
+  };
+
   const openUserPage = (event, video) => {
     event.stopPropagation();
 
@@ -305,9 +557,14 @@ export default function Home() {
             : item
         ));
 
-        cacheHomeFeed(nextItems);
+        cacheHomeFeed(nextItems, { hasMore: hasMoreFeed, nextOffset: nextFeedOffset });
         return nextItems;
       });
+      setFollowingVideos((currentItems) => currentItems.map((item) => (
+        item.post_id === video.post_id
+          ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
+          : item
+      )));
     } catch (error) {
       console.error('切換喜歡狀態失敗:', error);
       showToast('喜歡操作失敗，請稍後再試。');
@@ -335,6 +592,9 @@ export default function Home() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
+  const visibleVideos = activeSection === 'following' ? followingVideos : videos;
+  const activeFeedLoading = activeSection === 'following' ? followingLoading : loading;
+
   return (
     // 主背景：略帶冷灰的基礎色
     <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
@@ -350,9 +610,27 @@ export default function Home() {
         borderBottom: '1px solid var(--border-light)'
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
-          <span onClick={() => router.push('/following')} style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>追蹤</span>
-          <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600' }}>最新</span>
-          <span onClick={() => router.push('/m')} style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '500', cursor: 'pointer' }}>小館</span>
+          <button
+            type="button"
+            onClick={() => switchHomeSection('following', 'left')}
+            style={{ background: 'transparent', border: 'none', color: activeSection === 'following' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'following' ? '20px' : '18px', fontWeight: activeSection === 'following' ? 600 : 500, padding: 0 }}
+          >
+            追蹤
+          </button>
+          <button
+            type="button"
+            onClick={() => switchHomeSection('latest', activeSection === 'following' ? 'right' : 'left')}
+            style={{ background: 'transparent', border: 'none', color: activeSection === 'latest' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'latest' ? '20px' : '18px', fontWeight: activeSection === 'latest' ? 600 : 500, padding: 0 }}
+          >
+            最新
+          </button>
+          <button
+            type="button"
+            onClick={() => switchHomeSection('modules', 'right')}
+            style={{ background: 'transparent', border: 'none', color: activeSection === 'modules' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'modules' ? '20px' : '18px', fontWeight: activeSection === 'modules' ? 600 : 500, padding: 0 }}
+          >
+            小館
+          </button>
         </div>
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '2px', alignItems: 'center' }}>
           <svg onClick={() => router.push('/search')} style={{ width: '22px', height: '22px', color: 'var(--text-primary)', cursor: 'pointer' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -383,8 +661,81 @@ export default function Home() {
       </header>
 
       {/* 帖子信息流 */}
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '90px 0 0' }}>
-        {loading ? (
+      <main
+        onTouchEnd={handleSectionTouchEnd}
+        onTouchStart={handleSectionTouchStart}
+        style={{ maxWidth: '600px', margin: '0 auto', minHeight: 'calc(100vh - 164px)', padding: '90px 0 0', touchAction: 'pan-y' }}
+      >
+        <div
+          key={`${activeSection}-${sectionMotion}`}
+          className={sectionMotion === 'none' ? '' : `home-section-enter home-section-enter--${sectionMotion}`}
+        >
+        {activeSection === 'modules' ? (
+          <section style={{ padding: '18px 14px 24px' }}>
+            {modulesLoading ? (
+              <div aria-label="正在載入小館" style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
+                {[0, 1, 2, 3].map((index) => (
+                  <div key={index} className="app-detail-skeleton" style={{ aspectRatio: '4 / 3', borderRadius: '8px' }} />
+                ))}
+              </div>
+            ) : modules.length === 0 ? (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '72px 20px', textAlign: 'center' }}>
+                目前還沒有開放中的小館。
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
+                {modules.map((module) => {
+                  const hasImage = Boolean(module.cover_url || module.latest_cover_url);
+
+                  return (
+                    <button
+                      key={module.id}
+                      type="button"
+                      onClick={() => router.push(`/m/${module.slug}`)}
+                      onMouseEnter={() => prefetchModulePage(module.slug).catch(() => {})}
+                      onTouchStart={() => prefetchModulePage(module.slug).catch(() => {})}
+                      style={{
+                        ...getModuleCardBackground(module),
+                        aspectRatio: '4 / 3',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        padding: 0,
+                        position: 'relative',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{
+                        background: hasImage
+                          ? 'linear-gradient(to top, rgba(10,20,35,0.84) 0%, rgba(10,20,35,0.26) 58%, transparent 100%)'
+                          : 'linear-gradient(to top, rgba(0,0,0,0.42) 0%, transparent 64%)',
+                        bottom: 0,
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        left: 0,
+                        padding: '28px 14px 14px',
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                      }}>
+                        <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.3 }}>{module.name}</span>
+                        {module.description && (
+                          <span style={{ color: 'rgba(255,255,255,0.76)', fontSize: '11px', lineHeight: 1.5, marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {module.description}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ) : activeFeedLoading ? (
           <div aria-label="正在載入最新策展" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
             {[0, 1, 2].map((index) => (
               <article
@@ -423,7 +774,23 @@ export default function Home() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {videos.map((video) => (
+            {activeSection === 'following' && followingRequiresLogin && (
+              <button
+                type="button"
+                onClick={() => router.push('/login?next=/')}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}
+              >
+                登入後，這裡會留下你追蹤之人的最新採樣。
+              </button>
+            )}
+
+            {activeSection === 'following' && !followingRequiresLogin && visibleVideos.length === 0 && (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}>
+                還沒有追蹤動態。遇見喜歡的策展人後，這裡就會慢慢流動起來。
+              </div>
+            )}
+
+            {visibleVideos.map((video, index) => (
               // 帖子卡片
               <article key={video.post_id || video.id || video.bvid} onMouseEnter={() => video.post_id && router.prefetch(`/p/${video.post_id}`)} style={{ backgroundColor: 'var(--bg-surface)', padding: '16px 0', borderBottom: '1px solid var(--border-light)' }}>
                 
@@ -468,7 +835,14 @@ export default function Home() {
 
                 {/* 媒体区域 (带 16px 边距与圆角) */}
                 <div onClick={() => openImmersive(video)} style={{ position: 'relative', margin: '0 16px 12px', borderRadius: '8px', paddingTop: '42.8%', backgroundColor: 'var(--bg-base)', overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border-light)' }}>
-                  <img src={video.cover} alt={video.title} referrerPolicy="no-referrer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={video.cover}
+                    alt={video.title}
+                    referrerPolicy="no-referrer"
+                    loading={index < 2 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                   {/* 悬浮播放icon */}
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '42px', height: '42px', backgroundColor: 'rgba(255, 255, 255, 0.75)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                     <div style={{ width: 0, height: 0, borderTop: '7px solid transparent', borderBottom: '7px solid transparent', borderLeft: '10px solid var(--text-primary)', marginLeft: '3px' }}></div>
@@ -514,8 +888,27 @@ export default function Home() {
                 </div>
               </article>
             ))}
+
+            {activeSection === 'latest' && loadingMoreFeed && (
+              <article aria-label="正在預先載入更多策展" style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '16px' }}>
+                <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
+                  <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '28px', width: '28px' }} />
+                  <div className="app-detail-skeleton" style={{ height: '12px', width: '92px' }} />
+                </div>
+                <div className="app-detail-skeleton" style={{ borderRadius: '8px', height: '190px', marginTop: '14px' }} />
+              </article>
+            )}
+
+            {activeSection === 'latest' && <div ref={feedSentinelRef} aria-hidden="true" style={{ height: '1px' }} />}
+
+            {activeSection === 'latest' && !hasMoreFeed && videos.length > 0 && (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', padding: '18px 16px 6px', textAlign: 'center' }}>
+                暫時看到這裡
+              </div>
+            )}
           </div>
         )}
+        </div>
       </main>
 
       {/* 懸浮通知入口 */}
@@ -528,7 +921,11 @@ export default function Home() {
         )}
       </div>
 
-      <AppBottomNav active="home" />
+      <AppBottomNav
+        active={activeSection === 'modules' ? 'modules' : 'home'}
+        onHomeSelect={() => switchHomeSection('latest', activeSection === 'modules' ? 'left' : 'right')}
+        onModulesSelect={() => switchHomeSection('modules', 'right')}
+      />
 
       <ImmersiveVideoPlayer video={immersiveVideo} onClose={closeImmersive} />
 

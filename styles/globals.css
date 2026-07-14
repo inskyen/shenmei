@@ -91,3 +91,45 @@ body {
     animation: none;
   }
 }
+@keyframes home-section-enter-left {
+  from {
+    opacity: 0.72;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes home-section-enter-right {
+  from {
+    opacity: 0.72;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.home-section-enter {
+  animation-duration: 180ms;
+  animation-fill-mode: both;
+  animation-timing-function: ease-out;
+  will-change: opacity, transform;
+}
+
+.home-section-enter--left {
+  animation-name: home-section-enter-left;
+}
+
+.home-section-enter--right {
+  animation-name: home-section-enter-right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-section-enter {
+    animation: none;
+  }
+}
