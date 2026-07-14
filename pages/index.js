@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import AestheteBadge from '@/components/AestheteBadge';
+import ImmersiveVideoPlayer from '@/components/ImmersiveVideoPlayer';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
 import { cachePostPreview } from '@/lib/cache/postDetailCache';
 import { cacheHomeFeed, getCachedHomeFeed } from '@/lib/cache/homeFeedCache';
+import { prefetchMessageInbox } from '@/lib/cache/messagePageCache';
+import { prefetchModules } from '@/lib/cache/modulePageCache';
 import { prefetchProfilePage } from '@/lib/cache/profilePageCache';
 import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { loadUnreadNotificationCount } from '@/lib/notifications/userNotifications';
@@ -29,6 +32,7 @@ export default function Home() {
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
   const [detailPageVideo, setDetailPageVideo] = useState(null);
+  const warmedUpIdentityRef = useRef('');
   const myProfilePath = userProfile?.username ? `/u/${userProfile.username}` : '/u/me';
 
   // 初始化加载数据
@@ -129,6 +133,47 @@ export default function Home() {
     });
   }, [router, videos]);
 
+  useEffect(() => {
+    if (loading || isIdentityLoading || typeof window === 'undefined') return undefined;
+
+    // 弱網與省流模式優先保住首頁本身，不在背景額外取用頁面資源。
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return undefined;
+
+    const identityKey = currentUser?.id || 'guest';
+    if (warmedUpIdentityRef.current === identityKey) return undefined;
+    warmedUpIdentityRef.current = identityKey;
+
+    const warmUpCorePages = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      // 只預熱高頻入口的程式碼；資料仍維持既有的快取與權限判斷。
+      ['/m', '/search', '/submit'].forEach((path) => {
+        router.prefetch(path).catch(() => {});
+      });
+      prefetchModules().catch(() => {});
+
+      if (!currentUser) return;
+
+      router.prefetch('/messages').catch(() => {});
+      router.prefetch('/notifications').catch(() => {});
+      prefetchMessageInbox().catch(() => {});
+
+      if (userProfile?.username) {
+        router.prefetch(`/u/${userProfile.username}`).catch(() => {});
+      }
+    };
+
+    // 把工作让给浏览器的空闲时段，避免首页刚打开就出现抢资源的卡顿。
+    if ('requestIdleCallback' in window) {
+      const idleCallbackId = window.requestIdleCallback(warmUpCorePages, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = window.setTimeout(warmUpCorePages, 800);
+    return () => window.clearTimeout(timeoutId);
+  }, [currentUser, isIdentityLoading, loading, router, userProfile?.username]);
+
   // 历史记录劫持：防侧滑退出魔法
   useEffect(() => {
     const handlePopState = () => {
@@ -141,7 +186,7 @@ export default function Home() {
 
   // 鎖定背景滾動
   useEffect(() => {
-    if (immersiveVideo || detailPageVideo) {
+    if (detailPageVideo) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -149,7 +194,7 @@ export default function Home() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [immersiveVideo, detailPageVideo]);
+  }, [detailPageVideo]);
 
   const openImmersive = (video) => {
     window.history.pushState({ modal: true }, "");
@@ -294,7 +339,7 @@ export default function Home() {
     // 主背景：略帶冷灰的基礎色
     <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', paddingBottom: '100px', position: 'relative' }}>
       <Head>
-        <title>採樣器 · 審美者</title>
+        <title>採樣器</title>
       </Head>
 
       {/* 顶部导航栏 */}
@@ -485,21 +530,7 @@ export default function Home() {
 
       <AppBottomNav active="home" />
 
-      {/* 浮层 1：私人放映室 (保持暗黑幕布的高级感) */}
-      {immersiveVideo && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={closeImmersive} style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10000, width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', backdropFilter: 'blur(4px)', fontSize: '20px' }}>✕</div>
-          <div style={{ width: '100%', maxWidth: '800px' }}>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-              <iframe src={`//player.bilibili.com/player.html?bvid=${immersiveVideo.bvid}&page=1&autoplay=1&high_quality=1&danmaku=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
-            </div>
-            <div style={{ marginTop: '20px', color: '#FFFFFF', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '500', margin: '0 0 8px 0', letterSpacing: '0.5px' }}>{immersiveVideo.title}</h2>
-              <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>@{immersiveVideo.up_name}</div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ImmersiveVideoPlayer video={immersiveVideo} onClose={closeImmersive} />
 
       {/* 浮层 2：文字单页详情式 */}
       {detailPageVideo && (

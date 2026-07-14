@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import AestheteBadge from '@/components/AestheteBadge';
+import ImmersiveVideoPlayer from '@/components/ImmersiveVideoPlayer';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { canCurateInModules, loadProfileRole } from '@/lib/auth/roles';
 import { getCachedModulePage, prefetchModulePage } from '@/lib/cache/modulePageCache';
@@ -33,7 +34,7 @@ function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : '審';
 }
 
-function ModulePostCard({ post, profile, router }) {
+function ModulePostCard({ post, profile, router, onPlay }) {
   const video = post.videos || {};
   const displayName = getDisplayName(post, profile);
 
@@ -61,8 +62,8 @@ function ModulePostCard({ post, profile, router }) {
 
       <button
         type="button"
-        onClick={() => router.push(`/v/${video.id}`)}
-        aria-label={`開啟影片：${video.title || '未命名影片'}`}
+        onClick={() => onPlay(video)}
+        aria-label={`播放影片：${video.title || '未命名影片'}`}
         style={{ backgroundColor: 'var(--bg-base)', backgroundImage: video.cover_url ? `url(${video.cover_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', border: '1px solid var(--border-light)', cursor: 'pointer', display: 'block', margin: '0 16px 12px', borderRadius: '8px', overflow: 'hidden', position: 'relative', width: 'calc(100% - 32px)', paddingTop: 'calc((100% - 32px) * 0.5625)' }}
       >
         <span style={{ alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.75)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', height: '42px', justifyContent: 'center', left: '50%', position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)', width: '42px', backdropFilter: 'blur(4px)' }}>
@@ -110,6 +111,7 @@ export default function ModuleDetailPage() {
   const [profilesById, setProfilesById] = useState(() => cachedPage?.profilesById || {});
   const [loading, setLoading] = useState(() => !cachedPage);
   const [errorMessage, setErrorMessage] = useState('');
+  const [immersiveVideo, setImmersiveVideo] = useState(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -142,6 +144,22 @@ export default function ModuleDetailPage() {
 
     loadModulePage();
   }, [slug]);
+
+  useEffect(() => {
+    const closePlayerOnBack = () => setImmersiveVideo(null);
+    window.addEventListener('popstate', closePlayerOnBack);
+    return () => window.removeEventListener('popstate', closePlayerOnBack);
+  }, []);
+
+  const openImmersiveVideo = (video) => {
+    window.history.pushState({ immersiveVideo: true }, '');
+    setImmersiveVideo(video);
+  };
+
+  const closeImmersiveVideo = () => {
+    setImmersiveVideo(null);
+    if (window.history.state?.immersiveVideo) window.history.back();
+  };
 
   const goToModuleSubmit = async () => {
     if (module?.status === 'archived') {
@@ -206,11 +224,12 @@ export default function ModuleDetailPage() {
 
             {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這座小館還沒有策展。等第一束光被放進來。</div>}
 
-            {posts.map((post) => <ModulePostCard key={post.id} post={post} profile={profilesById[post.user_id]} router={router} />)}
+            {posts.map((post) => <ModulePostCard key={post.id} post={post} profile={profilesById[post.user_id]} router={router} onPlay={openImmersiveVideo} />)}
           </>
         )}
       </main>
       <AppBottomNav active="modules" />
+      <ImmersiveVideoPlayer video={immersiveVideo} onClose={closeImmersiveVideo} />
     </div>
   );
 }
