@@ -239,45 +239,18 @@ export default function ModulesPage() {
         alignItems: 'center',
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-light)',
+        boxSizing: 'border-box',
         display: 'flex',
-        justifyContent: 'space-between',
+        height: '88px',
+        justifyContent: 'center',
         padding: '48px 18px 14px',
         position: 'sticky',
         top: 0,
         zIndex: 10,
       }}>
-        <button
-          type="button"
-          onClick={() => router.push('/')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 500,
-            padding: 0,
-          }}
-        >
-          ← 大廳
-        </button>
-        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>頻道</div>
-        <button
-          type="button"
-          onClick={() => router.push('/submit')}
-          style={{
-            backgroundColor: 'var(--brand-blue)',
-            border: 'none',
-            borderRadius: '6px',
-            color: '#FFFFFF',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 500,
-            padding: '6px 14px',
-          }}
-        >
-          採樣
-        </button>
+        <div style={{ color: 'var(--text-primary)', fontSize: '17px', fontWeight: 600, letterSpacing: '0.5px' }}>
+          頻道
+        </div>
       </header>
 
       <main style={{ margin: '0 auto', maxWidth: '760px', padding: '20px 14px 104px' }}>

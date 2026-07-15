@@ -364,7 +364,7 @@ export default function SubmitPage() {
          <textarea 
            value={note}
            onChange={(e) => setNote(e.target.value)}
-           placeholder="寫下你想把它放進審美者的理由..."
+           placeholder="寫下您想把它採樣回來的留言..."
            style={{
              width: '100%',
              height: '180px',

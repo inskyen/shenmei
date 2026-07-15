@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  /* Design System Colors */
-  --bg-base: #F7F9FA;
-  --bg-surface: #FFFFFF;
-  --text-primary: #1A1D20;
-  --text-secondary: #687684;
-  --text-tertiary: #AAB8C2;
-  --brand-blue: #2B5A83;
-  --brand-blue-light: #E8F0F6;
-  --border-light: #EBEEF0;
+  /* Design System Colors - Warm Monochrome */
+  --bg-base: #F5F4F1;
+  --bg-surface: #FCFCFA;
+  --text-primary: #222222;
+  --text-secondary: #737373;
+  --text-tertiary: #A3A3A3;
+  --brand-blue: #222222; /* 主色調改為碳黑，維持極簡高級感 */
+  --brand-blue-light: #EBEAE5;
+  --border-light: #E8E6E1;
   
   --background: var(--bg-surface);
   --foreground: var(--text-primary);
@@ -24,14 +24,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-base: #000000;
-    --bg-surface: #111111;
-    --text-primary: #EAEAEA;
-    --text-secondary: #8899A6;
-    --text-tertiary: #5C6E7E;
-    --brand-blue: #4A81B5;
-    --brand-blue-light: #1E2D3D;
-    --border-light: #222222;
+    --bg-base: #141414;
+    --bg-surface: #1C1C1C;
+    --text-primary: #E6E4DF;
+    --text-secondary: #A3A3A3;
+    --text-tertiary: #737373;
+    --brand-blue: #E6E4DF;
+    --brand-blue-light: #2A2A2A;
+    --border-light: #2A2A2A;
 
     --background: var(--bg-surface);
     --foreground: var(--text-primary);
