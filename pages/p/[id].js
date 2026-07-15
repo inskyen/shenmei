@@ -127,7 +127,7 @@ export default function PostPage() {
         setLiked(false);
         setCommentsLoading(true);
 
-        // 推薦者、所屬小館、按讚狀態與登入身份彼此沒有依賴，
+        // 推薦者、所屬頻道、按讚狀態與登入身份彼此沒有依賴，
         // 同時讀取可縮短詳情頁從滑入到完整內容出現的等待時間。
         const profileRequest = postData.user_id
           ? supabase

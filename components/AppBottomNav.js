@@ -120,7 +120,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
     }
 
     router.prefetch('/m');
-    prefetchModules().catch((error) => console.error('小館列表預取失敗:', error));
+    prefetchModules().catch((error) => console.error('頻道列表預取失敗:', error));
     router.push('/m');
   };
 
@@ -188,7 +188,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       </button>
       <button type="button" onClick={goToModules} style={itemStyle('modules')}>
         <svg style={{ height: '22px', marginBottom: '3px', width: '22px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M4 5.5A1.5 1.5 0 015.5 4H10v7H4V5.5zM14 4h4.5A1.5 1.5 0 0120 5.5V11h-6V4zM4 15h6v5H5.5A1.5 1.5 0 014 18.5V15zM14 15h6v3.5a1.5 1.5 0 01-1.5 1.5H14v-5z" /></svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400' }}>小館</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400' }}>頻道</span>
       </button>
       <button type="button" onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} style={itemStyle('submit')}>
         <div style={{ 

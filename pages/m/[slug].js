@@ -161,8 +161,8 @@ export default function ModuleDetailPage() {
         setPosts(pageData.posts);
         setProfilesById(pageData.profilesById);
       } catch (error) {
-        console.error('小館詳情載入失敗:', error);
-        setErrorMessage('這座小館暫時無法顯示，可能尚未開放或已被移除。');
+        console.error('頻道詳情載入失敗:', error);
+        setErrorMessage('這個頻道暫時無法顯示，可能尚未開放或已被移除。');
       } finally {
         setLoading(false);
       }
@@ -189,14 +189,14 @@ export default function ModuleDetailPage() {
 
   const goToModuleSubmit = async () => {
     if (module?.status === 'archived') {
-      showToast('這座小館已關閉，現在只保留歷史內容。');
+      showToast('這個頻道已關閉，現在只保留歷史內容。');
       return;
     }
 
     const user = await requireLogin({
       router,
       nextPath: `/m/${slug}`,
-      message: '請先登入，才能投遞小館。',
+      message: '請先登入，才能投稿至頻道。',
     });
 
     if (!user) return;
@@ -204,13 +204,13 @@ export default function ModuleDetailPage() {
     try {
       const role = await loadProfileRole(user.id);
       if (!canCurateInModules(role)) {
-        showToast('成為審美者後，即可投遞至小館。');
+        showToast('成為審美者後，即可投稿至頻道。');
         return;
       }
 
       router.push(`/submit?module=${slug}`);
     } catch (error) {
-      console.error('讀取小館投遞權限失敗:', error);
+      console.error('讀取頻道投稿權限失敗:', error);
       showToast('目前無法確認投遞權限，請稍後再試。');
     }
   };
@@ -218,12 +218,12 @@ export default function ModuleDetailPage() {
   return (
     <div style={pageStyle}>
       <Head>
-        <title>{module ? `${module.name} · 審美者` : '小館 · 審美者'}</title>
+        <title>{module ? `${module.name} · 審美者` : '頻道 · 審美者'}</title>
       </Head>
 
       <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <button type="button" onClick={() => router.push('/m')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 小館</button>
-        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>{module?.name || '小館'}</div>
+        <button type="button" onClick={() => router.push('/m')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 頻道</button>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>{module?.name || '頻道'}</div>
         {module?.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ backgroundColor: 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: '6px 14px' }}>投遞</button>}
       </header>
 
@@ -236,19 +236,19 @@ export default function ModuleDetailPage() {
           <>
             <section style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '18px 16px' }}>
               <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>{module.name}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.75, margin: '8px 0 0' }}>{module.description || '這座小館正在收納它的第一批策展。'}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.75, margin: '8px 0 0' }}>{module.description || '這個頻道正在收納它的第一批策展。'}</p>
               <div style={{ backgroundColor: 'var(--bg-base)', borderLeft: '3px solid var(--brand-blue)', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginTop: '14px', padding: '9px 11px', borderRadius: '4px' }}>
-                館規：{module.rule_text || '這座小館的收錄規則正在整理中。'}
+                頻道規則：{module.rule_text || '這個頻道的收錄規則正在整理中。'}
               </div>
-              {module.status === 'archived' && <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '10px' }}>這座小館已關閉，僅保留歷史內容。</div>}
+              {module.status === 'archived' && <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '10px' }}>這個頻道已關閉，僅保留歷史內容。</div>}
             </section>
 
             <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', padding: '18px 16px 10px' }}>
               <h2 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600, margin: 0 }}>最新策展</h2>
-              {module.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>投遞到此小館</button>}
+              {module.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>投稿至此頻道</button>}
             </div>
 
-            {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這座小館還沒有策展。等第一束光被放進來。</div>}
+            {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這個頻道還沒有策展。等第一束光被放進來。</div>}
 
             {posts.map((post) => <ModulePostCard key={post.id} post={post} profile={profilesById[post.user_id]} router={router} onPlay={openImmersiveVideo} />)}
           </>

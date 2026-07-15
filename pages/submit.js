@@ -105,14 +105,15 @@ export default function SubmitPage() {
       try {
         const { data, error } = await supabase
           .from('modules')
-          .select('id, name, slug')
+          .select('id, name, slug, sort_order')
           .eq('status', 'active')
+          .order('sort_order', { ascending: true })
           .order('created_at', { ascending: false });
 
         if (error) throw error;
         setModules(data || []);
       } catch (error) {
-        console.error('小館選項載入失敗:', error);
+        console.error('頻道選項載入失敗:', error);
       } finally {
         setModulesLoading(false);
       }
@@ -225,7 +226,7 @@ export default function SubmitPage() {
     }
 
     if (forcedModuleSlug && !forcedModule) {
-      setMessage('這座小館目前無法投稿，請回到小館頁後再試。');
+      setMessage('這個頻道目前無法投稿，請回到頻道頁後再試。');
       return;
     }
 
@@ -245,7 +246,7 @@ export default function SubmitPage() {
       setCurrentRole(latestRole);
 
       if (effectiveSelectedModuleIds.length > 0 && !canCurateInModules(latestRole)) {
-        setMessage('只有審美者可以投遞至小館；這次採樣可發佈到大廳。');
+        setMessage('只有審美者可以投稿至頻道；這次採樣可發佈到大廳。');
         return;
       }
 
@@ -284,7 +285,7 @@ export default function SubmitPage() {
 
       if (forcedModule) {
         await prefetchModulePage(forcedModule.slug, { force: true })
-          .catch((error) => console.error('小館快取更新失敗:', error));
+          .catch((error) => console.error('頻道快取更新失敗:', error));
       }
 
       setPublishComplete(true);
@@ -477,24 +478,24 @@ export default function SubmitPage() {
                <div className="app-detail-skeleton" style={{ borderRadius: '6px', height: '58px', width: '100%' }} />
              ) : forcedModuleSlug && !canChooseModule ? (
                <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
-                 這座小館開放給審美者投遞；你仍可將這次採樣發佈到大廳。
+                 這個頻道開放給審美者投稿；你仍可將這次採樣發佈到大廳。
                </div>
              ) : forcedModuleSlug ? (
                <>
                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>本次投遞</div>
                  <div style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
-                   <span style={{ fontSize: '14px', fontWeight: 600 }}>{forcedModule ? forcedModule.name : '正在確認小館...'}</span>
+                   <span style={{ fontSize: '14px', fontWeight: 600 }}>{forcedModule ? forcedModule.name : '正在確認頻道...'}</span>
                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>已鎖定</span>
                  </div>
                </>
              ) : !canChooseModule ? (
                <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
-                 本次採樣會發佈至大廳。成為審美者後，即可選擇投遞到小館。
+                 本次採樣會發佈至大廳。成為審美者後，即可選擇投稿至頻道。
                </div>
              ) : (
                <>
                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
-                   你想把它放進哪個小館？<span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '13px' }}>（選填，最多一座）</span>
+                   你想把它放進哪個頻道？<span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '13px' }}>（選填，最多一個）</span>
                  </div>
                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                    {modulesLoading && [0, 1, 2].map((index) => (
@@ -534,7 +535,7 @@ export default function SubmitPage() {
           <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', padding: '24px 28px', textAlign: 'center' }}>
             <div style={{ alignItems: 'center', backgroundColor: 'var(--brand-blue-light)', borderRadius: '50%', color: 'var(--brand-blue)', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
             <div style={{ fontSize: '16px', fontWeight: 600 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這座小館。' : '正在帶你回到剛剛發出的策展。'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這個頻道。' : '正在帶你回到剛剛發出的策展。'}</div>
           </div>
         </div>
       )}

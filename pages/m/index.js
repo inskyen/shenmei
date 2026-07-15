@@ -54,6 +54,7 @@ export default function ModulesPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingModule, setCreatingModule] = useState(false);
+  const [reorderingModuleId, setReorderingModuleId] = useState(null);
   const [moduleName, setModuleName] = useState('');
   const [moduleDescription, setModuleDescription] = useState('');
   const [moduleRuleText, setModuleRuleText] = useState('');
@@ -65,8 +66,8 @@ export default function ModulesPage() {
         const data = await prefetchModules({ force: true });
         setModules(data);
       } catch (error) {
-        console.error('小館列表載入失敗:', error);
-        setErrorMessage('小館列表暫時無法顯示，請稍後再試。');
+        console.error('頻道列表載入失敗:', error);
+        setErrorMessage('頻道列表暫時無法顯示，請稍後再試。');
       } finally {
         setLoading(false);
       }
@@ -83,7 +84,7 @@ export default function ModulesPage() {
         const role = await loadProfileRole(session?.user?.id);
         if (isActive) setIsSuperAdmin(role === USER_ROLES.SUPER_ADMIN);
       } catch (error) {
-        console.warn('讀取小館管理權限失敗:', error);
+        console.warn('讀取頻道管理權限失敗:', error);
       }
     }
 
@@ -100,10 +101,10 @@ export default function ModulesPage() {
     const warmModulePages = () => {
       if (document.visibilityState !== 'visible') return;
 
-      // 小館目前數量很少，預熱前八座即可覆蓋常用入口，同時避免未來館數增加時過度取數。
+      // 頻道目前數量很少，預熱前八個即可覆蓋常用入口，同時避免未來頻道數增加時過度取數。
       modules.slice(0, 8).forEach((module) => {
         router.prefetch(`/m/${module.slug}`).catch(() => {});
-        prefetchModulePage(module.slug).catch((error) => console.warn('小館詳情預熱失敗:', error));
+        prefetchModulePage(module.slug).catch((error) => console.warn('頻道詳情預熱失敗:', error));
       });
     };
 
@@ -118,7 +119,7 @@ export default function ModulesPage() {
 
   const openModule = (module) => {
     router.prefetch(`/m/${module.slug}`);
-    prefetchModulePage(module.slug).catch((error) => console.error('小館預取失敗:', error));
+    prefetchModulePage(module.slug).catch((error) => console.error('頻道預取失敗:', error));
     router.push(`/m/${module.slug}`);
   };
 
@@ -127,7 +128,7 @@ export default function ModulesPage() {
     const name = moduleName.trim();
 
     if (!name) {
-      showToast('請先填寫小館名稱。');
+      showToast('請先填寫頻道名稱。');
       return;
     }
 
@@ -138,6 +139,9 @@ export default function ModulesPage() {
       if (!session?.user) throw new Error('請先登入超管帳號。');
 
       const generatedSlug = `module-${Date.now().toString(36)}`;
+      const nextSortOrder = modules.length > 0
+        ? Math.max(...modules.map((module) => Number(module.sort_order) || 0)) + 100
+        : 100;
       const { error } = await supabase
         .from('modules')
         .insert({
@@ -147,6 +151,7 @@ export default function ModulesPage() {
           rule_text: moduleRuleText.trim(),
           owner_id: session.user.id,
           status: 'active',
+          sort_order: nextSortOrder,
         });
 
       if (error) throw error;
@@ -157,10 +162,10 @@ export default function ModulesPage() {
       setModuleDescription('');
       setModuleRuleText('');
       setShowCreateForm(false);
-      showToast('小館已建立。', 'success');
+      showToast('頻道已建立。', 'success');
     } catch (error) {
-      console.error('建立小館失敗:', error);
-      showToast(error.message || '建立小館失敗，請稍後再試。');
+      console.error('建立頻道失敗:', error);
+      showToast(error.message || '建立頻道失敗，請稍後再試。');
     } finally {
       setCreatingModule(false);
     }
@@ -179,10 +184,41 @@ export default function ModulesPage() {
 
       const nextModules = await prefetchModules({ force: true });
       setModules(nextModules);
-      showToast('小館已關閉，歷史內容仍可保留瀏覽。', 'success');
+      showToast('頻道已關閉，歷史內容仍可保留瀏覽。', 'success');
     } catch (error) {
-      console.error('關閉小館失敗:', error);
-      showToast(error.message || '關閉小館失敗，請稍後再試。');
+      console.error('關閉頻道失敗:', error);
+      showToast(error.message || '關閉頻道失敗，請稍後再試。');
+    }
+  };
+
+  const moveModule = async (moduleIndex, direction) => {
+    const targetIndex = moduleIndex + direction;
+    if (targetIndex < 0 || targetIndex >= modules.length || reorderingModuleId) return;
+
+    const currentModule = modules[moduleIndex];
+    const targetModule = modules[targetIndex];
+    const currentSortOrder = Number(currentModule.sort_order) || ((moduleIndex + 1) * 100);
+    const targetSortOrder = Number(targetModule.sort_order) || ((targetIndex + 1) * 100);
+
+    setReorderingModuleId(currentModule.id);
+
+    try {
+      const [currentResult, targetResult] = await Promise.all([
+        supabase.from('modules').update({ sort_order: targetSortOrder }).eq('id', currentModule.id),
+        supabase.from('modules').update({ sort_order: currentSortOrder }).eq('id', targetModule.id),
+      ]);
+
+      if (currentResult.error) throw currentResult.error;
+      if (targetResult.error) throw targetResult.error;
+
+      const nextModules = await prefetchModules({ force: true });
+      setModules(nextModules);
+      showToast('頻道順序已更新。', 'success');
+    } catch (error) {
+      console.error('調整頻道順序失敗:', error);
+      showToast(error.message || '調整順序失敗，請稍後再試。');
+    } finally {
+      setReorderingModuleId(null);
     }
   };
 
@@ -195,7 +231,7 @@ export default function ModulesPage() {
       overflowX: 'hidden',
     }}>
       <Head>
-        <title>小館 · 審美者</title>
+        <title>頻道 · 審美者</title>
       </Head>
 
       {/* Sticky header */}
@@ -225,7 +261,7 @@ export default function ModulesPage() {
         >
           ← 大廳
         </button>
-        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>小館</div>
+        <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>頻道</div>
         <button
           type="button"
           onClick={() => router.push('/submit')}
@@ -248,21 +284,21 @@ export default function ModulesPage() {
         {/* Page header */}
         <section style={{ marginBottom: '20px' }}>
           <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>
-            小館
+            頻道
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
-            每座小館都有自己的收錄規則；你可以自由走進來，看看這裡正在留下什麼。
+            每個頻道都有自己的收錄規則；你可以自由進入，看看這裡正在留下什麼。
           </p>
-          {isSuperAdmin && <button type="button" onClick={() => setShowCreateForm((visible) => !visible)} style={{ background: 'transparent', border: '1px solid var(--brand-blue)', borderRadius: '6px', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, marginTop: '14px', padding: '7px 11px' }}>{showCreateForm ? '收起建立表單' : '+ 建立小館'}</button>}
+          {isSuperAdmin && <button type="button" onClick={() => setShowCreateForm((visible) => !visible)} style={{ background: 'transparent', border: '1px solid var(--brand-blue)', borderRadius: '6px', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, marginTop: '14px', padding: '7px 11px' }}>{showCreateForm ? '收起建立表單' : '+ 建立頻道'}</button>}
         </section>
 
         {isSuperAdmin && showCreateForm && (
           <form onSubmit={createModule} style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '8px', display: 'grid', gap: '12px', marginBottom: '20px', padding: '16px' }}>
-            <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>建立小館</div>
-            <input value={moduleName} onChange={(event) => setModuleName(event.target.value)} maxLength={40} placeholder="小館名稱，例如：2022 小館" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
-            <input value={moduleDescription} onChange={(event) => setModuleDescription(event.target.value)} maxLength={120} placeholder="一句小館簡介（選填）" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
+            <div style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>建立頻道</div>
+            <input value={moduleName} onChange={(event) => setModuleName(event.target.value)} maxLength={40} placeholder="頻道名稱，例如：2022 頻道" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
+            <input value={moduleDescription} onChange={(event) => setModuleDescription(event.target.value)} maxLength={120} placeholder="一句頻道簡介（選填）" style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', outline: 'none', padding: '10px 11px' }} />
             <textarea value={moduleRuleText} onChange={(event) => setModuleRuleText(event.target.value)} maxLength={300} placeholder="收錄規則（選填）" rows={3} style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', font: 'inherit', fontSize: '14px', lineHeight: 1.5, outline: 'none', padding: '10px 11px', resize: 'vertical' }} />
-            <button type="submit" disabled={creatingModule} style={{ backgroundColor: creatingModule ? 'var(--border-light)' : 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: creatingModule ? 'wait' : 'pointer', fontSize: '14px', fontWeight: 600, padding: '10px 14px' }}>{creatingModule ? '建立中...' : '建立小館'}</button>
+            <button type="submit" disabled={creatingModule} style={{ backgroundColor: creatingModule ? 'var(--border-light)' : 'var(--brand-blue)', border: 'none', borderRadius: '6px', color: '#FFFFFF', cursor: creatingModule ? 'wait' : 'pointer', fontSize: '14px', fontWeight: 600, padding: '10px 14px' }}>{creatingModule ? '建立中...' : '建立頻道'}</button>
           </form>
         )}
 
@@ -305,7 +341,7 @@ export default function ModulesPage() {
             padding: '28px 20px',
             textAlign: 'center',
           }}>
-            目前還沒有開放中的小館。先讓大廳流動起來，之後再慢慢分館。
+            目前還沒有開放中的頻道。先讓大廳流動起來，之後再慢慢建立新頻道。
           </div>
         )}
 
@@ -398,12 +434,16 @@ export default function ModulesPage() {
 
         {isSuperAdmin && !loading && modules.length > 0 && (
           <section style={{ borderTop: '1px solid var(--border-light)', marginTop: '28px', paddingTop: '18px' }}>
-            <h2 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, margin: '0 0 10px' }}>小館管理</h2>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, margin: '0 0 10px' }}>頻道管理</h2>
             <div style={{ display: 'grid', gap: '8px' }}>
-              {modules.map((module) => (
+              {modules.map((module, moduleIndex) => (
                 <div key={module.id} style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', display: 'flex', gap: '12px', justifyContent: 'space-between', padding: '10px 12px' }}>
                   <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{module.name}</span>
-                  <button type="button" onClick={() => archiveModule(module)} style={{ background: 'transparent', border: 'none', color: '#B85B6B', cursor: 'pointer', flex: '0 0 auto', fontSize: '12px', padding: '3px 0' }}>關閉</button>
+                  <div style={{ alignItems: 'center', display: 'flex', flex: '0 0 auto', gap: '9px' }}>
+                    <button type="button" disabled={moduleIndex === 0 || Boolean(reorderingModuleId)} onClick={() => moveModule(moduleIndex, -1)} style={{ background: 'transparent', border: 'none', color: moduleIndex === 0 ? 'var(--text-tertiary)' : 'var(--brand-blue)', cursor: moduleIndex === 0 ? 'default' : 'pointer', fontSize: '12px', padding: '3px 0' }}>上移</button>
+                    <button type="button" disabled={moduleIndex === modules.length - 1 || Boolean(reorderingModuleId)} onClick={() => moveModule(moduleIndex, 1)} style={{ background: 'transparent', border: 'none', color: moduleIndex === modules.length - 1 ? 'var(--text-tertiary)' : 'var(--brand-blue)', cursor: moduleIndex === modules.length - 1 ? 'default' : 'pointer', fontSize: '12px', padding: '3px 0' }}>下移</button>
+                    <button type="button" onClick={() => archiveModule(module)} style={{ background: 'transparent', border: 'none', color: '#B85B6B', cursor: 'pointer', fontSize: '12px', padding: '3px 0' }}>關閉</button>
+                  </div>
                 </div>
               ))}
             </div>

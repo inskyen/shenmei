@@ -124,6 +124,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   // 身份與 Profile 是兩個請求：在兩者都確認前保留載入狀態，
   // 避免右上角依序出現「訪客 -> 預設頭像 -> 真實頭像」的跳動。
   const [isIdentityLoading, setIsIdentityLoading] = useState(true);
@@ -266,7 +267,7 @@ export default function Home() {
       if (modulesResult.status === 'fulfilled') {
         setModules(modulesResult.value || []);
       } else {
-        console.warn('小館列表預載失敗:', modulesResult.reason);
+        console.warn('頻道列表預載失敗:', modulesResult.reason);
       }
 
       setFollowingLoading(false);
@@ -341,6 +342,24 @@ export default function Home() {
       window.scrollTo(0, Number(savedScrollY));
     });
   }, [loading]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const updateBackToTopVisibility = () => {
+      const revealDistance = Math.max(window.innerHeight * 1.25, 720);
+      setShowBackToTop(window.scrollY >= revealDistance);
+    };
+
+    updateBackToTopVisibility();
+    window.addEventListener('scroll', updateBackToTopVisibility, { passive: true });
+    window.addEventListener('resize', updateBackToTopVisibility);
+
+    return () => {
+      window.removeEventListener('scroll', updateBackToTopVisibility);
+      window.removeEventListener('resize', updateBackToTopVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     videos.slice(0, 8).forEach((video) => {
@@ -453,6 +472,34 @@ export default function Home() {
       router.push(`/v/${video.video_id || video.id}`);
     }
   };
+
+  const refreshAndReturnToTop = useCallback(async () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (activeSection !== 'latest' || feedRequestRef.current) return;
+
+    feedRequestRef.current = true;
+
+    try {
+      const data = await fetchFeedPage(0);
+      const firstPageItems = data.items || [];
+      const resolvedOffset = data.next_offset || firstPageItems.length;
+      const resolvedHasMore = Boolean(data.has_more);
+
+      setVideos(firstPageItems);
+      setNextFeedOffset(resolvedOffset);
+      setHasMoreFeed(resolvedHasMore);
+      cacheHomeFeed(firstPageItems, { hasMore: resolvedHasMore, nextOffset: resolvedOffset });
+
+      const nextLikedPostIds = await loadLikedPostIds(firstPageItems.map((item) => item.post_id));
+      if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
+    } catch (error) {
+      console.error('重新整理最新策展失敗:', error);
+      showToast('重新整理失敗，請稍後再試。');
+    } finally {
+      feedRequestRef.current = false;
+    }
+  }, [activeSection]);
 
   const switchHomeSection = useCallback((nextSection, motion = 'none') => {
     if (!HOME_SECTIONS.includes(nextSection) || nextSection === activeSection) return;
@@ -629,7 +676,7 @@ export default function Home() {
             onClick={() => switchHomeSection('modules', 'right')}
             style={{ background: 'transparent', border: 'none', color: activeSection === 'modules' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'modules' ? '20px' : '18px', fontWeight: activeSection === 'modules' ? 600 : 500, padding: 0 }}
           >
-            小館
+            頻道
           </button>
         </div>
         <div style={{ display: 'flex', gap: '16px', paddingBottom: '2px', alignItems: 'center' }}>
@@ -673,14 +720,14 @@ export default function Home() {
         {activeSection === 'modules' ? (
           <section style={{ padding: '18px 14px 24px' }}>
             {modulesLoading ? (
-              <div aria-label="正在載入小館" style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
+              <div aria-label="正在載入頻道" style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
                 {[0, 1, 2, 3].map((index) => (
                   <div key={index} className="app-detail-skeleton" style={{ aspectRatio: '4 / 3', borderRadius: '8px' }} />
                 ))}
               </div>
             ) : modules.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '72px 20px', textAlign: 'center' }}>
-                目前還沒有開放中的小館。
+                目前還沒有開放中的頻道。
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
@@ -910,6 +957,21 @@ export default function Home() {
         )}
         </div>
       </main>
+
+      {/* 滑過一段內容後顯示；回頂同時重新取得最新一批內容，避免整頁重新載入。 */}
+      {showBackToTop && (
+        <button
+          type="button"
+          aria-label="回到頂部並重新整理"
+          title="回到頂部並重新整理"
+          onClick={refreshAndReturnToTop}
+          style={{ position: 'fixed', bottom: '148px', right: '16px', width: '42px', height: '42px', padding: 0, backgroundColor: 'var(--bg-surface)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', zIndex: 30, cursor: 'pointer' }}
+        >
+          <svg aria-hidden="true" style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5 10l7-7 7 7M12 3v18" />
+          </svg>
+        </button>
+      )}
 
       {/* 懸浮通知入口 */}
       <div onClick={() => goToProtectedPage('/notifications', '請先登入，才能查看通知。')} style={{ position: 'fixed', bottom: '96px', right: '16px', width: '42px', height: '42px', backgroundColor: 'var(--bg-surface)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', zIndex: 30, cursor: 'pointer' }}>

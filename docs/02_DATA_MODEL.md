@@ -190,7 +190,7 @@ author_name
 
 ## 7. modules
 
-小館 / 板塊 / 主題空間。對應 `/m/[slug]`。
+頻道 / 板塊 / 主題空間。對應 `/m/[slug]`。
 
 ### 欄位
 
@@ -198,11 +198,12 @@ author_name
 | --- | --- | --- | --- |
 | id | uuid | 是 | 主鍵 |
 | slug | text | 是 | URL slug |
-| name | text | 是 | 小館名稱 |
-| description | text | 否 | 小館介紹 |
+| name | text | 是 | 頻道名稱 |
+| description | text | 否 | 頻道介紹 |
 | cover_url | text | 否 | 封面 |
 | theme_color | text | 否 | 主色 |
-| owner_id | uuid | 否 | 館主 / 建立者；第一版保留欄位但不做館主管理功能 |
+| owner_id | uuid | 否 | 頻道建立者；第一版保留欄位但不提供頻道管理功能 |
+| sort_order | integer | 是 | 頻道展示順序；數字越小越靠前，預設 `1000` |
 | status | text | 是 | 狀態，預設 `active` |
 | created_at | timestamptz | 是 | 建立時間 |
 | updated_at | timestamptz | 是 | 更新時間 |
@@ -210,8 +211,8 @@ author_name
 ### 約束
 
 - `slug` 唯一。
-- 第一版由管理員建立小館。
-- 第一版保留 `owner_id`，但可為空；若有建立者資料則記錄，介面不展示館主管理。
+- 第一版由管理員建立頻道。
+- 第一版保留 `owner_id`，但可為空；若有建立者資料則記錄，介面暫不提供頻道管理員功能。
 
 ### MVP 狀態
 
@@ -219,7 +220,7 @@ author_name
 
 ## 8. post_modules
 
-策展動態與小館的多對多關係。
+策展動態與頻道的多對多關係。
 
 ### 欄位
 
@@ -236,7 +237,7 @@ author_name
 
 ### MVP 狀態
 
-必做，因為一篇策展動態可以屬於多個小館。
+必做，因為一篇策展動態可以屬於多個頻道。
 
 ## 9. comments
 
@@ -469,8 +470,8 @@ modules related through posts
 3. 檢查 videos 是否已有 source_platform + external_id
 4. 若沒有，建立 videos
 5. 建立 posts
-6. 若使用者選擇小館，建立 post_modules
-7. 若未選小館，不建立 post_modules，該 post 仍出現在大廳最新流
+6. 若使用者選擇頻道，建立 post_modules
+7. 若未選頻道，不建立 post_modules，該 post 仍出現在大廳最新流
 8. 發布成功後返回大廳最新流，並將最新發布的 post 排在前列
 ```
 
@@ -490,10 +491,10 @@ Supabase RLS 應在 SQL 階段細化。初步原則：
 
 以下決策已確認，正式 SQL 時應照此落地：
 
-- 已確認：發布時允許一篇 post 無小館；未選小館時預設發到大廳最新流。
+- 已確認：發布時允許一篇 post 無頻道；未選頻道時預設發到大廳最新流。
 - 已確認：`reactions` 第一版只做 `like`，不提前支持多反應。
 - 已確認：`profiles.username` 註冊時自動生成一串數字，後續允許使用者修改。
-- 已確認：`modules.owner_id` 第一版保留但不做館主管理功能，可為空。
+- 已確認：`modules.owner_id` 第一版保留但不提供頻道管理功能，可為空。
 
 ## 22. 仍待確認
 

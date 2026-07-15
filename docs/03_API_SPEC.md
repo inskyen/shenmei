@@ -168,14 +168,14 @@ posts
 
 選填：
 
-- 小館 IDs。
+- 頻道 IDs。
 
 ### 6.3 前端校驗
 
 - 必須登入。
 - BVID 必須能解析。
 - `note` 至少 10 個字。
-- 小館可不選。
+- 頻道可不選。
 
 ### 6.4 寫入流程
 
@@ -184,8 +184,8 @@ posts
 2. 查 videos 是否存在 source_platform = bilibili + external_id = BVID
 3. 若不存在，建立 videos
 4. 建立 posts
-5. 若選擇小館，建立 post_modules
-6. 若未選小館，不建立 post_modules
+5. 若選擇頻道，建立 post_modules
+6. 若未選頻道，不建立 post_modules
 7. 發布成功後跳回 `/`
 8. 大廳最新流展示剛發布的 post
 ```
@@ -303,11 +303,11 @@ current_user reaction state
 }
 ```
 
-## 9. 小館列表 `/m`
+## 9. 頻道列表 `/m`
 
 ### 9.1 需求
 
-展示所有 active 小館。
+展示所有 active 頻道。
 
 ### 9.2 查詢資料
 
@@ -319,11 +319,11 @@ latest_post_at
 
 第一版如果統計成本高，可先只讀 `modules`。
 
-## 10. 小館頁 `/m/[slug]`
+## 10. 頻道頁 `/m/[slug]`
 
 ### 10.1 需求
 
-展示某個小館下的策展動態。
+展示某個頻道下的策展動態。
 
 ### 10.2 查詢資料
 
