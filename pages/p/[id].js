@@ -78,6 +78,7 @@ export default function PostPage() {
   const [replyTarget, setReplyTarget] = useState(null);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [videoDimension, setVideoDimension] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -168,6 +169,17 @@ export default function PostPage() {
           loadProfileFollowState(profileResult.data.id)
             .then((followState) => setIsFollowingAuthor(followState.isFollowing))
             .catch((followError) => console.warn('作者追蹤狀態載入失敗:', followError));
+        }
+
+        if (postData?.videos?.external_id) {
+          fetch(`/api/bilibili?bvid=${postData.videos.external_id}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.dimension) {
+                setVideoDimension(data.dimension);
+              }
+            })
+            .catch(err => console.warn('無法獲取影片尺寸:', err));
         }
       } catch (error) {
         console.error('策展動態載入失敗:', error);
@@ -356,55 +368,6 @@ export default function PostPage() {
         <title>{post ? `${video.title || '策展動態'} · 審美者` : '策展動態 · 審美者'}</title>
       </Head>
 
-      <header style={{
-        alignItems: 'center',
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '16px',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-      }}>
-        <button
-          type="button"
-          onClick={goBack}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border-light)',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'var(--bg-surface)',
-            borderRadius: '50%',
-          }}
-        >
-          <svg style={{ width: '22px', height: '22px' }} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"></path></svg>
-        </button>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            type="button"
-            onClick={goToSubmit}
-            style={{
-              backgroundColor: 'var(--brand-blue)',
-              border: 'none',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: 500,
-              padding: '6px 16px',
-            }}
-          >
-            採樣
-          </button>
-        </div>
-      </header>
-
       <main style={{ margin: '0 auto', maxWidth: '600px' }}>
         {loading && (
           <div style={{ display: 'grid', gap: '18px', padding: '84px 16px 28px' }}>
@@ -428,12 +391,25 @@ export default function PostPage() {
 
         {!loading && post && (
           <article style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* 顶部满铺视频/图片区 */}
+            {/* 顶部悬浮视频区 */}
             <section style={{
               backgroundColor: 'var(--bg-base)',
-              position: 'relative',
+              position: 'sticky',
+              top: 0,
+              zIndex: 40,
               width: '100%',
-              paddingTop: '56.25%',
+              ...(videoDimension && videoDimension.height > videoDimension.width ? {
+                height: '75vh',
+                maxHeight: '800px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'hidden',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              } : {
+                paddingTop: '56.25%',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+              })
             }}>
               {video.external_id ? (
                 <iframe
@@ -679,22 +655,27 @@ export default function PostPage() {
         )}
       </main>
 
-      {/* 底部吸底互動欄 (Xiaohongshu style) */}
+      {/* 底部懸浮互動欄 (Floating Island style) */}
       {!loading && post && (
         <div style={{
           position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 'max(24px, env(safe-area-inset-bottom))',
+          left: '16px',
+          right: '16px',
+          margin: '0 auto',
+          maxWidth: '568px',
           backgroundColor: 'var(--bg-surface)',
-          borderTop: '1px solid var(--border-light)',
-          padding: '10px 16px',
-          paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+          border: '1px solid var(--border-light)',
+          borderRadius: '99px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '16px',
-          zIndex: 40,
+          zIndex: 50,
+          transition: 'border-radius 0.2s',
+          ...(replyTarget ? { borderRadius: '24px', alignItems: 'flex-end', padding: '12px 16px' } : {})
         }}>
           {/* 輸入框 */}
           <div style={{ flex: 1, minWidth: 0 }}>

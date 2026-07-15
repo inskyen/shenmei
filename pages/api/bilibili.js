@@ -38,6 +38,7 @@ export default async function handler(req, res) {
         title,
         cover: securePic,
         author: owner?.name || '',
+        dimension: data.data.dimension || null,
       });
     }
 
