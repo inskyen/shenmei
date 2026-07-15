@@ -909,7 +909,7 @@ export default function Home() {
 
                   {/* 右侧底部互动区 */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                    <div onClick={() => openDetailPage(video)} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                       <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                       <span style={{ fontSize: '12px', fontWeight: '400' }}>{video.comment_count || 0}</span>
                     </div>
