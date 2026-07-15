@@ -34,7 +34,7 @@ export default function FollowingPage() {
         const user = await requireLogin({
           router,
           nextPath: '/following',
-          message: '請先登入，才能查看你的關注名單。',
+          message: '請先登入，才能查看您的關注名單。',
           replace: true,
         });
 
@@ -77,7 +77,7 @@ export default function FollowingPage() {
     <>
       <PageShell
         title="關注動態"
-        subtitle="只收下你想持續留意的人，剛剛發出的審美。"
+        subtitle="只收下您想持續留意的人，剛剛發出的審美。"
       >
       {loading && (
         <div style={{ display: 'grid', gap: '12px' }}>
@@ -93,7 +93,7 @@ export default function FollowingPage() {
 
       {!loading && !errorMessage && profiles.length === 0 && (
         <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8, textAlign: 'center', padding: '28px 8px' }}>
-          <p style={{ margin: '0 0 16px' }}>你還沒有關注任何策展人。</p>
+          <p style={{ margin: '0 0 16px' }}>您還沒有關注任何策展人。</p>
           <button
             type="button"
             onClick={() => router.push('/')}
@@ -128,7 +128,7 @@ export default function FollowingPage() {
 
           {posts.length === 0 && (
             <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '24px 8px', textAlign: 'center' }}>
-              你關注的策展人最近還沒有新的採樣。
+              您關注的策展人最近還沒有新的採樣。
             </div>
           )}
 

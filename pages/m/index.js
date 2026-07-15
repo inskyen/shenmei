@@ -260,7 +260,7 @@ export default function ModulesPage() {
             頻道
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
-            每個頻道都有自己的收錄規則；你可以自由進入，看看這裡正在留下什麼。
+            每個頻道都有自己的收錄規則；您可以自由進入，看看這裡正在留下什麼。
           </p>
           {isSuperAdmin && <button type="button" onClick={() => setShowCreateForm((visible) => !visible)} style={{ background: 'transparent', border: '1px solid var(--brand-blue)', borderRadius: '6px', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, marginTop: '14px', padding: '7px 11px' }}>{showCreateForm ? '收起建立表單' : '+ 建立頻道'}</button>}
         </section>

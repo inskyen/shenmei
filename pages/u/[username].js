@@ -48,7 +48,7 @@ export default function UserPage() {
           const user = await requireLogin({
             router,
             nextPath: '/u/me',
-            message: '請先登入，才能進入你的策展人頁。',
+            message: '請先登入，才能進入您的策展人頁。',
             replace: true,
           });
 

@@ -694,7 +694,7 @@ export default function Home() {
               onClick={() => router.push(myProfilePath)}
               style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--bg-base)', border: '1px solid var(--border-light)', overflow: 'hidden', cursor: 'pointer' }}
             >
-              <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="你的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="您的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ) : (
             <div 
@@ -827,7 +827,7 @@ export default function Home() {
                 onClick={() => router.push('/login?next=/')}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}
               >
-                登入後，這裡會留下你追蹤之人的最新採樣。
+                登入後，這裡會留下您追蹤之人的最新採樣。
               </button>
             )}
 

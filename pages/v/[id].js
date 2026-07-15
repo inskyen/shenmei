@@ -311,7 +311,7 @@ export default function VideoPage() {
 
               {recommendations.length === 0 && (
                 <div style={{ ...cardStyle, color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '22px 18px', textAlign: 'center', fontSize: '13px' }}>
-                  還沒有人推薦這支影片。你可以成為第一個把它放進大廳的人。
+                  還沒有人推薦這支影片。您可以成為第一個把它放進大廳的人。
                 </div>
               )}
 

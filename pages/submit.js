@@ -221,7 +221,7 @@ export default function SubmitPage() {
     }
 
     if (trimmedNote.length === 0) {
-      setMessage('請填寫推薦理由，讓這次策展有一點你的溫度。');
+      setMessage('請填寫推薦理由，讓這次策展有一點您的溫度。');
       return;
     }
 
@@ -478,7 +478,7 @@ export default function SubmitPage() {
                <div className="app-detail-skeleton" style={{ borderRadius: '6px', height: '58px', width: '100%' }} />
              ) : forcedModuleSlug && !canChooseModule ? (
                <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
-                 這個頻道開放給審美者投稿；你仍可將這次採樣發佈到大廳。
+                 這個頻道開放給審美者投稿；您仍可將這次採樣發佈到大廳。
                </div>
              ) : forcedModuleSlug ? (
                <>
@@ -495,7 +495,7 @@ export default function SubmitPage() {
              ) : (
                <>
                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
-                   你想把它放進哪個頻道？<span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '13px' }}>（選填，最多一個）</span>
+                   您想把它放進哪個頻道？<span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '13px' }}>（選填，最多一個）</span>
                  </div>
                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                    {modulesLoading && [0, 1, 2].map((index) => (
@@ -535,7 +535,7 @@ export default function SubmitPage() {
           <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', padding: '24px 28px', textAlign: 'center' }}>
             <div style={{ alignItems: 'center', backgroundColor: 'var(--brand-blue-light)', borderRadius: '50%', color: 'var(--brand-blue)', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
             <div style={{ fontSize: '16px', fontWeight: 600 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶你回到這個頻道。' : '正在帶你回到剛剛發出的策展。'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的策展。'}</div>
           </div>
         </div>
       )}

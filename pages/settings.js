@@ -19,7 +19,7 @@ const AVATAR_GROUPS = {
 const TAG_SUGGESTIONS = ['電影', '音樂', '攝影', '設計', '閱讀', '動畫', '遊戲', '舞蹈'];
 
 const MESSAGE_PERMISSION_OPTIONS = [
-  { value: 'everyone', label: '所有人', description: '任何人都能向你發起私訊。' },
+  { value: 'everyone', label: '所有人', description: '任何人都能向您發起私訊。' },
   { value: 'followers', label: '追蹤者', description: '追蹤關係開放後，僅限追蹤者。' },
   { value: 'none', label: '暫不接收', description: '目前不接收新的私訊。' },
 ];
@@ -302,7 +302,7 @@ export default function SettingsPage() {
             <input 
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="輸入你的暱稱"
+              placeholder="輸入您的暱稱"
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent' }}
             />
           </div>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
             <textarea 
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="介紹一下你自己，或是你的審美偏好..."
+              placeholder="介紹一下您自己，或是您的審美偏好..."
               rows={3}
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: 'var(--text-primary)', background: 'transparent', resize: 'none', fontFamily: 'inherit' }}
             />

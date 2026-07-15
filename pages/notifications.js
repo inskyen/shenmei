@@ -6,10 +6,10 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadNotifications, markNotificationsRead } from '@/lib/notifications/userNotifications';
 
 const notificationCopy = {
-  like: '喜歡了你的策展。',
-  comment: '在你的策展下留言。',
-  reply: '回覆了你的留言。',
-  follow: '關注了你。',
+  like: '喜歡了您的策展。',
+  comment: '在您的策展下留言。',
+  reply: '回覆了您的留言。',
+  follow: '關注了您。',
   message: '傳來了一則私訊。',
 };
 
@@ -87,7 +87,7 @@ export default function NotificationsPage() {
     <>
       <PageShell
         title="通知"
-        subtitle="有人回應你的審美時，光點會留在這裡。"
+        subtitle="有人回應您的審美時，光點會留在這裡。"
       >
         {loading && (
           <div style={{ display: 'grid', gap: '12px' }}>
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
 
         {!loading && !errorMessage && notifications.length === 0 && (
           <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '30px 8px', textAlign: 'center' }}>
-            還沒有新的光點。有人喜歡、留言或關注你時，會出現在這裡。
+            還沒有新的光點。有人喜歡、留言或關注您時，會出現在這裡。
           </div>
         )}
 
