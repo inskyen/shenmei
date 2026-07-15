@@ -110,7 +110,7 @@ export default function ConversationPage() {
   return (
     <div style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh' }}>
       <Head><title>{name} · 私訊 · 審美者</title></Head>
-      <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'sticky', top: 0, zIndex: 10 }}>
+      <header style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', padding: '48px 18px 14px', position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 10 }}>
         <button type="button" onClick={() => router.push('/messages')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: 500, padding: 0 }}>← 私訊</button>
         <div style={{ alignItems: 'center', display: 'flex', gap: '8px', minWidth: 0 }}>
           <span style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flex: '0 0 auto', fontSize: '12px', fontWeight: 500, height: '26px', justifyContent: 'center', width: '26px', border: '1px solid var(--border-light)' }}>{!profile?.avatar_url && getInitial(profile)}</span>
@@ -119,8 +119,12 @@ export default function ConversationPage() {
         <button type="button" onClick={() => profile?.username && router.push(`/u/${profile.username}`)} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>主頁</button>
       </header>
 
-      <main style={{ margin: '0 auto', maxWidth: '680px', padding: '18px 16px 28px' }}>
-        {loading && <div style={{ color: 'var(--text-tertiary)', padding: '48px 0', textAlign: 'center' }}>正在打開私訊...</div>}
+      <main style={{ margin: '0 auto', maxWidth: '680px', padding: '106px 16px 28px' }}>
+        {loading && (
+          <div style={{ padding: '48px 0', textAlign: 'center' }}>
+            <div style={{ animation: 'app-skeleton-pulse 1.25s ease-in-out infinite', backgroundColor: 'var(--border-light)', borderRadius: '50%', height: '24px', margin: '0 auto', width: '24px' }} />
+          </div>
+        )}
         {!loading && errorMessage && <p style={{ color: '#FF4D4F', lineHeight: 1.7 }}>{errorMessage}</p>}
         {!loading && data && <DirectMessageThread currentUserId={data.currentUser.id} messages={data.messages} onSend={handleSend} sending={sending} />}
       </main>

@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import { requireLogin } from '@/lib/auth/requireLogin';
-import { getCachedMessageInbox, prefetchConversation, prefetchMessageInbox } from '@/lib/cache/messagePageCache';
+import { cacheConversation, getCachedConversation, getCachedMessageInbox, prefetchConversation, prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 import { supabase } from '@/lib/supabase/client';
 
 function formatRelativeTime(timestamp) {
@@ -22,17 +22,17 @@ function getInitial(profile) {
   return name.charAt(0).toUpperCase();
 }
 
-// 根據名字生成穩定的漸層背景色（Soul 風格）
+// 根據名字生成 Soul 風格漸層背景色
 function getAvatarGradient(name) {
   const gradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)',
     'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+    'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+    'linear-gradient(135deg, #a6c0fe 0%, #f68084 100%)',
+    'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
   ];
   const index = (name?.charCodeAt(0) || 0) % gradients.length;
   return gradients[index];
@@ -92,6 +92,15 @@ export default function MessagesPage() {
   }, [currentUserId]);
 
   const openConversation = (conversation) => {
+    // 樂觀更新：在進入前先用已有資料填入快取，讓下個頁面能「秒開」頭像與標題
+    if (!getCachedConversation(conversation.id)) {
+      cacheConversation(conversation.id, {
+        currentUser: { id: currentUserId },
+        otherProfile: conversation.otherProfile,
+        messages: conversation.latestMessage ? [conversation.latestMessage] : [],
+      });
+    }
+
     router.prefetch(`/messages/${conversation.id}`);
     prefetchConversation(conversation.id).catch((error) => console.error('私訊預取失敗:', error));
     router.push(`/messages/${conversation.id}`);
@@ -119,7 +128,7 @@ export default function MessagesPage() {
           top: 0,
           zIndex: 10,
         }}>
-          <span style={{ color: 'var(--text-primary)', fontSize: '17px', fontWeight: 700, letterSpacing: '0.3px' }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: '17px', fontWeight: 600, letterSpacing: '0.5px' }}>
             私訊
           </span>
         </header>
@@ -191,16 +200,15 @@ export default function MessagesPage() {
                     onMouseEnter={() => prefetchConversation(conversation.id).catch(() => {})}
                     onTouchStart={() => prefetchConversation(conversation.id).catch(() => {})}
                     style={{
-                      alignItems: 'center',
+                      alignItems: 'stretch',
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid var(--border-light)',
                       cursor: 'pointer',
                       display: 'flex',
                       gap: '14px',
-                      padding: '14px 20px',
+                      padding: '0 0 0 20px',
                       textAlign: 'left',
-                      transition: 'background 0.15s',
+                      transition: 'background 0.2s ease',
                       width: '100%',
                     }}
                     onMouseDown={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
@@ -209,7 +217,7 @@ export default function MessagesPage() {
                     onTouchEnd={(e) => { setTimeout(() => { if (e.currentTarget) e.currentTarget.style.background = 'transparent'; }, 200); }}
                   >
                     {/* 頭像 */}
-                    <div style={{ flex: '0 0 auto', position: 'relative' }}>
+                    <div style={{ alignSelf: 'center', flex: '0 0 auto', padding: '12px 0', position: 'relative' }}>
                       <div style={{
                         alignItems: 'center',
                         background: hasAvatar ? 'transparent' : gradient,
@@ -219,16 +227,15 @@ export default function MessagesPage() {
                         borderRadius: '50%',
                         color: '#FFFFFF',
                         display: 'flex',
-                        fontSize: '20px',
+                        fontSize: '18px',
                         fontWeight: 600,
-                        height: '52px',
+                        height: '48px',
                         justifyContent: 'center',
-                        width: '52px',
-                        letterSpacing: '-0.5px',
+                        width: '48px',
                       }}>
                         {!hasAvatar && getInitial(profile)}
                       </div>
-                      {/* 未讀紅點（圓形徽章 Soul 風格） */}
+                      {/* Soul風格 未讀徽章 */}
                       {unread > 0 && (
                         <span style={{
                           alignItems: 'center',
@@ -253,34 +260,33 @@ export default function MessagesPage() {
                     </div>
 
                     {/* 文字區域 */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <div style={{ borderBottom: '1px solid var(--border-light)', display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', minWidth: 0, padding: '12px 20px 12px 0' }}>
+                      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <span style={{
-                          color: unread > 0 ? 'var(--text-primary)' : 'var(--text-primary)',
+                          color: 'var(--text-primary)',
                           fontSize: '15px',
-                          fontWeight: unread > 0 ? 700 : 500,
+                          fontWeight: unread > 0 ? 600 : 500,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          maxWidth: '65%',
+                          maxWidth: '70%',
                         }}>
                           {name}
                         </span>
                         <span style={{
                           color: unread > 0 ? 'var(--brand-blue)' : 'var(--text-tertiary)',
                           flex: '0 0 auto',
-                          fontSize: '12px',
-                          fontWeight: unread > 0 ? 600 : 400,
+                          fontSize: '11px',
                         }}>
                           {timeStr}
                         </span>
                       </div>
                       <span style={{
-                        color: unread > 0 ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                        color: unread > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                         display: 'block',
                         fontSize: '13px',
                         fontWeight: unread > 0 ? 500 : 400,
-                        lineHeight: 1.4,
+                        lineHeight: 1.5,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
