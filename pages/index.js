@@ -183,14 +183,34 @@ export default function Home() {
     loadInitialFeed();
 
     async function loadIdentity() {
+      // 先從本地快取讀取身份，實現瞬間渲染，避免每次重新整理都出現灰色骨架屏
       try {
-        // 先確認登入身份；未登入時不需要再請求 profiles。
+        const cached = window.localStorage.getItem('shenmei:my-profile');
+        if (cached === 'guest') {
+          if (isActive) setIsIdentityLoading(false);
+        } else if (cached) {
+          const parsed = JSON.parse(cached);
+          if (isActive) {
+            setUserProfile(parsed);
+            setCurrentUser({ id: parsed.id });
+            setIsIdentityLoading(false);
+          }
+        }
+      } catch (e) {
+        // 無視快取錯誤
+      }
+
+      try {
+        // 背景確認最新登入身份
         const { data: { user } } = await supabase.auth.getUser();
         if (!isActive) return;
 
         setCurrentUser(user || null);
 
-        if (!user) return;
+        if (!user) {
+          window.localStorage.setItem('shenmei:my-profile', 'guest');
+          return;
+        }
 
         loadUnreadNotificationCount()
           .then((count) => {
@@ -213,6 +233,12 @@ export default function Home() {
           setUserProfile(data || null);
           if (data?.username) {
             cacheProfileRoute(user.id, data.username);
+            // 寫入精簡版資料供下次瞬間渲染
+            window.localStorage.setItem('shenmei:my-profile', JSON.stringify({
+              id: data.id,
+              username: data.username,
+              avatar_url: data.avatar_url,
+            }));
           }
           prefetchProfilePage(data).catch((prefetchError) => {
             console.warn('預先載入個人頁失敗:', prefetchError);
