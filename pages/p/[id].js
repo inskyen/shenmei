@@ -286,7 +286,8 @@ export default function PostPage() {
     }
   };
 
-  const goToLoginForComment = async (message = '請先登入，才能留言。') => {
+  const goToLoginForComment = async (eOrMessage) => {
+    const message = typeof eOrMessage === 'string' ? eOrMessage : '請先登入';
     try {
       await requireLogin({
         router,
