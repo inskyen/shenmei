@@ -919,7 +919,7 @@ export default function PostPage() {
         onCancel={() => !deleteSubmitting && setDeleteTarget(null)}
         actions={[
           {
-            label: deleteTarget?.type === 'post' ? '刪除原連結' : '刪除留言',
+            label: '刪除',
             onClick: handleConfirmDelete,
             color: '#D94848',
             loading: deleteSubmitting,
