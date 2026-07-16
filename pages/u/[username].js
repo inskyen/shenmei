@@ -84,6 +84,8 @@ export default function UserPage() {
           setNextPostsOffset(cachedPage.nextOffset ?? cachedPage.posts.length);
           setTotalPostCount(cachedPage.totalPostCount ?? cachedPage.posts.length);
           setTotalLikeCount(cachedPage.totalLikeCount ?? 0);
+          setFollowerCount(cachedPage.followerCount ?? null);
+          setFollowingCount(cachedPage.followingCount ?? null);
           setIsOwnProfile(Boolean(currentUser && currentUser.id === cachedPage.profile.id));
           setLoading(false);
         }
@@ -132,15 +134,18 @@ export default function UserPage() {
         setNextPostsOffset(retainedOffset);
         setTotalPostCount(postsPage.totalPostCount);
         setTotalLikeCount(nextTotalLikeCount);
+        setFollowerCount(followState.followerCount);
+        setFollowingCount(followState.followingCount);
+        setIsFollowing(followState.isFollowing);
+
         cacheProfilePage(profileData, retainedPosts, {
           hasMore: retainedHasMore,
           nextOffset: retainedOffset,
           totalPostCount: postsPage.totalPostCount,
           totalLikeCount: nextTotalLikeCount,
+          followerCount: followState.followerCount,
+          followingCount: followState.followingCount,
         });
-        setFollowerCount(followState.followerCount);
-        setFollowingCount(followState.followingCount);
-        setIsFollowing(followState.isFollowing);
       } catch (error) {
         console.error('使用者頁載入失敗:', error);
         setErrorMessage('這位採樣人的資料暫時無法顯示。');
