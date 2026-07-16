@@ -193,12 +193,11 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       <button type="button" onClick={goToHome} style={itemStyle('home')}>
         {active === 'home' ? (
           <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1.05)' }} fill="currentColor" viewBox="0 0 24 24">
-            <path fillRule="evenodd" clipRule="evenodd" d="M12 21a9 9 0 100-18 9 9 0 000 18zm3.6-13.6a.5.5 0 01.6.3l3.3 8.7a.5.5 0 01-.6.6l-8.7-3.3a.5.5 0 01-.3-.6l-3.3-8.7a.5.5 0 01.6-.6l8.7 3.3z" />
+            <path d="M12 2.5a.5.5 0 01.47.34l2.4 7.2 7.2 2.4a.5.5 0 010 .95l-7.2 2.4-2.4 7.2a.5.5 0 01-.95 0l-2.4-7.2-7.2-2.4a.5.5 0 010-.95l7.2-2.4 2.4-7.2a.5.5 0 01.47-.34z" />
           </svg>
         ) : (
           <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" strokeWidth="1.2" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M15 9l-2.5 6.5-6.5 2.5 2.5-6.5L15 9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M12 3l2.25 6.75L21 12l-6.75 2.25L12 21l-2.25-6.75L3 12l6.75-2.25z" />
           </svg>
         )}
         <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400', lineHeight: 1 }}>發現</span>
@@ -245,11 +244,11 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
         <span style={{ display: 'inline-flex', position: 'relative' }}>
           {active === 'messages' ? (
             <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1.05)' }} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3a9 9 0 00-8.5 12L2 21l6.1-1.5A9 9 0 1012 3z" />
+              <path d="M12 3a9 9 0 00-6.36 15.36L3 21l2.64-2.64A9 9 0 1012 3z" />
             </svg>
           ) : (
             <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M3 21l1.9-5.7a8.5 8.5 0 113.8 3.8L3 21z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M20 12a8 8 0 01-13.66 5.66L4 20l2.34-2.34A8 8 0 1120 12z" />
             </svg>
           )}
           {hasUnreadMessages && (
