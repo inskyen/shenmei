@@ -51,15 +51,7 @@ export default function ImmersiveVideoPlayer({ video, onClose }) {
           boxShadow: '0 10px 40px rgba(0,0,0,0.5)', 
           position: 'relative', 
           width: '100%',
-          ...(videoDimension && videoDimension.height > videoDimension.width ? {
-            height: '80vh',
-            maxHeight: '800px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          } : {
-            paddingTop: '56.25%'
-          })
+          paddingTop: '56.25%'
         }}>
           {bvid ? (
             <iframe
