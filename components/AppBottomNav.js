@@ -45,6 +45,8 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
     refreshUnreadMessages();
 
     // INSERT 收到新訊息、UPDATE 標為已讀後，都重新核對一次未讀狀態。
+    // 若 WebSocket 連線失敗（如被廣告攔截器或防火牆封鎖），降級為靜默 warn，
+    // 不影響頁面正常運作，未讀計數仍會在頁面進入時正確載入。
     const channel = supabase
       .channel('bottom-nav-unread-messages')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
@@ -53,7 +55,11 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
           refreshUnreadMessages();
         }
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[Realtime] 即時連線無法建立，未讀計數將在頁面進入時載入，不影響核心功能。', err?.message || '');
+        }
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(() => {
       refreshUnreadMessages();
