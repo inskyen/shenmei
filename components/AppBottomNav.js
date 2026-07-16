@@ -81,7 +81,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
     const user = await requireLogin({
       router,
       nextPath: '/u/me',
-      message: '請先登入，才能進入您的採樣人頁。',
+      message: '請先登入',
     });
 
     if (!user) return;
@@ -227,7 +227,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       {/* 採樣 (UP按鈕) */}
       <button 
         type="button" 
-        onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} 
+        onClick={() => goToProtectedPage('/submit', '請先登入')} 
         style={itemStyle('submit')}
       >
         <div style={{
