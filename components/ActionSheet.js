@@ -15,7 +15,7 @@ export default function ActionSheet({
         display: 'flex',
         inset: 0,
         justifyContent: 'center',
-        padding: '24px 16px env(safe-area-inset-bottom)',
+        padding: '24px 16px calc(env(safe-area-inset-bottom) + 16px)',
         position: 'fixed',
         zIndex: 1000,
         transition: 'opacity 0.2s',
