@@ -692,7 +692,7 @@ export default function Home() {
               onMouseEnter={prefetchMyProfile}
               onTouchStart={prefetchMyProfile}
               onClick={() => router.push(myProfilePath)}
-              style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--bg-base)', border: '1px solid var(--border-light)', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--border-light)', border: '1px solid var(--border-light)', overflow: 'hidden', cursor: 'pointer' }}
             >
               <img src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${userProfile?.username || currentUser.id}`} alt="您的頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>

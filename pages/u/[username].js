@@ -30,8 +30,8 @@ export default function UserPage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(null);
+  const [followingCount, setFollowingCount] = useState(null);
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [nextPostsOffset, setNextPostsOffset] = useState(0);
   const [totalPostCount, setTotalPostCount] = useState(0);
@@ -450,11 +450,11 @@ export default function UserPage() {
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>獲讚</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followerCount}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followerCount ?? '-'}</span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>粉絲</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followingCount}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{followingCount ?? '-'}</span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>關注</span>
             </div>
           </div>
