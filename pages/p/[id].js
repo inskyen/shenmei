@@ -225,17 +225,30 @@ export default function PostPage() {
 
     const updateVideoSize = () => {
       videoResizeFrameRef.current = null;
-      // We removed the dynamic scroll-based shrinking here because it caused jitter
-      // Now the video just takes its natural aspect ratio space or max height.
+      const containerWidth = videoSection.parentElement?.clientWidth || Math.min(window.innerWidth, 600);
       const isPortraitVideo = Boolean(videoDimension && videoDimension.height > videoDimension.width);
-      if (!isPortraitVideo) {
-         videoSection.style.paddingTop = '56.25%';
-         videoSection.style.height = '0';
-      } else {
-         videoSection.style.paddingTop = '0';
-         videoSection.style.height = '75vh';
-         videoSection.style.maxHeight = '800px';
-      }
+      const naturalLandscapeHeight = containerWidth * 0.5625;
+      const expandedHeight = isPortraitVideo
+        ? Math.min(window.innerHeight * 0.75, 800)
+        : naturalLandscapeHeight;
+      const compactHeight = Math.min(
+        expandedHeight,
+        Math.max(176, Math.min(220, naturalLandscapeHeight))
+      );
+      const maximumCollapseDistance = expandedHeight - compactHeight;
+      const collapsedDistance = Math.min(Math.max(window.scrollY, 0), maximumCollapseDistance);
+      const currentHeight = expandedHeight - collapsedDistance;
+      const reservedHeight = expandedHeight - currentHeight;
+
+      videoSection.style.height = `${Math.round(currentHeight)}px`;
+      // 捲動 1px 就縮小 1px；同時用等量下邊距保留排版高度，讓下方
+      // 資訊自然緊貼播放器，並避免瀏覽器修正 scrollY 後反覆閃跳。
+      videoSection.style.marginBottom = `${Math.round(reservedHeight)}px`;
+      videoSection.style.maxHeight = 'none';
+      videoSection.style.paddingTop = '0';
+      videoSection.style.boxShadow = collapsedDistance > 4
+        ? '0 6px 18px rgba(0,0,0,0.12)'
+        : '0 4px 12px rgba(0,0,0,0.05)';
     };
 
     const scheduleVideoResize = () => {
@@ -244,9 +257,11 @@ export default function PostPage() {
     };
 
     updateVideoSize();
+    window.addEventListener('scroll', scheduleVideoResize, { passive: true });
     window.addEventListener('resize', scheduleVideoResize);
 
     return () => {
+      window.removeEventListener('scroll', scheduleVideoResize);
       window.removeEventListener('resize', scheduleVideoResize);
       if (videoResizeFrameRef.current) {
         window.cancelAnimationFrame(videoResizeFrameRef.current);
