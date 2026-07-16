@@ -266,7 +266,7 @@ export default function Login() {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
-              borderRadius: '6px',
+              borderRadius: '20px',
               color: 'var(--text-primary)',
               cursor: 'pointer',
               fontSize: '13px',
@@ -285,25 +285,30 @@ export default function Login() {
           <section style={{
             backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-light)',
-            borderRadius: '8px',
-            padding: '40px 32px',
+            borderRadius: '24px',
+            padding: '48px 32px',
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.04)',
           }}>
             
             {/* 頂部 Icon */}
             <div style={{
               alignItems: 'center',
-              background: 'var(--brand-blue-light)',
-              borderRadius: '6px',
               display: 'flex',
-              height: '64px',
+              height: '72px',
               justifyContent: 'center',
-              marginBottom: '24px',
-              width: '64px',
+              marginBottom: '32px',
+              width: '100%',
             }}>
               {isVerify ? (
-                <svg style={{ width: '32px', height: '32px', color: 'var(--brand-blue)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <div style={{ width: '64px', height: '64px', background: 'var(--brand-blue-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg style={{ width: '32px', height: '32px', color: 'var(--brand-blue)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
               ) : (
-                <span style={{ color: 'var(--brand-blue)', fontSize: '28px', fontWeight: 600 }}>審</span>
+                <img
+                  src="/brand/butterfly.svg"
+                  alt="審美者"
+                  style={{ width: '72px', height: '72px', objectFit: 'contain' }}
+                />
               )}
             </div>
 
@@ -390,16 +395,16 @@ export default function Login() {
               // 登入 / 註冊表單模式
               <>
                 {/* 膠囊切換器 */}
-                <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '6px', display: 'flex', marginBottom: '28px', padding: '4px', position: 'relative' }}>
+                <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '24px', display: 'flex', marginBottom: '32px', padding: '4px', position: 'relative' }}>
                   <div style={{
                     position: 'absolute', top: '4px', left: isLogin ? '4px' : 'calc(50% - 2px)', width: 'calc(50% - 2px)', height: 'calc(100% - 8px)',
-                    background: 'var(--bg-surface)', borderRadius: '4px', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
+                    background: 'var(--bg-surface)', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
                   }} />
-                  <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: isLogin ? '600' : '400', color: isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>登入</button>
-                  <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px 0', fontSize: '15px', fontWeight: !isLogin ? '600' : '400', color: !isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>註冊</button>
+                  <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 0', fontSize: '15px', fontWeight: isLogin ? '600' : '500', color: isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>登入</button>
+                  <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 0', fontSize: '15px', fontWeight: !isLogin ? '600' : '500', color: !isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>註冊</button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* Email */}
                   <div style={{ position: 'relative' }}>
                     <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex' }}>
@@ -453,13 +458,14 @@ export default function Login() {
                     style={{
                       background: submitting ? 'var(--border-light)' : 'var(--brand-blue)',
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '24px',
                       color: submitting ? 'var(--text-tertiary)' : 'white',
                       cursor: submitting ? 'not-allowed' : 'pointer',
                       fontSize: '15px',
-                      fontWeight: 500,
-                      padding: '14px',
-                      marginTop: '8px',
+                      fontWeight: 600,
+                      padding: '16px',
+                      marginTop: '12px',
+                      boxShadow: submitting ? 'none' : '0 6px 16px rgba(0,0,0,0.12)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
