@@ -224,7 +224,7 @@ export default function Login() {
   const inputStyle = {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-light)',
-    borderRadius: '6px',
+    borderRadius: '16px',
     boxSizing: 'border-box',
     color: 'var(--text-primary)',
     fontSize: '15px',
@@ -266,7 +266,7 @@ export default function Login() {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
-              borderRadius: '20px',
+              borderRadius: '24px',
               color: 'var(--text-primary)',
               cursor: 'pointer',
               fontSize: '13px',
@@ -276,6 +276,7 @@ export default function Login() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
             }}
           >
             <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -395,10 +396,10 @@ export default function Login() {
               // 登入 / 註冊表單模式
               <>
                 {/* 膠囊切換器 */}
-                <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '24px', display: 'flex', marginBottom: '32px', padding: '4px', position: 'relative' }}>
+                <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: '16px', display: 'flex', marginBottom: '32px', padding: '4px', position: 'relative' }}>
                   <div style={{
                     position: 'absolute', top: '4px', left: isLogin ? '4px' : 'calc(50% - 2px)', width: 'calc(50% - 2px)', height: 'calc(100% - 8px)',
-                    background: 'var(--bg-surface)', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
+                    background: 'var(--bg-surface)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1
                   }} />
                   <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 0', fontSize: '15px', fontWeight: isLogin ? '600' : '500', color: isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>登入</button>
                   <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 0', fontSize: '15px', fontWeight: !isLogin ? '600' : '500', color: !isLogin ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', position: 'relative', zIndex: 2, transition: 'color 0.3s' }}>註冊</button>
@@ -458,14 +459,14 @@ export default function Login() {
                     style={{
                       background: submitting ? 'var(--border-light)' : 'var(--brand-blue)',
                       border: 'none',
-                      borderRadius: '24px',
+                      borderRadius: '32px',
                       color: submitting ? 'var(--text-tertiary)' : 'white',
                       cursor: submitting ? 'not-allowed' : 'pointer',
                       fontSize: '15px',
                       fontWeight: 600,
-                      padding: '16px',
+                      padding: '14px',
                       marginTop: '12px',
-                      boxShadow: submitting ? 'none' : '0 6px 16px rgba(0,0,0,0.12)',
+                      boxShadow: submitting ? 'none' : '0 4px 12px rgba(29, 155, 240, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
