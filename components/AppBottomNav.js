@@ -193,11 +193,12 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       <button type="button" onClick={goToHome} style={itemStyle('home')}>
         {active === 'home' ? (
           <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1.05)' }} fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2.5a.5.5 0 01.47.34l2.4 7.2 7.2 2.4a.5.5 0 010 .95l-7.2 2.4-2.4 7.2a.5.5 0 01-.95 0l-2.4-7.2-7.2-2.4a.5.5 0 010-.95l7.2-2.4 2.4-7.2a.5.5 0 01.47-.34z" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.596 4.95a.75.75 0 01.454.454l-2.12 6.36a.75.75 0 01-.474.474l-6.36 2.12a.75.75 0 01-.954-.954l2.12-6.36a.75.75 0 01.474-.474l6.36-2.12zM12 11a1 1 0 100 2 1 1 0 000-2z" />
           </svg>
         ) : (
           <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M12 3l2.25 6.75L21 12l-6.75 2.25L12 21l-2.25-6.75L3 12l6.75-2.25z" />
+            <circle cx="12" cy="12" r="10" strokeWidth="1.2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
           </svg>
         )}
         <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400', lineHeight: 1 }}>發現</span>
@@ -244,11 +245,11 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
         <span style={{ display: 'inline-flex', position: 'relative' }}>
           {active === 'messages' ? (
             <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1.05)' }} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3a9 9 0 00-6.36 15.36L3 21l2.64-2.64A9 9 0 1012 3z" />
+              <path d="M12 3c-5.5 0-10 4-10 9 0 1.7.5 3.3 1.5 4.7L2 21l4.7-1.3A10.6 10.6 0 0012 21c5.5 0 10-4 10-9s-4.5-9-10-9zm-4 10.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm4 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm4 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
             </svg>
           ) : (
             <svg style={{ height: '24px', width: '24px', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M20 12a8 8 0 01-13.66 5.66L4 20l2.34-2.34A8 8 0 1120 12z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           )}
           {hasUnreadMessages && (
