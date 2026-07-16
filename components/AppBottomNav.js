@@ -78,12 +78,13 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
   };
 
   const goToMyProfile = async () => {
-    const user = await getCurrentUser();
+    const user = await requireLogin({
+      router,
+      nextPath: '/u/me',
+      message: '請先登入，才能進入您的採樣人頁。',
+    });
 
-    if (!user) {
-      router.push('/u/me');
-      return;
-    }
+    if (!user) return;
 
     // 先試緩存，避免閃爍
     const cachedPath = getCachedProfilePath(user.id);

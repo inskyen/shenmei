@@ -53,24 +53,14 @@ export default function UserPage() {
         setIsOwnProfile(false);
 
         if (username === 'me') {
-          const user = await getCurrentUser();
+          const user = await requireLogin({
+            router,
+            nextPath: '/u/me',
+            message: '請先登入，才能進入您的採樣人頁。',
+            replace: true,
+          });
 
-          if (!user) {
-            setProfile({
-              username: 'me',
-              display_name: '未登入訪客',
-              bio: '登入後即可建立專屬的審美主頁。',
-              isGuest: true
-            });
-            setPosts([]);
-            setTotalPostCount(0);
-            setTotalLikeCount(0);
-            setFollowerCount(0);
-            setFollowingCount(0);
-            setIsOwnProfile(true);
-            setLoading(false);
-            return;
-          }
+          if (!user) return;
 
           const { data: myProfile, error: myProfileError } = await supabase
             .from('profiles')
@@ -480,11 +470,7 @@ export default function UserPage() {
           </h2>
 
           {/* Masonry Feed */}
-          {profile.isGuest ? (
-            <div style={{ paddingTop: '20px' }}>
-              <GuestEmptyState message="登錄後才能查看及編輯您的主頁噢~" />
-            </div>
-          ) : posts.length === 0 ? (
+          {posts.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '40px 0' }}>
               這裡還沒有留下採樣痕跡。
             </div>
