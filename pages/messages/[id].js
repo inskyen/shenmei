@@ -32,7 +32,7 @@ export default function ConversationPage() {
 
     async function loadPage() {
       try {
-        const user = await requireLogin({ router, nextPath: `/messages/${id}`, message: '請先登入，才能查看私訊。', replace: true });
+        const user = await requireLogin({ router, nextPath: `/messages/${id}`, message: '請先登入', replace: true });
         if (!user) return;
         const cached = getCachedConversation(id);
         if (cached) {

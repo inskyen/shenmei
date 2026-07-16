@@ -71,7 +71,7 @@ export default function SearchPage() {
       const user = await requireLogin({
         router,
         nextPath: path,
-        message: '請先登入，才能採樣。',
+        message: '請先登入',
       });
 
       if (user) {

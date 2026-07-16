@@ -606,7 +606,7 @@ export default function Home() {
         await requireLogin({
           router,
           nextPath: router.asPath,
-          message: '請先登入，才能喜歡這條採樣。',
+          message: '請先登入',
         });
         return;
       }

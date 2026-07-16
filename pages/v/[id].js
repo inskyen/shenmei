@@ -62,7 +62,7 @@ export default function VideoPage() {
       const user = await requireLogin({
         router,
         nextPath: path,
-        message: '請先登入，才能推薦這支影片。',
+        message: '請先登入',
       });
 
       if (user) {

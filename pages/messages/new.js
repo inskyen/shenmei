@@ -18,7 +18,7 @@ export default function NewMessagePage() {
 
     async function loadTarget() {
       try {
-        const user = await requireLogin({ router, nextPath: `/messages/new?user=${username}`, message: '請先登入，才能傳送私訊。', replace: true });
+        const user = await requireLogin({ router, nextPath: `/messages/new?user=${username}`, message: '請先登入', replace: true });
         if (!user) return;
         const result = await loadMessageTarget(username);
         if (!result.profile) throw new Error('找不到這位審美者。');

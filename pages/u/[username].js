@@ -56,7 +56,7 @@ export default function UserPage() {
           const user = await requireLogin({
             router,
             nextPath: '/u/me',
-            message: '請先登入，才能進入您的採樣人頁。',
+            message: '請先登入',
             replace: true,
           });
 
@@ -214,7 +214,7 @@ export default function UserPage() {
     const user = await requireLogin({
       router,
       nextPath: router.asPath,
-      message: '請先登入以關注這位採樣人。',
+      message: '請先登入',
     });
 
     if (!user) return;
@@ -242,7 +242,7 @@ export default function UserPage() {
     const user = await requireLogin({
       router,
       nextPath: router.asPath,
-      message: '請先登入，才能傳送私訊。',
+      message: '請先登入',
     });
 
     if (user) {

@@ -65,7 +65,7 @@ export default function NotificationsPage() {
         const user = await requireLogin({
           router,
           nextPath: '/notifications',
-          message: '請先登入，才能查看通知。',
+          message: '請先登入',
           replace: true,
         });
 

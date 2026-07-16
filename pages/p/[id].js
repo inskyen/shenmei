@@ -274,7 +274,7 @@ export default function PostPage() {
       const user = await requireLogin({
         router,
         nextPath: '/submit',
-        message: '請先登入，才能採樣。',
+        message: '請先登入',
       });
 
       if (user) {
@@ -402,7 +402,7 @@ export default function PostPage() {
         const result = await deletePost(post.id);
         if (result.requiresLogin) {
           setDeleteTarget(null);
-          await requireLogin({ router, nextPath: router.asPath, message: '請先登入，才能刪除採樣。' });
+          await requireLogin({ router, nextPath: router.asPath, message: '請先登入' });
           return;
         }
 
@@ -416,7 +416,7 @@ export default function PostPage() {
       const result = await deletePostComment(deleteTarget.comment.id);
       if (result.requiresLogin) {
         setDeleteTarget(null);
-        await requireLogin({ router, nextPath: router.asPath, message: '請先登入，才能刪除留言。' });
+        await requireLogin({ router, nextPath: router.asPath, message: '請先登入' });
         return;
       }
 
@@ -455,7 +455,7 @@ export default function PostPage() {
         await requireLogin({
           router,
           nextPath: router.asPath,
-          message: '請先登入，才能喜歡這條採樣。',
+          message: '請先登入',
         });
         return;
       }
@@ -481,7 +481,7 @@ export default function PostPage() {
     const user = await requireLogin({
       router,
       nextPath: router.asPath,
-      message: '請先登入以關注作者。',
+      message: '請先登入',
     });
 
     if (!user) return;

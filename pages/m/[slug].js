@@ -196,7 +196,7 @@ export default function ModuleDetailPage() {
     const user = await requireLogin({
       router,
       nextPath: `/m/${slug}`,
-      message: '請先登入，才能投稿至頻道。',
+      message: '請先登入',
     });
 
     if (!user) return;

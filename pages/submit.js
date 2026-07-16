@@ -239,7 +239,7 @@ export default function SubmitPage() {
       const user = await requireLogin({
         router,
         nextPath: router.asPath,
-        message: '請先登入，才能採樣。',
+        message: '請先登入',
       });
 
       if (!user) return;

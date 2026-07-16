@@ -34,7 +34,7 @@ export default function FollowingPage() {
         const user = await requireLogin({
           router,
           nextPath: '/following',
-          message: '請先登入，才能查看您的關注名單。',
+          message: '請先登入',
           replace: true,
         });
 

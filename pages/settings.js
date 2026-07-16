@@ -47,7 +47,7 @@ export default function SettingsPage() {
         const currentUser = await requireLogin({
           router,
           nextPath: '/settings',
-          message: '請先登入，才能編輯資料。',
+          message: '請先登入',
           replace: true,
         });
 
