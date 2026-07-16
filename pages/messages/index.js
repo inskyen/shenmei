@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
-import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCurrentUser, requireLogin } from '@/lib/auth/requireLogin';
+import GuestEmptyState from '@/components/GuestEmptyState';
 import { cacheConversation, getCachedConversation, getCachedMessageInbox, prefetchConversation, prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 import { supabase } from '@/lib/supabase/client';
 
@@ -48,14 +49,12 @@ export default function MessagesPage() {
   useEffect(() => {
     async function loadInbox() {
       try {
-        const user = await requireLogin({
-          router,
-          nextPath: '/messages',
-          message: '請先登入，才能查看訊息。',
-          replace: true,
-        });
+        const user = await getCurrentUser();
 
-        if (!user) return;
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
         setCurrentUserId(user.id);
         const result = await prefetchMessageInbox({ force: true });
@@ -150,15 +149,20 @@ export default function MessagesPage() {
           </div>
         )}
 
+        {/* 未登入狀態 */}
+        {!loading && !currentUserId && (
+          <GuestEmptyState message="登錄後才能查看私信噢~" />
+        )}
+
         {/* 錯誤狀態 */}
-        {!loading && errorMessage && (
+        {!loading && currentUserId && errorMessage && (
           <div style={{ color: '#FF4D4F', fontSize: '13px', padding: '48px 24px', textAlign: 'center' }}>
             {errorMessage}
           </div>
         )}
 
         {/* 空狀態 */}
-        {!loading && !errorMessage && conversations.length === 0 && (
+        {!loading && currentUserId && !errorMessage && conversations.length === 0 && (
           <div style={{ alignItems: 'center', display: 'flex', flexDirection: 'column', gap: '16px', padding: '80px 32px', textAlign: 'center' }}>
             <div style={{
               alignItems: 'center',
@@ -182,8 +186,8 @@ export default function MessagesPage() {
           </div>
         )}
 
-        {/* 對話列表 */}
-        {!loading && !errorMessage && conversations.length > 0 && (
+        {/* 列表內容 */}
+        {!loading && currentUserId && conversations.length > 0 && (
           <ul style={{ listStyle: 'none', margin: 0, padding: '0 0 96px' }}>
             {conversations.map((conversation) => {
               const profile = conversation.otherProfile;

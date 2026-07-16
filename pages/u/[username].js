@@ -3,7 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import AestheteBadge from '@/components/AestheteBadge';
-import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCurrentUser, requireLogin } from '@/lib/auth/requireLogin';
+import GuestEmptyState from '@/components/GuestEmptyState';
 import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
@@ -52,14 +53,13 @@ export default function UserPage() {
         setIsOwnProfile(false);
 
         if (username === 'me') {
-          const user = await requireLogin({
-            router,
-            nextPath: '/u/me',
-            message: '請先登入，才能進入您的採樣人頁。',
-            replace: true,
-          });
+          const user = await getCurrentUser();
 
-          if (!user) return;
+          if (!user) {
+            setLoading(false);
+            setErrorMessage('UNAUTHENTICATED');
+            return;
+          }
 
           const { data: myProfile, error: myProfileError } = await supabase
             .from('profiles')

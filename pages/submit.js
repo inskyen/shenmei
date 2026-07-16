@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCurrentUser, requireLogin } from '@/lib/auth/requireLogin';
+import GuestEmptyState from '@/components/GuestEmptyState';
 import { canCurateInModules, loadProfileRole, USER_ROLES } from '@/lib/auth/roles';
 import { prefetchModulePage } from '@/lib/cache/modulePageCache';
 import { supabase } from '@/lib/supabase/client';
@@ -35,6 +36,7 @@ export default function SubmitPage() {
   const [modulesLoading, setModulesLoading] = useState(true);
   const [currentRole, setCurrentRole] = useState(USER_ROLES.MEMBER);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [publishComplete, setPublishComplete] = useState(false);
 
   const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
@@ -127,8 +129,9 @@ export default function SubmitPage() {
 
     async function loadCurrentRole() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const role = await loadProfileRole(session?.user?.id);
+        const user = await getCurrentUser();
+        if (isActive) setCurrentUserId(user?.id || null);
+        const role = await loadProfileRole(user?.id);
         if (isActive) setCurrentRole(role);
       } catch (error) {
         console.warn('讀取採樣權限失敗，暫以普通使用者處理:', error);
@@ -359,8 +362,15 @@ export default function SubmitPage() {
          </button>
       </header>
 
+      {/* 訪客狀態 */}
+      {!roleLoading && !currentUserId && (
+        <GuestEmptyState message="登錄後才能發佈採樣噢~" />
+      )}
+
       {/* Main Content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '10px 20px 40px', maxWidth: '680px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      {!roleLoading && currentUserId && (
+        <>
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '10px 20px 40px', maxWidth: '680px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
          <textarea 
            value={note}
            onChange={(e) => setNote(e.target.value)}
@@ -538,6 +548,9 @@ export default function SubmitPage() {
             <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的採樣。'}</div>
           </div>
         </div>
+      )}
+      
+      </>
       )}
     </div>
   );

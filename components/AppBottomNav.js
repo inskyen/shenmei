@@ -78,13 +78,12 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
   };
 
   const goToMyProfile = async () => {
-    const user = await requireLogin({
-      router,
-      nextPath: '/u/me',
-      message: '請先登入，才能進入您的採樣人頁。',
-    });
+    const user = await getCurrentUser();
 
-    if (!user) return;
+    if (!user) {
+      router.push('/u/me');
+      return;
+    }
 
     // 先試緩存，避免閃爍
     const cachedPath = getCachedProfilePath(user.id);
@@ -115,7 +114,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       console.error('取得個人主頁路徑失敗:', error);
     }
 
-    // 最後保底才走 /u/me（理論上不會到這裡）
+    // 最後保底才走 /u/me
     router.push('/u/me');
   };
 
@@ -133,7 +132,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
   const goToMessages = () => {
     router.prefetch('/messages');
     prefetchMessageInbox().catch((error) => console.error('私訊列表預取失敗:', error));
-    goToProtectedPage('/messages', '請先登入，才能查看訊息。');
+    router.push('/messages');
   };
 
   const goToHome = () => {
@@ -224,20 +223,29 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
         <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400', lineHeight: 1 }}>頻道</span>
       </button>
 
-      {/* 採樣 */}
-      <button type="button" onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} style={itemStyle('submit')}>
-        {active === 'submit' ? (
-          <svg style={{ height: '28px', width: '28px', color: 'var(--text-primary)', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1.05)' }} fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="var(--bg-surface)" d="M12 7.5v9M7.5 12h9" />
+      {/* 採樣 (UP按鈕) */}
+      <button 
+        type="button" 
+        onClick={() => router.push('/submit')} 
+        style={itemStyle('submit')}
+      >
+        <div style={{
+          alignItems: 'center',
+          backgroundColor: 'var(--brand-blue)',
+          borderRadius: '50%',
+          color: '#ffffff',
+          display: 'flex',
+          height: '42px',
+          justifyContent: 'center',
+          width: '42px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          transition: 'transform 0.15s ease',
+          transform: active === 'submit' ? 'scale(0.92)' : 'scale(1)',
+        }}>
+          <svg style={{ height: '24px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v12M6 12h12" />
           </svg>
-        ) : (
-          <svg style={{ height: '28px', width: '28px', color: 'var(--text-primary)', transition: 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', transform: 'scale(1)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9.5" strokeWidth="1.2" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M12 7.5v9M7.5 12h9" />
-          </svg>
-        )}
-        <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400', lineHeight: 1 }}>採樣</span>
+        </div>
       </button>
 
       {/* 私訊 */}
