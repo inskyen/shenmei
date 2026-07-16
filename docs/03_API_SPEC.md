@@ -58,7 +58,7 @@ supabase.auth.signUp({ email, password })
 1. 建立 auth user。
 2. 建立 `profiles`。
 3. `username` 自動生成數字字串。
-4. `display_name` 可先使用 `策展人` 或 email 前綴。
+4. `display_name` 可先使用 `採樣人` 或 email 前綴。
 
 ### 4.2 登入
 
@@ -85,7 +85,7 @@ supabase.auth.signOut()
 
 ### 5.1 需求
 
-讀取全站最新公開策展動態。
+讀取全站最新公開採樣動態。
 
 ### 5.2 查詢目標
 
@@ -130,7 +130,7 @@ posts
       "profile": {
         "id": "user_uuid",
         "username": "12345678",
-        "display_name": "策展人",
+        "display_name": "採樣人",
         "avatar_url": null
       },
       "video": {
@@ -153,11 +153,11 @@ posts
 }
 ```
 
-## 6. 發布策展 `/submit`
+## 6. 發布採樣 `/submit`
 
 ### 6.1 需求
 
-登入使用者發布一條策展動態。
+登入使用者發布一條採樣動態。
 
 ### 6.2 表單輸入
 
@@ -258,14 +258,14 @@ modules related through posts
       "note": "某個人的推薦理由",
       "profile": {
         "username": "12345678",
-        "display_name": "策展人"
+        "display_name": "採樣人"
       }
     }
   ]
 }
 ```
 
-## 8. 策展動態詳情 `/p/[id]`
+## 8. 採樣動態詳情 `/p/[id]`
 
 ### 8.1 需求
 
@@ -323,7 +323,7 @@ latest_post_at
 
 ### 10.1 需求
 
-展示某個頻道下的策展動態。
+展示某個頻道下的採樣動態。
 
 ### 10.2 查詢資料
 

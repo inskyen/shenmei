@@ -221,7 +221,7 @@ export default function SubmitPage() {
     }
 
     if (trimmedNote.length === 0) {
-      setMessage('請填寫推薦理由，讓這次策展有一點您的溫度。');
+      setMessage('請填寫推薦理由，讓這次採樣有一點您的溫度。');
       return;
     }
 
@@ -535,7 +535,7 @@ export default function SubmitPage() {
           <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', padding: '24px 28px', textAlign: 'center' }}>
             <div style={{ alignItems: 'center', backgroundColor: 'var(--brand-blue-light)', borderRadius: '50%', color: 'var(--brand-blue)', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
             <div style={{ fontSize: '16px', fontWeight: 600 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的策展。'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的採樣。'}</div>
           </div>
         </div>
       )}

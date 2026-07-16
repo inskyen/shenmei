@@ -7,7 +7,7 @@
 目前專案仍處於 MVP 早期施工階段，部署方案可在以下內容完成後補齊：
 
 - Auth / Profile 流程完成。
-- `/submit` 發布策展 MVP 完成。
+- `/submit` 發布採樣 MVP 完成。
 - 首頁資料源從 `videos` 過渡到 `posts`。
 
 ## 2. Supabase SQL

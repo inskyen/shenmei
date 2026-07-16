@@ -25,7 +25,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.display_name || profile?.username || post.legacy_added_by || '策展人';
+  return profile?.display_name || profile?.username || post.legacy_added_by || '採樣人';
 }
 
 function getInitial(name) {

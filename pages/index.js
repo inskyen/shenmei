@@ -58,7 +58,7 @@ function mergeFeedItems(primaryItems, secondaryItems) {
 
 async function fetchFeedPage(offset) {
   const response = await fetch(`/api/feed?offset=${offset}&limit=${FEED_PAGE_SIZE}`);
-  if (!response.ok) throw new Error('最新策展載入失敗');
+  if (!response.ok) throw new Error('最新採樣載入失敗');
   return response.json();
 }
 
@@ -75,7 +75,7 @@ function normalizeFollowingPosts(feed) {
     comment_count: post.comment_count || 0,
     fav_time: post.created_at,
     created_at: post.created_at,
-    added_by: post.profile?.display_name || post.profile?.username || '策展人',
+    added_by: post.profile?.display_name || post.profile?.username || '採樣人',
     profile_avatar_url: post.profile?.avatar_url || null,
     profile_username: post.profile?.username || null,
     profile_role: post.profile?.role || null,
@@ -173,7 +173,7 @@ export default function Home() {
           setLikedPostIds(nextLikedPostIds);
         }
       } catch (error) {
-        console.error('讀取最新策展失敗:', error);
+        console.error('讀取最新採樣失敗:', error);
       } finally {
         feedRequestRef.current = false;
         if (isActive) setLoading(false);
@@ -308,7 +308,7 @@ export default function Home() {
         setLikedPostIds((currentIds) => new Set([...currentIds, ...nextLikedPostIds]));
       }
     } catch (error) {
-      console.error('預先載入下一批策展失敗:', error);
+      console.error('預先載入下一批採樣失敗:', error);
     } finally {
       feedRequestRef.current = false;
       setLoadingMoreFeed(false);
@@ -445,7 +445,7 @@ export default function Home() {
   };
 
   const openDetailPage = (video) => {
-    // 有 post_id 時進入正式策展詳情頁；沒有時才退回舊的本頁浮層。
+    // 有 post_id 時進入正式採樣詳情頁；沒有時才退回舊的本頁浮層。
     if (video.post_id) {
       cachePostPreview(video);
       router.prefetch(`/p/${video.post_id}`);
@@ -494,7 +494,7 @@ export default function Home() {
       const nextLikedPostIds = await loadLikedPostIds(firstPageItems.map((item) => item.post_id));
       if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
     } catch (error) {
-      console.error('重新整理最新策展失敗:', error);
+      console.error('重新整理最新採樣失敗:', error);
       showToast('重新整理失敗，請稍後再試。');
     } finally {
       feedRequestRef.current = false;
@@ -580,7 +580,7 @@ export default function Home() {
         await requireLogin({
           router,
           nextPath: router.asPath,
-          message: '請先登入，才能喜歡這條策展。',
+          message: '請先登入，才能喜歡這條採樣。',
         });
         return;
       }
@@ -783,7 +783,7 @@ export default function Home() {
             )}
           </section>
         ) : activeFeedLoading ? (
-          <div aria-label="正在載入最新策展" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
+          <div aria-label="正在載入最新採樣" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
             {[0, 1, 2].map((index) => (
               <article
                 key={index}
@@ -833,7 +833,7 @@ export default function Home() {
 
             {activeSection === 'following' && !followingRequiresLogin && visibleVideos.length === 0 && (
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}>
-                還沒有追蹤動態。遇見喜歡的策展人後，這裡就會慢慢流動起來。
+                還沒有追蹤動態。遇見喜歡的採樣人後，這裡就會慢慢流動起來。
               </div>
             )}
 
@@ -864,7 +864,7 @@ export default function Home() {
                        {video.profile_avatar_url ? '' : (video.added_by ? video.added_by.charAt(0) : '審')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '採樣人'}</span>
                       <AestheteBadge role={video.profile_role} />
 
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· {formatDate(video.fav_time || video.created_at)}</span>
@@ -937,7 +937,7 @@ export default function Home() {
             ))}
 
             {activeSection === 'latest' && loadingMoreFeed && (
-              <article aria-label="正在預先載入更多策展" style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '16px' }}>
+              <article aria-label="正在預先載入更多採樣" style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '16px' }}>
                 <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
                   <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '28px', width: '28px' }} />
                   <div className="app-detail-skeleton" style={{ height: '12px', width: '92px' }} />

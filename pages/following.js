@@ -93,7 +93,7 @@ export default function FollowingPage() {
 
       {!loading && !errorMessage && profiles.length === 0 && (
         <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8, textAlign: 'center', padding: '28px 8px' }}>
-          <p style={{ margin: '0 0 16px' }}>您還沒有關注任何策展人。</p>
+          <p style={{ margin: '0 0 16px' }}>您還沒有關注任何採樣人。</p>
           <button
             type="button"
             onClick={() => router.push('/')}
@@ -128,7 +128,7 @@ export default function FollowingPage() {
 
           {posts.length === 0 && (
             <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '24px 8px', textAlign: 'center' }}>
-              您關注的策展人最近還沒有新的採樣。
+              您關注的採樣人最近還沒有新的採樣。
             </div>
           )}
 
@@ -151,7 +151,7 @@ export default function FollowingPage() {
                         <span style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', border: '1px solid var(--border-light)', display: 'flex', flex: '0 0 auto', fontSize: '9px', fontWeight: 600, height: '18px', justifyContent: 'center', width: '18px', color: 'var(--text-secondary)' }}>
                           {!profile.avatar_url && getInitial(profile)}
                         </span>
-                        {profile.display_name || profile.username || '策展人'}
+                        {profile.display_name || profile.username || '採樣人'}
                         <span style={{ color: 'var(--text-tertiary)' }}>{formatDate(post.created_at)}</span>
                       </span>
                       <span style={{ color: 'var(--text-primary)', display: '-webkit-box', fontSize: '14px', fontWeight: 600, lineHeight: 1.45, marginTop: '8px', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2 }}>

@@ -138,9 +138,9 @@ added_by   → profile.display_name
 
 ```text
 /                 大廳最新流
-/submit           發佈策展
+/submit           發佈採樣
 /v/[id]           影片主頁
-/p/[id]           策展動態詳情
+/p/[id]           採樣動態詳情
 /m                頻道列表
 /m/[slug]         頻道頁
 /u/[username]     使用者頁
@@ -197,7 +197,7 @@ added_by   → profile.display_name
 
 - 柔和。
 - 安靜。
-- 有策展感。
+- 有採樣感。
 - 不要太工具化。
 - 不要太吵鬧社群。
 
@@ -205,7 +205,7 @@ added_by   → profile.display_name
 
 ```text
 流雲正載著美好趕來...
-還沒有策展動態。成為第一個留下審美痕跡的人。
+還沒有採樣動態。成為第一個留下審美痕跡的人。
 已發布，這支影片有了新的審美註解。
 ```
 

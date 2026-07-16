@@ -6,8 +6,8 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadNotifications, markNotificationsRead } from '@/lib/notifications/userNotifications';
 
 const notificationCopy = {
-  like: '喜歡了您的策展。',
-  comment: '在您的策展下留言。',
+  like: '喜歡了您的採樣。',
+  comment: '在您的採樣下留言。',
   reply: '回覆了您的留言。',
   follow: '關注了您。',
   message: '傳來了一則私訊。',

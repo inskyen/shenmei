@@ -55,7 +55,7 @@ export default function UserPage() {
           const user = await requireLogin({
             router,
             nextPath: '/u/me',
-            message: '請先登入，才能進入您的策展人頁。',
+            message: '請先登入，才能進入您的採樣人頁。',
             replace: true,
           });
 
@@ -98,7 +98,7 @@ export default function UserPage() {
         if (profileError) throw profileError;
 
         if (!profileData) {
-          setErrorMessage('找不到這位策展人。');
+          setErrorMessage('找不到這位採樣人。');
           return;
         }
 
@@ -143,7 +143,7 @@ export default function UserPage() {
         setIsFollowing(followState.isFollowing);
       } catch (error) {
         console.error('使用者頁載入失敗:', error);
-        setErrorMessage('這位策展人的資料暫時無法顯示。');
+        setErrorMessage('這位採樣人的資料暫時無法顯示。');
       } finally {
         setLoading(false);
       }
@@ -171,7 +171,7 @@ export default function UserPage() {
       setNextPostsOffset(page.nextOffset);
       setTotalPostCount(page.totalPostCount);
     } catch (error) {
-      console.error('載入更多策展動態失敗:', error);
+      console.error('載入更多採樣動態失敗:', error);
     } finally {
       postsRequestRef.current = false;
       setLoadingMorePosts(false);
@@ -190,7 +190,7 @@ export default function UserPage() {
     return () => observer.disconnect();
   }, [hasMorePosts, loadMorePosts, loading, posts.length]);
 
-  const displayName = profile?.display_name || profile?.username || '策展人';
+  const displayName = profile?.display_name || profile?.username || '採樣人';
   const aestheticTags = profile?.aesthetic_tags || [];
 
   const goBack = () => {
@@ -208,7 +208,7 @@ export default function UserPage() {
     const user = await requireLogin({
       router,
       nextPath: router.asPath,
-      message: '請先登入以關注這位策展人。',
+      message: '請先登入以關注這位採樣人。',
     });
 
     if (!user) return;
@@ -221,7 +221,7 @@ export default function UserPage() {
 
       setIsFollowing(result.isFollowing);
       setFollowerCount((count) => Math.max(0, count + (result.isFollowing ? 1 : -1)));
-      showToast(result.isFollowing ? '已關注這位策展人。' : '已取消關注。');
+      showToast(result.isFollowing ? '已關注這位採樣人。' : '已取消關注。');
     } catch (error) {
       console.error('追蹤操作失敗:', error);
       showToast('關注狀態暫時無法更新，請稍後再試。');
@@ -443,7 +443,7 @@ export default function UserPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalPostCount}</span>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>策展</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>採樣</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalLikeCount}</span>
@@ -460,13 +460,13 @@ export default function UserPage() {
           </div>
 
           <h2 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
-            策展動態
+            採樣動態
           </h2>
 
           {/* Masonry Feed */}
           {posts.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '40px 0' }}>
-              這裡還沒有留下策展痕跡。
+              這裡還沒有留下採樣痕跡。
             </div>
           ) : (
             <div style={{ columnCount: 2, columnGap: '12px' }}>
@@ -537,7 +537,7 @@ export default function UserPage() {
           )}
 
           {loadingMorePosts && (
-            <div aria-label="正在預先載入更多策展動態" style={{ columnCount: 2, columnGap: '12px', marginTop: '12px' }}>
+            <div aria-label="正在預先載入更多採樣動態" style={{ columnCount: 2, columnGap: '12px', marginTop: '12px' }}>
               {[0, 1].map((item) => (
                 <div key={item} className="app-detail-skeleton" style={{ breakInside: 'avoid', borderRadius: '8px', height: item === 0 ? '260px' : '220px', marginBottom: '12px' }} />
               ))}

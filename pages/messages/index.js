@@ -176,7 +176,7 @@ export default function MessagesPage() {
             <div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500, margin: '0 0 8px' }}>還沒有訊息</p>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', lineHeight: 1.7, margin: 0 }}>
-                到某位策展人的個人頁，<br />和他說一句話吧。
+                到某位採樣人的個人頁，<br />和他說一句話吧。
               </p>
             </div>
           </div>

@@ -27,7 +27,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.display_name || profile?.username || post.legacy_added_by || '策展人';
+  return profile?.display_name || profile?.username || post.legacy_added_by || '採樣人';
 }
 
 function getInitial(name) {
@@ -236,7 +236,7 @@ export default function ModuleDetailPage() {
           <>
             <section style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '18px 16px' }}>
               <h1 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 600, lineHeight: 1.25, margin: 0 }}>{module.name}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.75, margin: '8px 0 0' }}>{module.description || '這個頻道正在收納它的第一批策展。'}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.75, margin: '8px 0 0' }}>{module.description || '這個頻道正在收納它的第一批採樣。'}</p>
               <div style={{ backgroundColor: 'var(--bg-base)', borderLeft: '3px solid var(--brand-blue)', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginTop: '14px', padding: '9px 11px', borderRadius: '4px' }}>
                 頻道規則：{module.rule_text || '這個頻道的收錄規則正在整理中。'}
               </div>
@@ -244,11 +244,11 @@ export default function ModuleDetailPage() {
             </section>
 
             <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', padding: '18px 16px 10px' }}>
-              <h2 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600, margin: 0 }}>最新策展</h2>
+              <h2 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600, margin: 0 }}>最新採樣</h2>
               {module.status !== 'archived' && <button type="button" onClick={goToModuleSubmit} style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}>投稿至此頻道</button>}
             </div>
 
-            {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這個頻道還沒有策展。等第一束光被放進來。</div>}
+            {posts.length === 0 && <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '38px 18px', textAlign: 'center' }}>這個頻道還沒有採樣。等第一束光被放進來。</div>}
 
             {posts.map((post) => <ModulePostCard key={post.id} post={post} profile={profilesById[post.user_id]} router={router} onPlay={openImmersiveVideo} />)}
           </>

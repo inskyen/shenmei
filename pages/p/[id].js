@@ -25,7 +25,7 @@ function formatDate(timestamp) {
 }
 
 function getDisplayName(post, profile) {
-  return profile?.display_name || profile?.username || post?.legacy_added_by || '策展人';
+  return profile?.display_name || profile?.username || post?.legacy_added_by || '採樣人';
 }
 
 function getInitial(name) {
@@ -184,8 +184,8 @@ export default function PostPage() {
             .catch(err => console.warn('無法獲取影片尺寸:', err));
         }
       } catch (error) {
-        console.error('策展動態載入失敗:', error);
-        setErrorMessage('這條策展動態暫時無法顯示，可能已被移除或尚未公開。');
+        console.error('採樣動態載入失敗:', error);
+        setErrorMessage('這條採樣動態暫時無法顯示，可能已被移除或尚未公開。');
       } finally {
         setCommentsLoading(false);
         if (!cachedDetail) {
@@ -369,7 +369,7 @@ export default function PostPage() {
         await requireLogin({
           router,
           nextPath: router.asPath,
-          message: '請先登入，才能喜歡這條策展。',
+          message: '請先登入，才能喜歡這條採樣。',
         });
         return;
       }
@@ -419,7 +419,7 @@ export default function PostPage() {
   return (
     <div className="app-detail-page" style={pageStyle}>
       <Head>
-        <title>{post ? `${video.title || '策展動態'} · 審美者` : '策展動態 · 審美者'}</title>
+        <title>{post ? `${video.title || '採樣動態'} · 審美者` : '採樣動態 · 審美者'}</title>
       </Head>
 
       <main style={{ margin: '0 auto', maxWidth: '600px' }}>
@@ -432,7 +432,7 @@ export default function PostPage() {
               <div className="app-detail-skeleton" style={{ height: '14px', width: '64%' }} />
             </div>
             <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', paddingTop: '6px', textAlign: 'center' }}>
-              正在打開這篇策展...
+              正在打開這篇採樣...
             </div>
           </div>
         )}

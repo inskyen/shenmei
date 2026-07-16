@@ -161,7 +161,7 @@ export default function SearchPage() {
             探索
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '6px 0 0' }}>
-            搜尋已收錄影片，或用審美號找到一位策展人。
+            搜尋已收錄影片，或用審美號找到一位採樣人。
           </p>
         </section>
 
@@ -214,7 +214,7 @@ export default function SearchPage() {
               影片 ({results.length})
             </button>
             <button type="button" onClick={() => setActiveTab('users')} style={{ background: 'none', border: 'none', borderBottom: activeTab === 'users' ? '2px solid var(--text-primary)' : '2px solid transparent', color: activeTab === 'users' ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px', fontWeight: activeTab === 'users' ? 600 : 500, padding: '8px 4px', transition: 'all 0.2s' }}>
-              策展人 ({userResults.length})
+              採樣人 ({userResults.length})
             </button>
           </div>
         )}
@@ -309,14 +309,14 @@ export default function SearchPage() {
 
         {!loading && searched && activeTab === 'users' && userResults.length === 0 && !message && (
           <section style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, marginTop: '32px', padding: '24px 0', textAlign: 'center' }}>
-            沒有找到這位策展人。請確認審美號或名稱。
+            沒有找到這位採樣人。請確認審美號或名稱。
           </section>
         )}
 
         {activeTab === 'users' && userResults.length > 0 && (
           <section style={{ display: 'grid', gap: '20px', marginTop: '16px' }}>
             {userResults.map((profile) => {
-              const displayName = profile.display_name || profile.username || '策展人';
+              const displayName = profile.display_name || profile.username || '採樣人';
 
               return (
                 <button

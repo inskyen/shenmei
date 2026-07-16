@@ -81,7 +81,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
     const user = await requireLogin({
       router,
       nextPath: '/u/me',
-      message: '請先登入，才能進入您的策展人頁。',
+      message: '請先登入，才能進入您的採樣人頁。',
     });
 
     if (!user) return;
