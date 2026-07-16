@@ -132,6 +132,7 @@ export default function Home() {
   // 交互状态保留
   const [immersiveVideo, setImmersiveVideo] = useState(null);
   const [detailPageVideo, setDetailPageVideo] = useState(null);
+  const [detailVideoDimension, setDetailVideoDimension] = useState(null);
   const warmedUpIdentityRef = useRef('');
   const feedSentinelRef = useRef(null);
   const feedRequestRef = useRef(false);
@@ -481,6 +482,18 @@ export default function Home() {
 
     window.history.pushState({ modal: true }, "");
     setDetailPageVideo(video);
+    setDetailVideoDimension(null);
+    if (video.bvid || video.external_id) {
+      const targetBvid = video.bvid || video.external_id;
+      fetch(`/api/bilibili?bvid=${targetBvid}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.dimension) {
+            setDetailVideoDimension(data.dimension);
+          }
+        })
+        .catch(err => console.warn('無法獲取影片尺寸:', err));
+    }
   };
 
   const prefetchMyProfile = () => {
@@ -1026,8 +1039,19 @@ export default function Home() {
             <div style={{ flex: 1, textAlign: 'center', fontWeight: '600', color: 'var(--text-primary)', paddingRight: '40px' }}>動態詳情</div>
           </div>
           <div style={{ paddingBottom: '100px' }}>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderBottom: '1px solid var(--border-light)' }}>
-              <iframe src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid}&page=1&autoplay=1&high_quality=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
+            <div style={{ 
+              position: 'relative', 
+              width: '100%', 
+              backgroundColor: '#000', 
+              borderBottom: '1px solid var(--border-light)',
+              ...(detailVideoDimension && detailVideoDimension.height > detailVideoDimension.width ? {
+                height: '75vh',
+                maxHeight: '800px',
+              } : {
+                paddingTop: '56.25%',
+              })
+            }}>
+              <iframe src={`//player.bilibili.com/player.html?bvid=${detailPageVideo.bvid || detailPageVideo.external_id}&page=1&autoplay=1&high_quality=1&loop=1`} scrolling="no" border="0" frameBorder="no" framespacing="0" allowFullScreen={true} allow="autoplay; fullscreen" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}></iframe>
             </div>
             <div style={{ padding: '0 20px' }}>
               <h2 style={{ fontSize: '16px', marginTop: '20px', color: 'var(--text-primary)', lineHeight: '1.6', fontWeight: '600' }}>{detailPageVideo.title}</h2>
