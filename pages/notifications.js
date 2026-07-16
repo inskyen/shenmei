@@ -32,15 +32,33 @@ function getInitial(notification) {
   return getActorName(notification).charAt(0).toUpperCase();
 }
 
+const CACHE_KEY = 'shenmei:notifications-cache';
+
+function readCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(notifications) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(notifications));
+  } catch {
+    // sessionStorage 寫入失敗時靜默忽略，不影響功能。
+  }
+}
+
 export default function NotificationsPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState(() => readCache() || []);
+  const [loading, setLoading] = useState(() => !readCache());
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     async function loadNotificationPage() {
-      setLoading(true);
       setErrorMessage('');
 
       try {
@@ -54,11 +72,17 @@ export default function NotificationsPage() {
         if (!user) return;
 
         const result = await loadNotifications();
-        setNotifications((result.notifications || []).filter((n) => n.type !== 'message'));
+        const fresh = (result.notifications || []).filter((n) => n.type !== 'message');
+
+        writeCache(fresh);
+        setNotifications(fresh);
         await markNotificationsRead();
       } catch (error) {
         console.error('通知頁載入失敗:', error);
-        setErrorMessage('通知暫時無法顯示，請稍後再試。');
+        // 有快取時靜默失敗，無快取時才顯示錯誤提示。
+        if (!readCache()) {
+          setErrorMessage('通知暫時無法顯示，請稍後再試。');
+        }
       } finally {
         setLoading(false);
       }
