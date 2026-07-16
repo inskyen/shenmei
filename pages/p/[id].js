@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import ActionSheet from '@/components/ActionSheet';
 import { requireLogin } from '@/lib/auth/requireLogin';
+import { loadProfileRole, USER_ROLES } from '@/lib/auth/roles';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
-import { createPostComment, loadPostComments } from '@/lib/comments/postComments';
+import { createPostComment, deletePostComment, loadPostComments } from '@/lib/comments/postComments';
+import { adjustPostCommentCountInCaches, removeDeletedPostFromCaches } from '@/lib/cache/contentDeletion';
 import { cachePostDetail, getCachedPostDetail } from '@/lib/cache/postDetailCache';
 import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
+import { deletePost } from '@/lib/posts/postDeletion';
 import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 
 const pageStyle = {
@@ -52,11 +56,24 @@ function groupComments(comments) {
     repliesByParent.set(comment.parent_id, replies);
   });
 
-  repliesByParent.forEach((replies) => {
-    replies.sort((first, second) => new Date(first.created_at) - new Date(second.created_at));
+  repliesByParent.forEach((replies, parentId) => {
+    const visibleReplies = replies
+      .filter((reply) => reply.status === 'published')
+      .sort((first, second) => new Date(first.created_at) - new Date(second.created_at));
+
+    if (visibleReplies.length > 0) {
+      repliesByParent.set(parentId, visibleReplies);
+    } else {
+      repliesByParent.delete(parentId);
+    }
   });
 
-  return { topLevelComments, repliesByParent };
+  return {
+    topLevelComments: topLevelComments.filter((comment) => (
+      comment.status === 'published' || repliesByParent.has(comment.id)
+    )),
+    repliesByParent,
+  };
 }
 
 export default function PostPage() {
@@ -70,6 +87,7 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(USER_ROLES.MEMBER);
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -78,9 +96,12 @@ export default function PostPage() {
   const [replyTarget, setReplyTarget] = useState(null);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [videoDimension, setVideoDimension] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const videoDimension = useState(null);
   const videoSectionRef = useRef(null);
   const videoResizeFrameRef = useRef(null);
+  const touchTimerRef = useRef(null);
 
   useEffect(() => {
     if (!id) return;
@@ -163,6 +184,7 @@ export default function PostPage() {
         setModules((moduleResult.data || []).map((row) => row.modules).filter(Boolean));
         setLiked(likedPostIds.has(postData.id));
         setCurrentUser(user);
+        setCurrentUserRole(user ? await loadProfileRole(user.id) : USER_ROLES.MEMBER);
         setComments(commentRows);
         cachePostDetail(postData, profileResult.data || null);
         setIsFollowingAuthor(false);
@@ -317,6 +339,7 @@ export default function PostPage() {
         ...currentPost,
         comment_count: (currentPost.comment_count || 0) + 1,
       }));
+      adjustPostCommentCountInCaches(post.id, 1);
       setCommentDraft('');
       setReplyTarget(null);
       showToast(replyTarget ? '回覆已送出。' : '留言已送出。');
@@ -337,6 +360,85 @@ export default function PostPage() {
     setReplyTarget(comment);
     setCommentMessage('');
     window.setTimeout(() => document.getElementById('comment-input')?.focus(), 0);
+  };
+
+  const canDeleteComment = (comment) => Boolean(
+    currentUser
+    && comment?.status === 'published'
+    && (comment.user_id === currentUser.id || currentUserRole === USER_ROLES.SUPER_ADMIN)
+  );
+
+  const createLongPressHandler = (targetComment) => {
+    return {
+      onTouchStart: () => {
+        touchTimerRef.current = setTimeout(() => {
+          if (canDeleteComment(targetComment)) {
+            if (window.navigator?.vibrate) window.navigator.vibrate(50);
+            setDeleteTarget({ type: 'comment', comment: targetComment });
+          }
+        }, 500);
+      },
+      onTouchEnd: () => {
+        if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+      },
+      onTouchMove: () => {
+        if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+      },
+      onContextMenu: (e) => {
+        if (canDeleteComment(targetComment)) {
+          e.preventDefault();
+        }
+      }
+    };
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || deleteSubmitting) return;
+
+    setDeleteSubmitting(true);
+
+    try {
+      if (deleteTarget.type === 'post') {
+        const result = await deletePost(post.id);
+        if (result.requiresLogin) {
+          setDeleteTarget(null);
+          await requireLogin({ router, nextPath: router.asPath, message: '請先登入，才能刪除採樣。' });
+          return;
+        }
+
+        removeDeletedPostFromCaches(post.id);
+        showToast('採樣已刪除。', 'success');
+        setDeleteTarget(null);
+        await router.replace('/');
+        return;
+      }
+
+      const result = await deletePostComment(deleteTarget.comment.id);
+      if (result.requiresLogin) {
+        setDeleteTarget(null);
+        await requireLogin({ router, nextPath: router.asPath, message: '請先登入，才能刪除留言。' });
+        return;
+      }
+
+      setComments((currentComments) => currentComments.map((comment) => (
+        comment.id === deleteTarget.comment.id
+          ? { ...comment, content: '此留言已刪除', status: 'deleted' }
+          : comment
+      )));
+      setPost((currentPost) => ({
+        ...currentPost,
+        comment_count: Math.max(0, (currentPost.comment_count || 0) - 1),
+      }));
+      adjustPostCommentCountInCaches(post.id, -1);
+      if (replyTarget?.id === deleteTarget.comment.id) setReplyTarget(null);
+      setDeleteTarget(null);
+      showToast('留言已刪除。', 'success');
+    } catch (error) {
+      console.error('刪除內容失敗:', error);
+      showToast(error.message || '刪除失敗，請稍後再試。');
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   const handleToggleLike = async () => {
@@ -517,26 +619,37 @@ export default function PostPage() {
                     </div>
                   </div>
                 </div>
-                {profile && currentUser?.id !== profile.id && (
-                  <button
-                    type="button"
-                    onClick={handleToggleAuthorFollow}
-                    disabled={followLoading}
-                    style={{
-                      border: `1px solid ${isFollowingAuthor ? 'var(--border-light)' : 'var(--brand-blue)'}`,
-                      color: isFollowingAuthor ? 'var(--text-secondary)' : 'var(--brand-blue)',
-                      backgroundColor: isFollowingAuthor ? 'var(--brand-blue-light)' : 'transparent',
-                      borderRadius: '6px',
-                      padding: '4px 16px',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: followLoading ? 'wait' : 'pointer',
-                      opacity: followLoading ? 0.7 : 1,
-                    }}
-                  >
-                    {followLoading ? '處理中' : isFollowingAuthor ? '已關注' : '關注'}
-                  </button>
-                )}
+                <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
+                  {profile && currentUser?.id !== profile.id && (
+                    <button
+                      type="button"
+                      onClick={handleToggleAuthorFollow}
+                      disabled={followLoading}
+                      style={{
+                        border: `1px solid ${isFollowingAuthor ? 'var(--border-light)' : 'var(--brand-blue)'}`,
+                        color: isFollowingAuthor ? 'var(--text-secondary)' : 'var(--brand-blue)',
+                        backgroundColor: isFollowingAuthor ? 'var(--brand-blue-light)' : 'transparent',
+                        borderRadius: '6px',
+                        padding: '4px 16px',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: followLoading ? 'wait' : 'pointer',
+                        opacity: followLoading ? 0.7 : 1,
+                      }}
+                    >
+                      {followLoading ? '處理中' : isFollowingAuthor ? '已關注' : '關注'}
+                    </button>
+                  )}
+                  {currentUser && (post.user_id === currentUser.id || currentUserRole === USER_ROLES.SUPER_ADMIN) && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget({ type: 'post' })}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 標題 */}
@@ -596,27 +709,28 @@ export default function PostPage() {
                 </div>
               )}
 
-              {!commentsLoading && comments.length === 0 && (
+              {!commentsLoading && topLevelComments.length === 0 && (
                 <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0', fontSize: '14px' }}>
                   還沒有人留言，來做第一個發聲的人吧。
                 </div>
               )}
 
-              {!commentsLoading && comments.length > 0 && (
+              {!commentsLoading && topLevelComments.length > 0 && (
                 <div style={{ display: 'grid', gap: '22px', paddingBottom: '22px' }}>
                   {topLevelComments.map((comment) => {
-                    const commentDisplayName = getCommentDisplayName(comment);
+                    const isDeletedComment = comment.status === 'deleted';
+                    const commentDisplayName = isDeletedComment ? '已刪除的留言' : getCommentDisplayName(comment);
                     const replies = repliesByParent.get(comment.id) || [];
 
                     return (
                       <div key={comment.id}>
-                        <article style={{ display: 'flex', gap: '10px' }}>
+                        <article style={{ display: 'flex', gap: '10px' }} {...createLongPressHandler(comment)}>
                           <div
                             aria-label={commentDisplayName}
                             style={{
                               alignItems: 'center',
                               backgroundColor: 'var(--bg-base)',
-                              backgroundImage: comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
+                              backgroundImage: !isDeletedComment && comment.profile?.avatar_url ? `url(${comment.profile.avatar_url})` : 'none',
                               backgroundPosition: 'center',
                               backgroundSize: 'cover',
                               borderRadius: '50%',
@@ -631,23 +745,27 @@ export default function PostPage() {
                               border: '1px solid var(--border-light)'
                             }}
                           >
-                            {comment.profile?.avatar_url ? '' : getInitial(commentDisplayName)}
+                            {!isDeletedComment && comment.profile?.avatar_url ? '' : isDeletedComment ? '—' : getInitial(commentDisplayName)}
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ alignItems: 'baseline', display: 'flex', gap: '8px' }}>
-                              <span style={{ color: 'var(--brand-blue)', fontSize: '13px', fontWeight: '500' }}>{commentDisplayName}</span>
-                              <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>
+                              <span style={{ color: isDeletedComment ? 'var(--text-tertiary)' : 'var(--brand-blue)', fontSize: '13px', fontWeight: '500' }}>{commentDisplayName}</span>
+                              {!isDeletedComment && <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{formatDate(comment.created_at)}</span>}
                             </div>
-                            <p style={{ color: 'var(--text-primary)', fontSize: '14px', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
-                              {comment.content}
+                            <p style={{ color: isDeletedComment ? 'var(--text-tertiary)' : 'var(--text-primary)', fontSize: '14px', fontStyle: isDeletedComment ? 'italic' : 'normal', lineHeight: 1.7, margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>
+                              {isDeletedComment ? '此留言已刪除' : comment.content}
                             </p>
-                            <button
-                              type="button"
-                              onClick={() => handleReply(comment)}
-                              style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', marginTop: '4px', padding: 0 }}
-                            >
-                              回覆
-                            </button>
+                            {!isDeletedComment && (
+                              <div style={{ alignItems: 'center', display: 'flex', gap: '14px', marginTop: '4px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReply(comment)}
+                                  style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', padding: 0 }}
+                                >
+                                  回覆
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </article>
 
@@ -657,7 +775,7 @@ export default function PostPage() {
                                const replyDisplayName = getCommentDisplayName(reply);
 
                                return (
-                                 <article key={reply.id} style={{ display: 'flex', gap: '8px' }}>
+                                 <article key={reply.id} style={{ display: 'flex', gap: '8px' }} {...createLongPressHandler(reply)}>
                                    <div
                                      aria-label={replyDisplayName}
                                      style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: reply.profile?.avatar_url ? `url(${reply.profile.avatar_url})` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flex: '0 0 auto', fontSize: '11px', fontWeight: 500, height: '28px', justifyContent: 'center', width: '28px', border: '1px solid var(--border-light)' }}
@@ -670,13 +788,16 @@ export default function PostPage() {
                                        <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{formatDate(reply.created_at)}</span>
                                      </div>
                                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{reply.content}</p>
-                                     <button
-                                       type="button"
-                                       onClick={() => handleReply(comment)}
-                                       style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', marginTop: '3px', padding: 0 }}
-                                     >
-                                       回覆
-                                     </button>
+                                     <div style={{ alignItems: 'center', display: 'flex', gap: '12px', marginTop: '3px' }}>
+                                       <button
+                                         type="button"
+                                         onClick={() => handleReply(comment)}
+                                         style={{ background: 'transparent', border: 'none', color: 'var(--brand-blue)', cursor: 'pointer', fontSize: '12px', padding: 0 }}
+                                       >
+                                         回覆
+                                       </button>
+
+                                     </div>
                                    </div>
                                  </article>
                                );
@@ -792,6 +913,20 @@ export default function PostPage() {
           {commentMessage}
         </div>
       )}
+
+      <ActionSheet
+        open={Boolean(deleteTarget)}
+        onCancel={() => !deleteSubmitting && setDeleteTarget(null)}
+        actions={[
+          {
+            label: deleteTarget?.type === 'post' ? '刪除原連結' : '刪除留言',
+            onClick: handleConfirmDelete,
+            color: '#D94848',
+            loading: deleteSubmitting,
+            bold: true,
+          }
+        ]}
+      />
     </div>
   );
 }
