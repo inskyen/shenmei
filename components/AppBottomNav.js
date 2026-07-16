@@ -226,7 +226,7 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       {/* 採樣 (UP按鈕) */}
       <button 
         type="button" 
-        onClick={() => router.push('/submit')} 
+        onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} 
         style={itemStyle('submit')}
       >
         <div style={{
