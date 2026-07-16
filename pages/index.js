@@ -958,17 +958,18 @@ export default function Home() {
         </div>
       </main>
 
-      {/* 滑過一段內容後顯示；回頂同時重新取得最新一批內容，避免整頁重新載入。 */}
-      {showBackToTop && (
+      {/* 重新整理與回到頂部按鈕 */}
+      {activeSection === 'latest' && (
         <button
           type="button"
-          aria-label="回到頂部並重新整理"
-          title="回到頂部並重新整理"
+          aria-label="重新整理推薦並回到頂部"
+          title="重新整理推薦並回到頂部"
           onClick={refreshAndReturnToTop}
           style={{ position: 'fixed', bottom: '148px', right: '16px', width: '42px', height: '42px', padding: 0, backgroundColor: 'var(--bg-surface)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', zIndex: 30, cursor: 'pointer' }}
         >
-          <svg aria-hidden="true" style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5 10l7-7 7 7M12 3v18" />
+          <svg aria-hidden="true" style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 3v5h-5" />
           </svg>
         </button>
       )}
