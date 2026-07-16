@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import AppBottomNav from '@/components/AppBottomNav';
-import PageShell from '@/components/PageShell';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { loadNotifications, markNotificationsRead } from '@/lib/notifications/userNotifications';
 
@@ -85,53 +85,115 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <PageShell
-        title="通知"
-        subtitle="有人回應您的審美時，光點會留在這裡。"
-      >
-        {loading && (
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="app-detail-skeleton" style={{ borderRadius: '6px', height: '72px' }} />
-            ))}
-          </div>
-        )}
+      <Head>
+        <title>通知 · 審美者</title>
+      </Head>
 
-        {!loading && errorMessage && (
-          <p style={{ color: '#FF4D4F', lineHeight: 1.7, margin: 0 }}>{errorMessage}</p>
-        )}
+      <div style={{
+        backgroundColor: 'var(--bg-base)',
+        color: 'var(--text-primary)',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        minHeight: '100vh',
+        paddingBottom: '80px',
+      }}>
+        {/* 固定頂部欄 */}
+        <header style={{
+          alignItems: 'center',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-light)',
+          boxSizing: 'border-box',
+          display: 'flex',
+          height: '88px',
+          justifyContent: 'center',
+          padding: '48px 18px 14px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: '17px', fontWeight: 600, letterSpacing: '0.5px' }}>
+            通知
+          </span>
+        </header>
 
-        {!loading && !errorMessage && notifications.length === 0 && (
-          <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '30px 8px', textAlign: 'center' }}>
-            還沒有新的光點。有人喜歡、留言或關注您時，會出現在這裡。
-          </div>
-        )}
+        <main style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'var(--bg-surface)', minHeight: 'calc(100vh - 88px)' }}>
+          {loading && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--border-light)' }}>
+                  <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '48px', width: '48px', flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                    <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '16px', width: '40%' }} />
+                    <div className="app-detail-skeleton" style={{ borderRadius: '4px', height: '14px', width: '25%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {!loading && !errorMessage && notifications.length > 0 && (
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {notifications.map((notification) => (
-              <button
-                key={notification.id}
-                type="button"
-                onClick={() => openNotification(notification)}
-                style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '8px', cursor: notification.post_id || notification.conversation_id || notification.actor?.username ? 'pointer' : 'default', display: 'flex', gap: '12px', padding: '12px', textAlign: 'left', width: '100%', position: 'relative' }}
-              >
-                <span
-                  style={{ alignItems: 'center', backgroundColor: 'var(--bg-base)', backgroundImage: notification.actor?.avatar_url ? `url("${notification.actor.avatar_url}")` : 'none', backgroundPosition: 'center', backgroundSize: 'cover', borderRadius: '50%', color: 'var(--text-secondary)', display: 'flex', flexShrink: 0, fontSize: '15px', fontWeight: 600, height: '44px', justifyContent: 'center', width: '44px', border: '1px solid var(--border-light)' }}
+          {!loading && errorMessage && (
+            <p style={{ color: '#FF4D4F', lineHeight: 1.7, margin: 0, padding: '30px 20px', textAlign: 'center' }}>{errorMessage}</p>
+          )}
+
+          {!loading && !errorMessage && notifications.length === 0 && (
+            <div style={{ color: 'var(--text-tertiary)', lineHeight: 1.8, padding: '60px 20px', textAlign: 'center' }}>
+              還沒有新的光點。有人喜歡、留言或關注您時，會出現在這裡。
+            </div>
+          )}
+
+          {!loading && !errorMessage && notifications.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {notifications.map((notification) => (
+                <button
+                  key={notification.id}
+                  type="button"
+                  onClick={() => openNotification(notification)}
+                  style={{
+                    alignItems: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid var(--border-light)',
+                    cursor: notification.post_id || notification.conversation_id || notification.actor?.username ? 'pointer' : 'default',
+                    display: 'flex',
+                    gap: '16px',
+                    padding: '16px 20px',
+                    textAlign: 'left',
+                    width: '100%',
+                    position: 'relative'
+                  }}
                 >
-                  {!notification.actor?.avatar_url && getInitial(notification)}
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>{getActorName(notification)}</span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}> {notificationCopy[notification.type]}</span>
-                  <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '12px', marginTop: '4px' }}>{formatRelativeTime(notification.created_at)}</span>
-                </span>
-                {!notification.is_read && <span style={{ backgroundColor: '#FF4D4F', borderRadius: '50%', height: '8px', width: '8px' }} />}
-              </button>
-            ))}
-          </div>
-        )}
-      </PageShell>
+                  <span
+                    style={{
+                      alignItems: 'center',
+                      backgroundColor: 'var(--bg-base)',
+                      backgroundImage: notification.actor?.avatar_url ? `url("${notification.actor.avatar_url}")` : 'none',
+                      backgroundPosition: 'center',
+                      backgroundSize: 'cover',
+                      borderRadius: '50%',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      flexShrink: 0,
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      height: '48px',
+                      justifyContent: 'center',
+                      width: '48px',
+                      border: '1px solid var(--border-light)'
+                    }}
+                  >
+                    {!notification.actor?.avatar_url && getInitial(notification)}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>{getActorName(notification)}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}> {notificationCopy[notification.type]}</span>
+                    <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '13px', marginTop: '4px' }}>{formatRelativeTime(notification.created_at)}</span>
+                  </span>
+                  {!notification.is_read && <span style={{ backgroundColor: '#FF4D4F', borderRadius: '50%', height: '8px', width: '8px', position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)' }} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
       <AppBottomNav active="notifications" />
     </>
   );

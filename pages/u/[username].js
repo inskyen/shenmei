@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
@@ -7,7 +7,7 @@ import { requireLogin } from '@/lib/auth/requireLogin';
 import { cacheProfileRoute } from '@/lib/auth/profileRoute';
 import { supabase } from '@/lib/supabase/client';
 import { showToast } from '@/lib/ui/toast';
-import { cacheProfilePage, getCachedProfilePage } from '@/lib/cache/profilePageCache';
+import { cacheProfilePage, getCachedProfilePage, loadProfileLikeCount, loadProfilePostsPage } from '@/lib/cache/profilePageCache';
 import { loadProfileFollowState, toggleProfileFollow } from '@/lib/follows/profileFollows';
 
 function formatDate(timestamp) {
@@ -32,6 +32,13 @@ export default function UserPage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [nextPostsOffset, setNextPostsOffset] = useState(0);
+  const [totalPostCount, setTotalPostCount] = useState(0);
+  const [totalLikeCount, setTotalLikeCount] = useState(0);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
+  const postsSentinelRef = useRef(null);
+  const postsRequestRef = useRef(false);
 
   useEffect(() => {
     if (!username) return;
@@ -73,6 +80,10 @@ export default function UserPage() {
         if (cachedPage) {
           setProfile(cachedPage.profile);
           setPosts(cachedPage.posts);
+          setHasMorePosts(Boolean(cachedPage.hasMore));
+          setNextPostsOffset(cachedPage.nextOffset ?? cachedPage.posts.length);
+          setTotalPostCount(cachedPage.totalPostCount ?? cachedPage.posts.length);
+          setTotalLikeCount(cachedPage.totalLikeCount ?? 0);
           setIsOwnProfile(Boolean(currentUser && currentUser.id === cachedPage.profile.id));
           setLoading(false);
         }
@@ -98,39 +109,35 @@ export default function UserPage() {
           cacheProfileRoute(currentUser.id, profileData.username);
         }
 
-        const postsRequest = supabase
-          .from('posts')
-          .select(`
-              id,
-              note,
-              created_at,
-              like_count,
-              comment_count,
-              videos (
-                id,
-                external_id,
-                title,
-                cover_url,
-                author_name
-              )
-            `)
-          .eq('user_id', profileData.id)
-          .eq('status', 'published')
-          .eq('visibility', 'public')
-          .order('created_at', { ascending: false });
-
-        const [postsResult, followState] = await Promise.all([
-          postsRequest,
+        const [postsPage, nextTotalLikeCount, followState] = await Promise.all([
+          loadProfilePostsPage(profileData.id, 0),
+          loadProfileLikeCount(profileData.id),
           loadProfileFollowState(profileData.id).catch((followError) => {
             console.warn('追蹤狀態載入失敗:', followError);
             return { followerCount: 0, followingCount: 0, isFollowing: false };
           }),
         ]);
 
-        if (postsResult.error) throw postsResult.error;
+        const cachedPosts = cachedPage?.posts || [];
+        const freshPostIds = new Set(postsPage.posts.map((post) => post.id));
+        const retainedPosts = [
+          ...postsPage.posts,
+          ...cachedPosts.filter((post) => !freshPostIds.has(post.id)),
+        ].slice(0, postsPage.totalPostCount);
+        const retainedOffset = retainedPosts.length;
+        const retainedHasMore = retainedOffset < postsPage.totalPostCount;
 
-        setPosts(postsResult.data || []);
-        cacheProfilePage(profileData, postsResult.data || []);
+        setPosts(retainedPosts);
+        setHasMorePosts(retainedHasMore);
+        setNextPostsOffset(retainedOffset);
+        setTotalPostCount(postsPage.totalPostCount);
+        setTotalLikeCount(nextTotalLikeCount);
+        cacheProfilePage(profileData, retainedPosts, {
+          hasMore: retainedHasMore,
+          nextOffset: retainedOffset,
+          totalPostCount: postsPage.totalPostCount,
+          totalLikeCount: nextTotalLikeCount,
+        });
         setFollowerCount(followState.followerCount);
         setFollowingCount(followState.followingCount);
         setIsFollowing(followState.isFollowing);
@@ -145,8 +152,45 @@ export default function UserPage() {
     loadUserPage();
   }, [router, username]);
 
+  const loadMorePosts = useCallback(async () => {
+    if (!profile?.id || !hasMorePosts || postsRequestRef.current) return;
+
+    postsRequestRef.current = true;
+    setLoadingMorePosts(true);
+
+    try {
+      const page = await loadProfilePostsPage(profile.id, nextPostsOffset);
+
+      setPosts((currentPosts) => {
+        const knownPostIds = new Set(currentPosts.map((post) => post.id));
+        const mergedPosts = [...currentPosts, ...page.posts.filter((post) => !knownPostIds.has(post.id))];
+        cacheProfilePage(profile, mergedPosts, page);
+        return mergedPosts;
+      });
+      setHasMorePosts(page.hasMore);
+      setNextPostsOffset(page.nextOffset);
+      setTotalPostCount(page.totalPostCount);
+    } catch (error) {
+      console.error('載入更多策展動態失敗:', error);
+    } finally {
+      postsRequestRef.current = false;
+      setLoadingMorePosts(false);
+    }
+  }, [hasMorePosts, nextPostsOffset, profile]);
+
+  useEffect(() => {
+    if (loading || !hasMorePosts || typeof window === 'undefined' || !postsSentinelRef.current) return undefined;
+
+    const preloadDistance = Math.round(window.innerHeight * 1.25);
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMorePosts();
+    }, { rootMargin: `0px 0px ${preloadDistance}px 0px` });
+
+    observer.observe(postsSentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMorePosts, loadMorePosts, loading, posts.length]);
+
   const displayName = profile?.display_name || profile?.username || '策展人';
-  const totalLikes = posts.reduce((sum, post) => sum + (post.like_count || 0), 0);
   const aestheticTags = profile?.aesthetic_tags || [];
 
   const goBack = () => {
@@ -398,11 +442,11 @@ export default function UserPage() {
           {/* Stats Row */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{posts.length}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalPostCount}</span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>策展</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalLikes}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{totalLikeCount}</span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>獲讚</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -448,6 +492,8 @@ export default function UserPage() {
                           <img 
                             src={video.cover_url} 
                             alt={video.title} 
+                            loading="lazy"
+                            decoding="async"
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
                           />
                         )}
@@ -489,6 +535,16 @@ export default function UserPage() {
               })}
             </div>
           )}
+
+          {loadingMorePosts && (
+            <div aria-label="正在預先載入更多策展動態" style={{ columnCount: 2, columnGap: '12px', marginTop: '12px' }}>
+              {[0, 1].map((item) => (
+                <div key={item} className="app-detail-skeleton" style={{ breakInside: 'avoid', borderRadius: '8px', height: item === 0 ? '260px' : '220px', marginBottom: '12px' }} />
+              ))}
+            </div>
+          )}
+
+          {hasMorePosts && <div ref={postsSentinelRef} aria-hidden="true" style={{ height: '1px' }} />}
 
         </div>
       </div>

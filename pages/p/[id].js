@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { requireLogin } from '@/lib/auth/requireLogin';
@@ -79,6 +79,8 @@ export default function PostPage() {
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [videoDimension, setVideoDimension] = useState(null);
+  const videoSectionRef = useRef(null);
+  const videoResizeFrameRef = useRef(null);
 
   useEffect(() => {
     if (!id) return;
@@ -194,6 +196,58 @@ export default function PostPage() {
 
     loadPost();
   }, [id]);
+
+  useEffect(() => {
+    const videoSection = videoSectionRef.current;
+    if (!post || !videoSection || typeof window === 'undefined') return undefined;
+
+    const updateVideoSize = () => {
+      videoResizeFrameRef.current = null;
+
+      const containerWidth = videoSection.parentElement?.clientWidth || Math.min(window.innerWidth, 600);
+      const isPortraitVideo = Boolean(videoDimension && videoDimension.height > videoDimension.width);
+      const naturalLandscapeHeight = containerWidth * 0.5625;
+      const expandedHeight = isPortraitVideo
+        ? Math.min(window.innerHeight * 0.75, 800)
+        : naturalLandscapeHeight;
+      const compactHeight = Math.min(
+        expandedHeight,
+        Math.max(176, Math.min(220, naturalLandscapeHeight))
+      );
+      const maximumCollapseDistance = expandedHeight - compactHeight;
+      const collapsedDistance = Math.min(Math.max(window.scrollY, 0), maximumCollapseDistance);
+      const currentHeight = expandedHeight - collapsedDistance;
+      const reservedHeight = expandedHeight - currentHeight;
+
+      videoSection.style.height = `${Math.round(currentHeight)}px`;
+      // 捲動 1px 就縮小 1px；同時用等量下邊距保留排版高度，讓下方
+      // 資訊自然緊貼播放器，並避免瀏覽器修正 scrollY 後反覆閃跳。
+      videoSection.style.marginBottom = `${Math.round(reservedHeight)}px`;
+      videoSection.style.maxHeight = 'none';
+      videoSection.style.paddingTop = '0';
+      videoSection.style.boxShadow = collapsedDistance > 4
+        ? '0 6px 18px rgba(0,0,0,0.12)'
+        : '0 4px 12px rgba(0,0,0,0.05)';
+    };
+
+    const scheduleVideoResize = () => {
+      if (videoResizeFrameRef.current) return;
+      videoResizeFrameRef.current = window.requestAnimationFrame(updateVideoSize);
+    };
+
+    updateVideoSize();
+    window.addEventListener('scroll', scheduleVideoResize, { passive: true });
+    window.addEventListener('resize', scheduleVideoResize);
+
+    return () => {
+      window.removeEventListener('scroll', scheduleVideoResize);
+      window.removeEventListener('resize', scheduleVideoResize);
+      if (videoResizeFrameRef.current) {
+        window.cancelAnimationFrame(videoResizeFrameRef.current);
+        videoResizeFrameRef.current = null;
+      }
+    };
+  }, [post, videoDimension]);
 
   const video = post?.videos || {};
   const displayName = getDisplayName(post, profile);
@@ -392,12 +446,13 @@ export default function PostPage() {
         {!loading && post && (
           <article style={{ display: 'flex', flexDirection: 'column' }}>
             {/* 顶部悬浮视频区 */}
-            <section style={{
+            <section ref={videoSectionRef} style={{
               backgroundColor: 'var(--bg-base)',
               position: 'sticky',
               top: 0,
               zIndex: 40,
               width: '100%',
+              willChange: 'height',
               ...(videoDimension && videoDimension.height > videoDimension.width ? {
                 height: '75vh',
                 maxHeight: '800px',
