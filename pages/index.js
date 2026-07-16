@@ -958,8 +958,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* 重新整理與回到頂部按鈕 */}
-      {activeSection === 'latest' && (
+      {/* 重新整理與回到頂部按鈕 (滑過一段內容後顯示) */}
+      {showBackToTop && activeSection === 'latest' && (
         <button
           type="button"
           aria-label="重新整理推薦並回到頂部"
