@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ImmersiveVideoPlayer({ video, onClose }) {
+  const [videoDimension, setVideoDimension] = useState(null);
   useEffect(() => {
     if (!video) return undefined;
 
@@ -11,6 +12,18 @@ export default function ImmersiveVideoPlayer({ video, onClose }) {
 
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
+
+    if (video.bvid || video.external_id) {
+      const targetBvid = video.bvid || video.external_id;
+      fetch(`/api/bilibili?bvid=${targetBvid}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.dimension) {
+            setVideoDimension(data.dimension);
+          }
+        })
+        .catch(err => console.warn('無法獲取影片尺寸:', err));
+    }
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -29,19 +42,25 @@ export default function ImmersiveVideoPlayer({ video, onClose }) {
       aria-label={`播放影片：${title}`}
       aria-modal="true"
       role="dialog"
+      onClick={onClose}
       style={{ alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.9)', bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', left: 0, position: 'fixed', right: 0, top: 0, zIndex: 9999 }}
     >
-      <button
-        type="button"
-        aria-label="關閉播放器"
-        onClick={onClose}
-        style={{ alignItems: 'center', backdropFilter: 'blur(4px)', backgroundColor: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', color: '#FFFFFF', cursor: 'pointer', display: 'flex', fontSize: '20px', height: '40px', justifyContent: 'center', padding: 0, position: 'absolute', right: '24px', top: '24px', width: '40px', zIndex: 1 }}
-      >
-        ✕
-      </button>
-
-      <div style={{ maxWidth: '800px', width: '100%' }}>
-        <div style={{ backgroundColor: '#000', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', paddingTop: '56.25%', position: 'relative', width: '100%' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', width: '100%' }}>
+        <div style={{ 
+          backgroundColor: '#000', 
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)', 
+          position: 'relative', 
+          width: '100%',
+          ...(videoDimension && videoDimension.height > videoDimension.width ? {
+            height: '80vh',
+            maxHeight: '800px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          } : {
+            paddingTop: '56.25%'
+          })
+        }}>
           {bvid ? (
             <iframe
               allow="autoplay; fullscreen"
