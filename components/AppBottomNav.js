@@ -158,10 +158,11 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
+    gap: '3px',
     flex: 1,
     height: '100%',
     minWidth: 0,
-    padding: 0,
+    padding: '0 0 env(safe-area-inset-bottom)',
     touchAction: 'manipulation',
     userSelect: 'none',
     WebkitTouchCallout: 'none',
@@ -176,10 +177,10 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       bottom: 0, 
       boxShadow: '0 -1px 3px rgba(0, 0, 0, 0.03)', 
       display: 'flex', 
-      height: '64px', 
+      height: 'calc(64px + env(safe-area-inset-bottom))', 
       left: 0, 
       maxWidth: 'none', 
-      padding: '4px 8px 16px', 
+      padding: '0 8px',
       position: 'fixed', 
       touchAction: 'manipulation',
       userSelect: 'none',
@@ -189,30 +190,30 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
       zIndex: 100 
     }}>
       <button type="button" onClick={goToHome} style={itemStyle('home')}>
-        <svg style={{ height: '24px', marginBottom: '4px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg style={{ height: '24px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" strokeWidth="1.5"/>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
         </svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400' }}>發現</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'home' ? '600' : '400', lineHeight: 1 }}>發現</span>
       </button>
       <button type="button" onClick={goToModules} style={itemStyle('modules')}>
-        <svg style={{ height: '24px', marginBottom: '4px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg style={{ height: '24px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7" rx="1.5" strokeWidth="1.5"/>
           <rect x="14" y="3" width="7" height="7" rx="1.5" strokeWidth="1.5"/>
           <rect x="14" y="14" width="7" height="7" rx="1.5" strokeWidth="1.5"/>
           <rect x="3" y="14" width="7" height="7" rx="1.5" strokeWidth="1.5"/>
         </svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400' }}>頻道</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'modules' ? '600' : '400', lineHeight: 1 }}>頻道</span>
       </button>
       <button type="button" onClick={() => goToProtectedPage('/submit', '請先登入，才能採樣。')} style={itemStyle('submit')}>
-        <svg style={{ height: '32px', marginBottom: '1px', width: '32px', color: 'var(--text-primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg style={{ height: '32px', width: '32px', color: 'var(--text-primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" strokeWidth="1.2"/>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v8M8 12h8" />
         </svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400' }}>採樣</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'submit' ? '600' : '400', lineHeight: 1 }}>採樣</span>
       </button>
       <button type="button" onClick={goToMessages} style={itemStyle('messages')}>
-        <span style={{ display: 'inline-flex', marginBottom: '4px', position: 'relative' }}>
+        <span style={{ display: 'inline-flex', position: 'relative' }}>
           <svg style={{ height: '24px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
           </svg>
@@ -232,14 +233,14 @@ export default function AppBottomNav({ active, onHomeSelect, onModulesSelect }) 
             />
           )}
         </span>
-        <span style={{ fontSize: '10px', fontWeight: active === 'messages' ? '600' : '400' }}>私訊</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'messages' ? '600' : '400', lineHeight: 1 }}>私訊</span>
       </button>
       <button type="button" onClick={goToMyProfile} style={itemStyle('profile')}>
-        <svg style={{ height: '24px', marginBottom: '4px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg style={{ height: '24px', width: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
           <circle cx="12" cy="7" r="4" strokeWidth="1.5" />
         </svg>
-        <span style={{ fontSize: '10px', fontWeight: active === 'profile' ? '600' : '400' }}>我的</span>
+        <span style={{ fontSize: '10px', fontWeight: active === 'profile' ? '600' : '400', lineHeight: 1 }}>我的</span>
       </button>
     </nav>
   );
