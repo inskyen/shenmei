@@ -669,7 +669,7 @@ export default function Home() {
             onClick={() => switchHomeSection('latest', activeSection === 'following' ? 'right' : 'left')}
             style={{ background: 'transparent', border: 'none', color: activeSection === 'latest' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'latest' ? '20px' : '18px', fontWeight: activeSection === 'latest' ? 600 : 500, padding: 0 }}
           >
-            最新
+            推薦
           </button>
           <button
             type="button"
@@ -866,7 +866,7 @@ export default function Home() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '14px' }}>{video.added_by || '策展人'}</span>
                       <AestheteBadge role={video.profile_role} />
-                      <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· INFP</span>
+
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: '400' }}>· {formatDate(video.fav_time || video.created_at)}</span>
                     </div>
                   </div>
