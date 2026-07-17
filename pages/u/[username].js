@@ -475,78 +475,151 @@ export default function UserPage() {
               這裡還沒有留下採樣痕跡。
             </div>
           ) : (
-            <div style={{ columnCount: 2, columnGap: '12px' }}>
-              {posts.map((post) => {
-                const video = post.videos || {};
-                return (
-                  <div key={post.id} style={{ breakInside: 'avoid', marginBottom: '12px' }}>
-                    <div 
-                      onClick={() => router.push(`/p/${post.id}`)}
-                      style={{
-                        backgroundColor: 'var(--bg-surface)',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        border: '1px solid var(--border-light)'
-                      }}
-                    >
-                      {/* Cover */}
-                      <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: 'var(--bg-base)' }}>
-                        {video.cover_url && (
-                          <img 
-                            src={video.cover_url} 
-                            alt={video.title} 
-                            loading="lazy"
-                            decoding="async"
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
-                          />
-                        )}
-                        {!video.cover_url && (
-                          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '12px' }}>無封面</div>
-                        )}
-                      </div>
-
-                      {/* Content Snippet */}
-                      <div style={{ padding: '10px 12px' }}>
-                        <div style={{ 
-                          fontSize: '13px', 
-                          fontWeight: '600', 
-                          color: 'var(--text-primary)',
-                          display: '-webkit-box', 
-                          WebkitLineClamp: 2, 
-                          WebkitBoxOrient: 'vertical', 
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              {/* 左列 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                {posts.filter((_, i) => i % 2 === 0).map((post) => {
+                  const video = post.videos || {};
+                  return (
+                    <div key={post.id}>
+                      <div 
+                        onClick={() => router.push(`/p/${post.id}`)}
+                        style={{
+                          backgroundColor: 'var(--bg-surface)',
+                          borderRadius: '8px',
                           overflow: 'hidden',
-                          lineHeight: 1.4,
-                          marginBottom: '8px'
-                        }}>
-                          {post.note || video.title}
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          border: '1px solid var(--border-light)'
+                        }}
+                      >
+                        {/* Cover */}
+                        <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: 'var(--bg-base)' }}>
+                          {video.cover_url && (
+                            <img 
+                              src={video.cover_url} 
+                              alt={video.title} 
+                              loading="lazy"
+                              decoding="async"
+                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          )}
+                          {!video.cover_url && (
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '12px' }}>無封面</div>
+                          )}
                         </div>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                             <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--border-light)', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
-                             {displayName.slice(0, 8)}{displayName.length > 8 ? '...' : ''}
-                          </span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            {post.like_count || 0}
-                          </span>
+
+                        {/* Content Snippet */}
+                        <div style={{ padding: '10px 12px' }}>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: 'var(--text-primary)',
+                            display: '-webkit-box', 
+                            WebkitLineClamp: 2, 
+                            WebkitBoxOrient: 'vertical', 
+                            overflow: 'hidden',
+                            lineHeight: 1.4,
+                            marginBottom: '8px'
+                          }}>
+                            {post.note || video.title}
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                               <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--border-light)', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
+                               {displayName.slice(0, 8)}{displayName.length > 8 ? '...' : ''}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                              {post.like_count || 0}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+
+              {/* 右列 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                {posts.filter((_, i) => i % 2 !== 0).map((post) => {
+                  const video = post.videos || {};
+                  return (
+                    <div key={post.id}>
+                      <div 
+                        onClick={() => router.push(`/p/${post.id}`)}
+                        style={{
+                          backgroundColor: 'var(--bg-surface)',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          border: '1px solid var(--border-light)'
+                        }}
+                      >
+                        {/* Cover */}
+                        <div style={{ width: '100%', paddingTop: '133%', position: 'relative', backgroundColor: 'var(--bg-base)' }}>
+                          {video.cover_url && (
+                            <img 
+                              src={video.cover_url} 
+                              alt={video.title} 
+                              loading="lazy"
+                              decoding="async"
+                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          )}
+                          {!video.cover_url && (
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '12px' }}>無封面</div>
+                          )}
+                        </div>
+
+                        {/* Content Snippet */}
+                        <div style={{ padding: '10px 12px' }}>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: 'var(--text-primary)',
+                            display: '-webkit-box', 
+                            WebkitLineClamp: 2, 
+                            WebkitBoxOrient: 'vertical', 
+                            overflow: 'hidden',
+                            lineHeight: 1.4,
+                            marginBottom: '8px'
+                          }}>
+                            {post.note || video.title}
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                               <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--border-light)', display: 'inline-block', backgroundImage: profile.avatar_url ? `url("${profile.avatar_url}")` : 'none', backgroundSize: 'cover' }} />
+                               {displayName.slice(0, 8)}{displayName.length > 8 ? '...' : ''}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                              {post.like_count || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
           {loadingMorePosts && (
-            <div aria-label="正在預先載入更多採樣動態" style={{ columnCount: 2, columnGap: '12px', marginTop: '12px' }}>
-              {[0, 1].map((item) => (
-                <div key={item} className="app-detail-skeleton" style={{ breakInside: 'avoid', borderRadius: '8px', height: item === 0 ? '260px' : '220px', marginBottom: '12px' }} />
-              ))}
+            <div aria-label="正在預先載入更多採樣動態" style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                <div className="app-detail-skeleton" style={{ borderRadius: '8px', height: '260px' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                <div className="app-detail-skeleton" style={{ borderRadius: '8px', height: '220px' }} />
+              </div>
             </div>
           )}
 

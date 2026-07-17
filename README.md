@@ -1,40 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# 審美者（採樣器）
 
-## Getting Started
+審美者是一個以 Bilibili 影片為內容入口的審美採樣社交產品。
 
-First, run the development server:
+使用者發布的不是單純影片連結，而是：
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+一支影片 + 一段推薦理由 + 可選頻道
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+產品採用 `video + post` 雙核心：
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+- `video`：影片本體與長期沉澱，對應 `/v/[id]`。
+- `post`：使用者的一次採樣與討論，對應 `/p/[id]`。
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+## 當前階段
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+截至 2026-07-16：
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 核心 MVP 已完成，可進行小規模種子內測。
+- 正在補齊公開測試前的反濫用、檢舉治理、安全與運維能力。
+- 暫不建議在缺少治理工具的情況下完全開放註冊並大規模宣傳。
 
-## Learn More
+詳細進度請讀：
 
-To learn more about Next.js, take a look at the following resources:
+- `docs/README.md`
+- `docs/07_ROADMAP.md`
+- `docs/05_DEPLOY_OPS.md`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+## 已完成功能
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Email / Password 註冊登入與六位 Email OTP。
+- profile、數字審美號、角色權限與資料設定。
+- 首頁「追蹤／最新／頻道」、分頁載入與頁面預熱。
+- B站影片採樣發布、影片搜索與使用者搜索。
+- `/v/[id]` 影片主頁與 `/p/[id]` 採樣詳情。
+- 頻道建立、排序、投遞與角色限制。
+- 喜歡、留言、回覆與軟刪除。
+- 使用者追蹤、通知、即時私訊與未讀狀態。
+- 行動端底部導航、沉浸播放與 App 化頁面過渡。
 
-## Deploy on Vercel
+## 技術棧
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Next.js 16 Pages Router
+- React 19
+- Supabase Auth / Database / Realtime
+- Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## 本地啟動
+
+建立 `.env.local`：
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+安裝與啟動：
+
+```bash
+npm install
+npm run dev
+```
+
+檢查：
+
+```bash
+npm run lint
+npm run build
+```
+
+## 資料庫
+
+SQL migration 位於 `supabase/migrations/`，目前仍採 Supabase SQL Editor 手動執行。
+
+每次部署前必須確認：
+
+1. 新 migration 已在目標 Supabase 專案執行。
+2. RLS policy 與 trigger 已生效。
+3. 前端程式與遠端資料庫版本一致。
+
+不要把 Supabase service role key 放進前端或提交到 Git。

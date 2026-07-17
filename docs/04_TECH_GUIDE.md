@@ -7,7 +7,7 @@
 - Next.js Pages Router
 - React
 - Supabase
-- Tailwind CSS 4
+- Tailwind CSS 4（已安裝；現有頁面主要使用 inline style 與 `styles/globals.css`）
 
 第一階段繼續使用 Pages Router，不急著遷移 App Router。
 
@@ -31,38 +31,34 @@
 
 ### 2.2 不做大爆炸重構
 
-首頁目前都在 `pages/index.js`。  
-後續應逐步拆元件，但不要在第一個功能回合一次重寫所有 UI。
+首頁主要邏輯仍集中在 `pages/index.js`。後續應在不破壞緩存、預載與滑動狀態的前提下逐步拆元件，不做一次性大重寫。
 
 ### 2.3 先保留產品氣質
 
-技術重構不能破壞目前的雾蓝、柔白、私人放映室氣質。
+技術重構不能破壞目前克制、黑白、內容優先、略帶冷感的移動端社區氣質。
 
-## 3. 建議目錄結構
-
-後續逐步新增：
+## 3. 當前目錄結構
 
 ```text
 lib/
   supabase/
     client.js
     server.js        # 若需要服務端使用
-  bilibili.js        # BVID 解析與後續 B 站資料處理
+  auth/
+  cache/
+  comments/
+  follows/
+  messages/
+  notifications/
+  posts/
+  reactions/
 
 components/
-  layout/
-    BottomNav.jsx
-    TopTabs.jsx
-  posts/
-    PostCard.jsx
-    PostFeed.jsx
-  videos/
-    VideoPlayer.jsx
-    VideoCover.jsx
-  modules/
-    ModuleCard.jsx
-  comments/
-    CommentList.jsx
+  AppBottomNav.js
+  ActionSheet.js
+  ConfirmDialog.js
+  DirectMessageThread.js
+  ImmersiveVideoPlayer.js
 
 pages/
   index.js
@@ -81,16 +77,14 @@ pages/
 
 ### 4.1 不要在頁面硬編碼 Supabase 設定
 
-目前 `pages/login.js` 有硬編碼 Supabase URL 和 key，正式施工時應修正。
-
-應使用：
+目前已統一使用：
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-### 4.2 建議建立共用 client
+### 4.2 共用 client
 
 檔案：
 
@@ -98,7 +92,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 lib/supabase/client.js
 ```
 
-用途：
+`lib/supabase/client.js` 已建立，用途：
 
 - 前端頁面共用。
 - 避免每個頁面重複 `createClient`。

@@ -604,7 +604,10 @@ export default function PostPage() {
             <section style={{ padding: '20px 16px' }}>
               {/* 用户信息 */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div 
+                  onClick={() => { if (profile?.username) router.push(`/u/${profile.username}`); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                >
                   <div
                     aria-label={displayName}
                     style={{

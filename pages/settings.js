@@ -12,7 +12,7 @@ const AVATAR_GROUPS = {
     "/avatars/istj-logistician.svg", "/avatars/isfj-defender.svg", "/avatars/estj-executive.svg", "/avatars/esfj-consul.svg",
     "/avatars/istp-virtuoso.svg", "/avatars/isfp-adventurer.svg", "/avatars/estp-entrepreneur.svg", "/avatars/esfp-entertainer.svg"
   ],
-  rings: Array.from({length: 16}, (_, i) => `/avatars/rings${i+1}.svg`),
+  momo: Array.from({length: 16}, (_, i) => `/avatars/momo${i+1}.svg`),
   notion: Array.from({length: 16}, (_, i) => `/avatars/notion_${i+1}.svg`)
 };
 
@@ -251,13 +251,13 @@ export default function SettingsPage() {
                 color: activeGroup === 'mbti' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}>16 型人格</button>
             <button 
-              onClick={() => setActiveGroup('rings')}
+              onClick={() => setActiveGroup('momo')}
               type="button"
               style={{
-                flex: 1, padding: '8px 0', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: activeGroup === 'rings' ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: activeGroup === 'rings' ? 'var(--bg-surface)' : 'transparent',
-                color: activeGroup === 'rings' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              }}>純粹光環</button>
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: activeGroup === 'momo' ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: activeGroup === 'momo' ? 'var(--bg-surface)' : 'transparent',
+                color: activeGroup === 'momo' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              }}>momo</button>
             <button 
               onClick={() => setActiveGroup('notion')}
               type="button"

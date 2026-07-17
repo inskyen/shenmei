@@ -64,7 +64,7 @@ conversations 1 - n messages
 | 欄位 | 型別 | 必填 | 說明 |
 | --- | --- | --- | --- |
 | id | uuid | 是 | 對應 `auth.users.id` |
-| username | text | 是 | 唯一帳號，用於 `/u/[username]`；註冊時先自動生成一串數字，後續可修改 |
+| username | text | 是 | 唯一審美號，用於 `/u/[username]`；註冊時自動生成數字，前端不可自行修改 |
 | display_name | text | 是 | 顯示名稱 |
 | avatar_url | text | 否 | 頭像 |
 | bio | text | 否 | 個人簡介 |
@@ -76,7 +76,7 @@ conversations 1 - n messages
 ### 約束
 
 - `username` 唯一。
-- 註冊時自動生成數字型 `username`，類似小紅書初始號碼。
+- 註冊時自動生成唯一數字型 `username`，目前作為穩定審美號與路由識別，不允許前端自行修改。
 - 使用者後續可在個人設定中修改 `username`。
 - `message_permission` 建議值：
   - `everyone`
@@ -493,7 +493,7 @@ Supabase RLS 應在 SQL 階段細化。初步原則：
 
 - 已確認：發布時允許一篇 post 無頻道；未選頻道時預設發到大廳最新流。
 - 已確認：`reactions` 第一版只做 `like`，不提前支持多反應。
-- 已確認：`profiles.username` 註冊時自動生成一串數字，後續允許使用者修改。
+- 已確認：`profiles.username` 註冊時自動生成唯一數字審美號；目前前端與資料庫禁止使用者自行修改。
 - 已確認：`modules.owner_id` 第一版保留但不提供頻道管理功能，可為空。
 
 ## 22. 仍待確認
