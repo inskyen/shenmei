@@ -25,7 +25,9 @@ import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
 const FEED_PAGE_SIZE = 10;
+const MIN_TOP_REFRESH_DURATION = 650;
 const HOME_SECTIONS = ['following', 'recommended', 'latest', 'modules'];
+const HOME_HISTORY_SECTION_KEY = 'shenmeiHomeSection';
 const RECENT_RECOMMENDATION_STORAGE_KEY = 'shenmei:recent-recommendations';
 
 const MODULE_GRADIENTS = [
@@ -64,8 +66,13 @@ function mergeFeedItems(primaryItems, secondaryItems) {
   return [...itemsById.values()];
 }
 
-async function fetchFeedPage(offset) {
-  const response = await fetch(`/api/feed?offset=${offset}&limit=${FEED_PAGE_SIZE}`);
+async function waitForMinimumRefreshDuration(startedAt) {
+  const remaining = MIN_TOP_REFRESH_DURATION - (Date.now() - startedAt);
+  if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, remaining));
+}
+
+async function fetchFeedPage(offset, { signal } = {}) {
+  const response = await fetch(`/api/feed?offset=${offset}&limit=${FEED_PAGE_SIZE}`, { signal });
   if (!response.ok) throw new Error('最新採樣載入失敗');
   return response.json();
 }
@@ -93,7 +100,7 @@ function rememberRecommendationIds(postIds) {
   window.localStorage.setItem(RECENT_RECOMMENDATION_STORAGE_KEY, JSON.stringify(nextIds));
 }
 
-async function fetchRecommendationBatch({ seed, sessionId, exclude = [] }) {
+async function fetchRecommendationBatch({ seed, sessionId, exclude = [], signal }) {
   const { data: { session } } = await supabase.auth.getSession();
   const params = new URLSearchParams({
     limit: String(FEED_PAGE_SIZE),
@@ -106,6 +113,7 @@ async function fetchRecommendationBatch({ seed, sessionId, exclude = [] }) {
     headers: session?.access_token
       ? { Authorization: `Bearer ${session.access_token}` }
       : undefined,
+    signal,
   });
   if (!response.ok) throw new Error('推薦採樣載入失敗');
   return response.json();
@@ -196,22 +204,51 @@ export default function Home() {
   const warmedUpIdentityRef = useRef('');
   const feedSentinelRef = useRef(null);
   const feedRequestRef = useRef(false);
+  const feedAbortRef = useRef(null);
+  const feedRequestVersionRef = useRef(0);
   const followingRequestRef = useRef(false);
   const recommendationRequestRef = useRef(false);
+  const recommendationAbortRef = useRef(null);
+  const recommendationRequestVersionRef = useRef(0);
+  const manualRefreshRef = useRef(false);
   const swipeStartRef = useRef(null);
   const sectionScrollRef = useRef({ following: 0, recommended: 0, latest: 0, modules: 0 });
   const myProfilePath = userProfile?.username ? `/u/${userProfile.username}` : '/u/me';
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const historySection = window.history.state?.[HOME_HISTORY_SECTION_KEY];
+    if (HOME_SECTIONS.includes(historySection)) {
+      const restoreFrame = window.requestAnimationFrame(() => {
+        setActiveSection(historySection);
+      });
+      return () => window.cancelAnimationFrame(restoreFrame);
+    }
+
+    // 把目前首頁分頁寫進這一筆瀏覽紀錄。離開首頁後使用瀏覽器回退時，
+    // 可以恢復離開前的分頁，而不是每次重新落到「推薦」。
+    window.history.replaceState({
+      ...window.history.state,
+      [HOME_HISTORY_SECTION_KEY]: 'recommended',
+    }, '');
+    return undefined;
+  }, []);
+
   // 初始化加载数据
   useEffect(() => {
     let isActive = true;
+    const feedController = new AbortController();
+    const feedRequestVersion = ++feedRequestVersionRef.current;
+    feedAbortRef.current?.abort();
+    feedAbortRef.current = feedController;
 
     async function loadInitialFeed() {
       feedRequestRef.current = true;
 
       try {
         // 即使已有記憶體快取，也在背景刷新第一批；畫面保留舊內容，不重新閃骨架。
-        const data = await fetchFeedPage(0);
+        const data = await fetchFeedPage(0, { signal: feedController.signal });
         if (!isActive) return;
 
         const firstPageItems = data.items || [];
@@ -236,10 +273,13 @@ export default function Home() {
           setLikedPostIds(nextLikedPostIds);
         }
       } catch (error) {
-        console.error('讀取最新採樣失敗:', error);
+        if (error.name !== 'AbortError') console.error('讀取最新採樣失敗:', error);
       } finally {
-        feedRequestRef.current = false;
-        if (isActive) setLoading(false);
+        if (feedRequestVersionRef.current === feedRequestVersion) {
+          feedRequestRef.current = false;
+          feedAbortRef.current = null;
+          if (isActive) setLoading(false);
+        }
       }
     }
 
@@ -319,11 +359,16 @@ export default function Home() {
 
     return () => {
       isActive = false;
+      feedController.abort();
     };
   }, []);
 
   useEffect(() => {
     let isActive = true;
+    const recommendationController = new AbortController();
+    const recommendationRequestVersion = ++recommendationRequestVersionRef.current;
+    recommendationAbortRef.current?.abort();
+    recommendationAbortRef.current = recommendationController;
 
     async function loadInitialRecommendations() {
       const visibleSnapshot = initialRecommendation?.items?.length
@@ -342,6 +387,7 @@ export default function Home() {
           seed: recommendationSeed,
           sessionId: recommendationSessionId,
           exclude: getRecentRecommendationIds(),
+          signal: recommendationController.signal,
         });
         if (!isActive) return;
 
@@ -355,16 +401,24 @@ export default function Home() {
           sessionId: data.session_id || recommendationSessionId,
         });
       } catch (error) {
-        console.error('讀取推薦採樣失敗:', error);
+        if (error.name !== 'AbortError') console.error('讀取推薦採樣失敗:', error);
       } finally {
-        recommendationRequestRef.current = false;
-        if (isActive) setRecommendationLoading(false);
+        if (recommendationRequestVersionRef.current === recommendationRequestVersion) {
+          recommendationRequestRef.current = false;
+          recommendationAbortRef.current = null;
+          if (isActive) setRecommendationLoading(false);
+        }
       }
     }
 
     loadInitialRecommendations();
-    return () => { isActive = false; };
-  }, [initialRecommendation, recommendationSeed, recommendationSessionId]);
+    return () => {
+      isActive = false;
+      recommendationController.abort();
+    };
+    // 首次推薦只在首頁掛載時執行；手動刷新更新 seed 時不可再次觸發。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -416,11 +470,14 @@ export default function Home() {
   const loadMoreFeed = useCallback(async () => {
     if (!hasMoreFeed || feedRequestRef.current) return;
 
+    const feedController = new AbortController();
+    const feedRequestVersion = ++feedRequestVersionRef.current;
+    feedAbortRef.current = feedController;
     feedRequestRef.current = true;
     setLoadingMoreFeed(true);
 
     try {
-      const data = await fetchFeedPage(nextFeedOffset);
+      const data = await fetchFeedPage(nextFeedOffset, { signal: feedController.signal });
       const nextPageItems = data.items || [];
       const resolvedOffset = data.next_offset ?? (nextFeedOffset + nextPageItems.length);
       const resolvedHasMore = Boolean(data.has_more);
@@ -443,10 +500,13 @@ export default function Home() {
         setLikedPostIds((currentIds) => new Set([...currentIds, ...nextLikedPostIds]));
       }
     } catch (error) {
-      console.error('預先載入下一批採樣失敗:', error);
+      if (error.name !== 'AbortError') console.error('預先載入下一批採樣失敗:', error);
     } finally {
-      feedRequestRef.current = false;
-      setLoadingMoreFeed(false);
+      if (feedRequestVersionRef.current === feedRequestVersion) {
+        feedRequestRef.current = false;
+        feedAbortRef.current = null;
+        setLoadingMoreFeed(false);
+      }
     }
   }, [hasMoreFeed, nextFeedOffset, router]);
 
@@ -483,6 +543,9 @@ export default function Home() {
   const loadMoreRecommendations = useCallback(async () => {
     if (!recommendationHasMore || recommendationRequestRef.current) return;
 
+    const recommendationController = new AbortController();
+    const recommendationRequestVersion = ++recommendationRequestVersionRef.current;
+    recommendationAbortRef.current = recommendationController;
     recommendationRequestRef.current = true;
     setLoadingMoreRecommendations(true);
     try {
@@ -491,6 +554,7 @@ export default function Home() {
         seed: recommendationSeed,
         sessionId: recommendationSessionId,
         exclude: [...new Set([...currentIds, ...getRecentRecommendationIds()])],
+        signal: recommendationController.signal,
       });
       const nextItems = data.items || [];
       const mergedItems = mergeFeedItems(recommendedVideos, nextItems);
@@ -514,10 +578,13 @@ export default function Home() {
         setLikedPostIds((currentIdsSet) => new Set([...currentIdsSet, ...nextLikedPostIds]));
       }
     } catch (error) {
-      console.error('預先載入下一批推薦失敗:', error);
+      if (error.name !== 'AbortError') console.error('預先載入下一批推薦失敗:', error);
     } finally {
-      recommendationRequestRef.current = false;
-      setLoadingMoreRecommendations(false);
+      if (recommendationRequestVersionRef.current === recommendationRequestVersion) {
+        recommendationRequestRef.current = false;
+        recommendationAbortRef.current = null;
+        setLoadingMoreRecommendations(false);
+      }
     }
   }, [recommendationHasMore, recommendationSeed, recommendationSessionId, recommendedVideos, router]);
 
@@ -700,12 +767,19 @@ export default function Home() {
 
   const refreshAndReturnToTop = useCallback(async () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!['recommended', 'latest'].includes(activeSection) || manualRefreshRef.current) return;
+
+    manualRefreshRef.current = true;
+    setIsTopRefreshing(true);
+    const refreshStartedAt = Date.now();
 
     if (activeSection === 'recommended') {
-      if (recommendationRequestRef.current) return;
-
+      recommendationAbortRef.current?.abort();
+      const recommendationController = new AbortController();
+      const recommendationRequestVersion = ++recommendationRequestVersionRef.current;
+      recommendationAbortRef.current = recommendationController;
       recommendationRequestRef.current = true;
-      setIsTopRefreshing(true);
+      setLoadingMoreRecommendations(false);
       setRecommendationLoading(recommendedVideos.length === 0);
       try {
         const nextSeed = createRecommendationSessionId();
@@ -717,6 +791,7 @@ export default function Home() {
             ...recommendedVideos.map((item) => item.post_id).filter(Boolean),
             ...getRecentRecommendationIds(),
           ])],
+          signal: recommendationController.signal,
         });
         const items = data.items || [];
 
@@ -734,23 +809,32 @@ export default function Home() {
         const nextLikedPostIds = await loadLikedPostIds(items.map((item) => item.post_id));
         if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
       } catch (error) {
-        console.error('重新整理推薦採樣失敗:', error);
-        showToast('推薦重新整理失敗，請稍後再試。');
+        if (error.name !== 'AbortError') {
+          console.error('重新整理推薦採樣失敗:', error);
+          showToast('推薦重新整理失敗，請稍後再試。');
+        }
       } finally {
-        recommendationRequestRef.current = false;
-        setIsTopRefreshing(false);
-        setRecommendationLoading(false);
+        await waitForMinimumRefreshDuration(refreshStartedAt);
+        if (recommendationRequestVersionRef.current === recommendationRequestVersion) {
+          recommendationRequestRef.current = false;
+          recommendationAbortRef.current = null;
+          manualRefreshRef.current = false;
+          setIsTopRefreshing(false);
+          setRecommendationLoading(false);
+        }
       }
       return;
     }
 
-    if (activeSection !== 'latest' || feedRequestRef.current) return;
-
+    feedAbortRef.current?.abort();
+    const feedController = new AbortController();
+    const feedRequestVersion = ++feedRequestVersionRef.current;
+    feedAbortRef.current = feedController;
     feedRequestRef.current = true;
-    setIsTopRefreshing(true);
+    setLoadingMoreFeed(false);
 
     try {
-      const data = await fetchFeedPage(0);
+      const data = await fetchFeedPage(0, { signal: feedController.signal });
       const firstPageItems = data.items || [];
       const resolvedOffset = data.next_offset || firstPageItems.length;
       const resolvedHasMore = Boolean(data.has_more);
@@ -763,11 +847,18 @@ export default function Home() {
       const nextLikedPostIds = await loadLikedPostIds(firstPageItems.map((item) => item.post_id));
       if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
     } catch (error) {
-      console.error('重新整理最新採樣失敗:', error);
-      showToast('重新整理失敗，請稍後再試。');
+      if (error.name !== 'AbortError') {
+        console.error('重新整理最新採樣失敗:', error);
+        showToast('重新整理失敗，請稍後再試。');
+      }
     } finally {
-      feedRequestRef.current = false;
-      setIsTopRefreshing(false);
+      await waitForMinimumRefreshDuration(refreshStartedAt);
+      if (feedRequestVersionRef.current === feedRequestVersion) {
+        feedRequestRef.current = false;
+        feedAbortRef.current = null;
+        manualRefreshRef.current = false;
+        setIsTopRefreshing(false);
+      }
     }
   }, [activeSection, recommendedVideos]);
 
@@ -775,6 +866,10 @@ export default function Home() {
     if (!HOME_SECTIONS.includes(nextSection) || nextSection === activeSection) return;
 
     sectionScrollRef.current[activeSection] = window.scrollY;
+    window.history.replaceState({
+      ...window.history.state,
+      [HOME_HISTORY_SECTION_KEY]: nextSection,
+    }, '');
     setSectionMotion(motion);
     setActiveSection(nextSection);
 
