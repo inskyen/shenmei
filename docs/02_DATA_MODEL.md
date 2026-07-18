@@ -25,6 +25,8 @@ modules
 post_modules
 comments
 reactions
+user_channel_preferences
+feed_impressions
 ```
 
 第二階段再實作：
@@ -53,6 +55,8 @@ profiles 1 - n reactions
 profiles n - n profiles through follows
 profiles n - n conversations through conversation_members
 conversations 1 - n messages
+profiles n - n modules through user_channel_preferences
+profiles 1 - n feed_impressions
 ```
 
 ## 4. profiles
@@ -77,7 +81,7 @@ conversations 1 - n messages
 
 - `username` 唯一。
 - 註冊時自動生成唯一數字型 `username`，目前作為穩定審美號與路由識別，不允許前端自行修改。
-- 使用者後續可在個人設定中修改 `username`。
+- `username` 目前作為穩定審美號與路由識別，不提供使用者自行修改。
 - `message_permission` 建議值：
   - `everyone`
   - `followers`

@@ -67,6 +67,7 @@ migration 位於 `supabase/migrations/`，必須依檔名順序執行。
 20260715_000001_rename_modules_to_channels.sql
 20260716_000001_add_module_sort_order.sql
 20260716_000002_add_content_soft_deletion.sql
+20260718_000001_create_recommendation_foundation.sql
 ```
 
 目前仍由 Supabase SQL Editor 手動執行，因此每次操作都要記錄：

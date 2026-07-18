@@ -4,9 +4,14 @@ import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import AestheteBadge from '@/components/AestheteBadge';
 import ImmersiveVideoPlayer from '@/components/ImmersiveVideoPlayer';
-import { requireLogin } from '@/lib/auth/requireLogin';
+import { getCurrentUser, requireLogin } from '@/lib/auth/requireLogin';
 import { canCurateInModules, loadProfileRole } from '@/lib/auth/roles';
 import { getCachedModulePage, prefetchModulePage } from '@/lib/cache/modulePageCache';
+import {
+  CHANNEL_PREFERENCE_OPTIONS,
+  loadChannelPreference,
+  saveChannelPreference,
+} from '@/lib/recommendation/channelPreferences';
 import { showToast } from '@/lib/ui/toast';
 
 const pageStyle = {
@@ -138,6 +143,9 @@ export default function ModuleDetailPage() {
   const [loading, setLoading] = useState(() => !cachedPage);
   const [errorMessage, setErrorMessage] = useState('');
   const [immersiveVideo, setImmersiveVideo] = useState(null);
+  const [channelPreference, setChannelPreference] = useState(0);
+  const [preferenceLoading, setPreferenceLoading] = useState(true);
+  const [preferenceSaving, setPreferenceSaving] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -170,6 +178,33 @@ export default function ModuleDetailPage() {
 
     loadModulePage();
   }, [slug]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadPreference() {
+      if (!module?.id) return;
+
+      setPreferenceLoading(true);
+      try {
+        const user = await getCurrentUser();
+        if (!user) {
+          if (isActive) setChannelPreference(0);
+          return;
+        }
+
+        const preference = await loadChannelPreference(user.id, module.id);
+        if (isActive) setChannelPreference(preference);
+      } catch (error) {
+        console.warn('讀取頻道推薦偏好失敗:', error);
+      } finally {
+        if (isActive) setPreferenceLoading(false);
+      }
+    }
+
+    loadPreference();
+    return () => { isActive = false; };
+  }, [module?.id]);
 
   useEffect(() => {
     const closePlayerOnBack = () => setImmersiveVideo(null);
@@ -215,6 +250,31 @@ export default function ModuleDetailPage() {
     }
   };
 
+  const updateChannelPreference = async (preference) => {
+    if (!module?.id || preferenceSaving) return;
+
+    const user = await requireLogin({
+      router,
+      nextPath: `/m/${slug}`,
+      message: '登入後，才能調整您的推薦。',
+    });
+    if (!user) return;
+
+    const previousPreference = channelPreference;
+    setChannelPreference(preference);
+    setPreferenceSaving(true);
+    try {
+      await saveChannelPreference(user.id, module.id, preference);
+      showToast('推薦偏好已更新，下次換一批就會生效。');
+    } catch (error) {
+      setChannelPreference(previousPreference);
+      console.error('更新頻道推薦偏好失敗:', error);
+      showToast('推薦偏好更新失敗，請稍後再試。');
+    } finally {
+      setPreferenceSaving(false);
+    }
+  };
+
   return (
     <div style={pageStyle}>
       <Head>
@@ -239,6 +299,37 @@ export default function ModuleDetailPage() {
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.75, margin: '8px 0 0' }}>{module.description || '這個頻道正在收納它的第一批採樣。'}</p>
               <div style={{ backgroundColor: 'var(--bg-base)', borderLeft: '3px solid var(--brand-blue)', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginTop: '14px', padding: '9px 11px', borderRadius: '4px' }}>
                 頻道規則：{module.rule_text || '這個頻道的收錄規則正在整理中。'}
+              </div>
+              <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '16px', paddingTop: '14px' }}>
+                <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>在推薦裡出現</span>
+                  {preferenceLoading && <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>讀取中</span>}
+                </div>
+                <div style={{ display: 'grid', gap: '6px', gridTemplateColumns: 'repeat(4, 1fr)', marginTop: '10px' }}>
+                  {CHANNEL_PREFERENCE_OPTIONS.map((option) => {
+                    const isActive = channelPreference === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        disabled={preferenceSaving}
+                        onClick={() => updateChannelPreference(option.value)}
+                        style={{
+                          backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
+                          border: `1px solid ${isActive ? 'var(--text-primary)' : 'var(--border-light)'}`,
+                          borderRadius: '5px',
+                          color: isActive ? 'var(--bg-surface)' : 'var(--text-secondary)',
+                          cursor: preferenceSaving ? 'wait' : 'pointer',
+                          fontSize: '11px',
+                          fontWeight: isActive ? 600 : 500,
+                          padding: '7px 4px',
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {module.status === 'archived' && <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginTop: '10px' }}>這個頻道已關閉，僅保留歷史內容。</div>}
             </section>

@@ -153,6 +153,40 @@ posts
 }
 ```
 
+## 5A. 可解釋推薦流 `/api/feed/recommended`
+
+### 5A.1 需求
+
+- 與「最新」純時間流分離。
+- 訪客使用全站公共配方；登入使用者加入頻道偏好與追蹤訊號。
+- 每批使用固定 seed，繼續載入時保持穩定；主動刷新時更換 seed。
+- 排除本批與近期已展示 post，並限制同一影片、作者與頻道連續佔位。
+
+### 5A.2 請求
+
+```text
+GET /api/feed/recommended?limit=10&seed=...&session_id=...&exclude=post_uuid,...
+Authorization: Bearer <access_token>  // 登入使用者選填
+```
+
+### 5A.3 回傳
+
+沿用首頁採樣卡資料格式，額外包含：
+
+```json
+{
+  "recommendation_reason": "來自您偏好的音樂頻道",
+  "recommendation_reason_code": "channel_preference",
+  "recommendation_channel": {
+    "id": "module_uuid",
+    "name": "音樂頻道",
+    "slug": "music"
+  }
+}
+```
+
+推薦不記錄停留時長。`feed_impressions` 只保存登入使用者已展示的 post、批次與推薦原因，用於短期去重。
+
 ## 6. 發布採樣 `/submit`
 
 ### 6.1 需求

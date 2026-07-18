@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import PageShell from '@/components/PageShell';
 import { requireLogin } from '@/lib/auth/requireLogin';
-import { getCachedFollowingFeed, prefetchFollowingFeed, cacheFollowingFeed } from '@/lib/cache/followingFeedCache';
+import { getCachedFollowingFeed, prefetchFollowingFeed } from '@/lib/cache/followingFeedCache';
 
 function getInitial(profile) {
   const name = profile.display_name || profile.username || '審';
@@ -24,11 +24,17 @@ export default function FollowingPage() {
   const [profiles, setProfiles] = useState(() => cached?.profiles || []);
   const [posts, setPosts] = useState(() => cached?.posts || []);
   const [loading, setLoading] = useState(() => !cached);
+  const [hasMore, setHasMore] = useState(() => cached?.hasMore ?? true);
+  const [nextOffset, setNextOffset] = useState(() => cached?.nextOffset || cached?.posts?.length || 0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const sentinelRef = useRef(null);
+  const requestRef = useRef(false);
 
   useEffect(() => {
     async function loadFollowing() {
       setErrorMessage('');
+      requestRef.current = true;
 
       try {
         const user = await requireLogin({
@@ -45,15 +51,15 @@ export default function FollowingPage() {
         if (hit) {
           setProfiles(hit.profiles);
           setPosts(hit.posts);
+          setHasMore(Boolean(hit.hasMore));
+          setNextOffset(hit.nextOffset || hit.posts.length);
           setLoading(false);
           // 背景靜默刷新（不觸發 loading 動畫）
-          prefetchFollowingFeed({ force: true })
-            .then((fresh) => {
-              setProfiles(fresh.profiles);
-              setPosts(fresh.posts);
-              cacheFollowingFeed(fresh);
-            })
-            .catch(() => {});
+          const fresh = await prefetchFollowingFeed({ force: true });
+          setProfiles(fresh.profiles);
+          setPosts(fresh.posts);
+          setHasMore(Boolean(fresh.hasMore));
+          setNextOffset(fresh.nextOffset || fresh.posts.length);
           return;
         }
 
@@ -62,16 +68,50 @@ export default function FollowingPage() {
         const result = await prefetchFollowingFeed({ force: true });
         setProfiles(result.profiles);
         setPosts(result.posts);
+        setHasMore(Boolean(result.hasMore));
+        setNextOffset(result.nextOffset || result.posts.length);
       } catch (error) {
         console.error('關注名單載入失敗:', error);
         setErrorMessage('關注名單暫時無法顯示，請稍後再試。');
       } finally {
+        requestRef.current = false;
         setLoading(false);
       }
     }
 
     loadFollowing();
   }, [router]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || requestRef.current) return;
+
+    requestRef.current = true;
+    setLoadingMore(true);
+    try {
+      const result = await prefetchFollowingFeed({ offset: nextOffset });
+      setProfiles(result.profiles);
+      setPosts(result.posts);
+      setHasMore(Boolean(result.hasMore));
+      setNextOffset(result.nextOffset || result.posts.length);
+    } catch (error) {
+      console.error('下一批關注動態載入失敗:', error);
+      setErrorMessage('下一批關注動態暫時無法顯示，請稍後再試。');
+    } finally {
+      requestRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [hasMore, nextOffset]);
+
+  useEffect(() => {
+    if (loading || !hasMore || !sentinelRef.current) return undefined;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMore();
+    }, { rootMargin: `${Math.round(window.innerHeight * 1.25)}px 0px` });
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, loading]);
 
   return (
     <>
@@ -167,6 +207,18 @@ export default function FollowingPage() {
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {loadingMore && (
+            <div className="app-detail-skeleton" style={{ borderRadius: '6px', height: '76px', marginTop: '14px' }} />
+          )}
+
+          <div ref={sentinelRef} aria-hidden="true" style={{ height: '1px' }} />
+
+          {!hasMore && posts.length > 0 && (
+            <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', padding: '18px 8px 4px', textAlign: 'center' }}>
+              關注動態暫時看到這裡
             </div>
           )}
         </div>

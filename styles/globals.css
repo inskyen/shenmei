@@ -94,6 +94,58 @@ body {
   border-radius: 8px;
 }
 
+.app-visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@keyframes butterfly-loading-float {
+  0%, 100% {
+    transform: translateY(2px) rotate(-5deg) scale(0.96);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(6deg) scale(1.04);
+  }
+}
+
+.butterfly-loading-indicator {
+  align-items: center;
+  display: flex;
+  height: 0;
+  justify-content: center;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-12px);
+  transition: height 220ms ease, opacity 160ms ease, transform 220ms ease;
+}
+
+.butterfly-loading-indicator--visible {
+  height: 54px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.butterfly-loading-indicator__mascot {
+  animation: butterfly-loading-float 900ms ease-in-out infinite;
+  filter: drop-shadow(0 5px 10px rgb(34 34 34 / 14%));
+  height: 38px;
+  transform-origin: 54% 58%;
+  width: 38px;
+}
+
+.butterfly-loading-indicator__mascot img {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-detail-page {
     animation: none;
@@ -101,6 +153,12 @@ body {
 
   .app-detail-skeleton {
     animation: none;
+  }
+
+  .butterfly-loading-indicator,
+  .butterfly-loading-indicator__mascot {
+    animation: none;
+    transition: none;
   }
 }
 @keyframes home-section-enter-left {

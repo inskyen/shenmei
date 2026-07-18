@@ -3,12 +3,19 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppBottomNav from '@/components/AppBottomNav';
 import AestheteBadge from '@/components/AestheteBadge';
+import ButterflyLoadingIndicator from '@/components/ButterflyLoadingIndicator';
 import ImmersiveVideoPlayer from '@/components/ImmersiveVideoPlayer';
 import { requireLogin } from '@/lib/auth/requireLogin';
 import { showToast } from '@/lib/ui/toast';
 import { cachePostPreview } from '@/lib/cache/postDetailCache';
 import { getCachedFollowingFeed, prefetchFollowingFeed } from '@/lib/cache/followingFeedCache';
 import { cacheHomeFeed, getCachedHomeFeed } from '@/lib/cache/homeFeedCache';
+import {
+  adjustRecommendationLikeCount,
+  cacheRecommendationFeed,
+  getCachedRecommendationFeed,
+  getPersistedRecommendationFeed,
+} from '@/lib/cache/recommendationFeedCache';
 import { prefetchMessageInbox } from '@/lib/cache/messagePageCache';
 import { getCachedModules, prefetchModulePage, prefetchModules } from '@/lib/cache/modulePageCache';
 import { prefetchProfilePage } from '@/lib/cache/profilePageCache';
@@ -18,7 +25,8 @@ import { loadLikedPostIds, togglePostLike } from '@/lib/reactions/postLikes';
 import { supabase } from '@/lib/supabase/client';
 
 const FEED_PAGE_SIZE = 10;
-const HOME_SECTIONS = ['following', 'latest', 'modules'];
+const HOME_SECTIONS = ['following', 'recommended', 'latest', 'modules'];
+const RECENT_RECOMMENDATION_STORAGE_KEY = 'shenmei:recent-recommendations';
 
 const MODULE_GRADIENTS = [
   ['#C1693A', '#E8A87C'],
@@ -59,6 +67,47 @@ function mergeFeedItems(primaryItems, secondaryItems) {
 async function fetchFeedPage(offset) {
   const response = await fetch(`/api/feed?offset=${offset}&limit=${FEED_PAGE_SIZE}`);
   if (!response.ok) throw new Error('最新採樣載入失敗');
+  return response.json();
+}
+
+function createRecommendationSessionId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `feed-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getRecentRecommendationIds() {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(RECENT_RECOMMENDATION_STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored.filter(Boolean).slice(0, 120) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberRecommendationIds(postIds) {
+  if (typeof window === 'undefined') return;
+
+  const nextIds = [...new Set([...postIds.filter(Boolean), ...getRecentRecommendationIds()])].slice(0, 120);
+  window.localStorage.setItem(RECENT_RECOMMENDATION_STORAGE_KEY, JSON.stringify(nextIds));
+}
+
+async function fetchRecommendationBatch({ seed, sessionId, exclude = [] }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const params = new URLSearchParams({
+    limit: String(FEED_PAGE_SIZE),
+    seed,
+    session_id: sessionId,
+  });
+  if (exclude.length > 0) params.set('exclude', exclude.slice(0, 160).join(','));
+
+  const response = await fetch(`/api/feed/recommended?${params.toString()}`, {
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined,
+  });
+  if (!response.ok) throw new Error('推薦採樣載入失敗');
   return response.json();
 }
 
@@ -106,17 +155,28 @@ export default function Home() {
   const router = useRouter();
   const [initialFollowingFeed] = useState(() => getCachedFollowingFeed());
   const [initialFeed] = useState(() => normalizeCachedFeed(getCachedHomeFeed()));
+  const [initialRecommendation] = useState(() => getCachedRecommendationFeed());
   const initialFeedRef = useRef(initialFeed);
   const [videos, setVideos] = useState(() => initialFeed?.items || []);
   const [loading, setLoading] = useState(() => !initialFeed?.items?.length);
   const [hasMoreFeed, setHasMoreFeed] = useState(() => initialFeed?.hasMore ?? true);
   const [nextFeedOffset, setNextFeedOffset] = useState(() => initialFeed?.nextOffset || 0);
   const [loadingMoreFeed, setLoadingMoreFeed] = useState(false);
-  const [activeSection, setActiveSection] = useState('latest');
+  const [recommendedVideos, setRecommendedVideos] = useState(() => initialRecommendation?.items || []);
+  const [recommendationLoading, setRecommendationLoading] = useState(() => !initialRecommendation?.items?.length);
+  const [recommendationHasMore, setRecommendationHasMore] = useState(() => initialRecommendation?.hasMore ?? true);
+  const [recommendationSeed, setRecommendationSeed] = useState(() => initialRecommendation?.seed || createRecommendationSessionId());
+  const [recommendationSessionId, setRecommendationSessionId] = useState(() => initialRecommendation?.sessionId || createRecommendationSessionId());
+  const [loadingMoreRecommendations, setLoadingMoreRecommendations] = useState(false);
+  const [isTopRefreshing, setIsTopRefreshing] = useState(false);
+  const [activeSection, setActiveSection] = useState('recommended');
   const [sectionMotion, setSectionMotion] = useState('none');
   const [followingVideos, setFollowingVideos] = useState(() => normalizeFollowingPosts(initialFollowingFeed));
   const [followingLoading, setFollowingLoading] = useState(() => !initialFollowingFeed);
   const [followingRequiresLogin, setFollowingRequiresLogin] = useState(() => Boolean(initialFollowingFeed?.requiresLogin));
+  const [followingHasMore, setFollowingHasMore] = useState(() => initialFollowingFeed?.hasMore ?? true);
+  const [followingNextOffset, setFollowingNextOffset] = useState(() => initialFollowingFeed?.nextOffset || initialFollowingFeed?.posts?.length || 0);
+  const [loadingMoreFollowing, setLoadingMoreFollowing] = useState(false);
   const [modules, setModules] = useState(() => getCachedModules() || []);
   const [modulesLoading, setModulesLoading] = useState(() => !getCachedModules());
   const [likedPostIds, setLikedPostIds] = useState(new Set());
@@ -136,8 +196,10 @@ export default function Home() {
   const warmedUpIdentityRef = useRef('');
   const feedSentinelRef = useRef(null);
   const feedRequestRef = useRef(false);
+  const followingRequestRef = useRef(false);
+  const recommendationRequestRef = useRef(false);
   const swipeStartRef = useRef(null);
-  const sectionScrollRef = useRef({ following: 0, latest: 0, modules: 0 });
+  const sectionScrollRef = useRef({ following: 0, recommended: 0, latest: 0, modules: 0 });
   const myProfilePath = userProfile?.username ? `/u/${userProfile.username}` : '/u/me';
 
   // 初始化加载数据
@@ -263,6 +325,50 @@ export default function Home() {
   useEffect(() => {
     let isActive = true;
 
+    async function loadInitialRecommendations() {
+      const visibleSnapshot = initialRecommendation?.items?.length
+        ? initialRecommendation
+        : getPersistedRecommendationFeed();
+
+      if (visibleSnapshot?.items?.length) {
+        setRecommendedVideos(visibleSnapshot.items);
+        setRecommendationHasMore(visibleSnapshot.hasMore ?? true);
+        setRecommendationLoading(false);
+      }
+
+      recommendationRequestRef.current = true;
+      try {
+        const data = await fetchRecommendationBatch({
+          seed: recommendationSeed,
+          sessionId: recommendationSessionId,
+          exclude: getRecentRecommendationIds(),
+        });
+        if (!isActive) return;
+
+        const items = data.items || [];
+        setRecommendedVideos(items);
+        setRecommendationHasMore(Boolean(data.has_more));
+        rememberRecommendationIds(items.map((item) => item.post_id));
+        cacheRecommendationFeed(items, {
+          hasMore: Boolean(data.has_more),
+          seed: data.seed || recommendationSeed,
+          sessionId: data.session_id || recommendationSessionId,
+        });
+      } catch (error) {
+        console.error('讀取推薦採樣失敗:', error);
+      } finally {
+        recommendationRequestRef.current = false;
+        if (isActive) setRecommendationLoading(false);
+      }
+    }
+
+    loadInitialRecommendations();
+    return () => { isActive = false; };
+  }, [initialRecommendation, recommendationSeed, recommendationSessionId]);
+
+  useEffect(() => {
+    let isActive = true;
+
     async function warmHomeSections() {
       const [followingResult, modulesResult] = await Promise.allSettled([
         prefetchFollowingFeed({ force: true }),
@@ -276,6 +382,8 @@ export default function Home() {
         const nextFollowingVideos = normalizeFollowingPosts(feed);
         setFollowingVideos(nextFollowingVideos);
         setFollowingRequiresLogin(Boolean(feed?.requiresLogin));
+        setFollowingHasMore(Boolean(feed?.hasMore));
+        setFollowingNextOffset(feed?.nextOffset || nextFollowingVideos.length);
 
         if (nextFollowingVideos.length > 0) {
           try {
@@ -342,20 +450,97 @@ export default function Home() {
     }
   }, [hasMoreFeed, nextFeedOffset, router]);
 
+  const loadMoreFollowing = useCallback(async () => {
+    if (!followingHasMore || followingRequestRef.current) return;
+
+    followingRequestRef.current = true;
+    setLoadingMoreFollowing(true);
+    try {
+      const feed = await prefetchFollowingFeed({ offset: followingNextOffset });
+      const nextFollowingVideos = normalizeFollowingPosts(feed);
+      const newlyLoadedVideos = nextFollowingVideos.slice(followingVideos.length);
+
+      setFollowingVideos(nextFollowingVideos);
+      setFollowingHasMore(Boolean(feed?.hasMore));
+      setFollowingNextOffset(feed?.nextOffset || nextFollowingVideos.length);
+
+      newlyLoadedVideos.slice(0, 4).forEach((item) => {
+        if (item.post_id) router.prefetch(`/p/${item.post_id}`).catch(() => {});
+      });
+
+      const nextLikedPostIds = await loadLikedPostIds(newlyLoadedVideos.map((item) => item.post_id));
+      if (nextLikedPostIds) {
+        setLikedPostIds((currentIds) => new Set([...currentIds, ...nextLikedPostIds]));
+      }
+    } catch (error) {
+      console.error('預先載入下一批追蹤採樣失敗:', error);
+    } finally {
+      followingRequestRef.current = false;
+      setLoadingMoreFollowing(false);
+    }
+  }, [followingHasMore, followingNextOffset, followingVideos.length, router]);
+
+  const loadMoreRecommendations = useCallback(async () => {
+    if (!recommendationHasMore || recommendationRequestRef.current) return;
+
+    recommendationRequestRef.current = true;
+    setLoadingMoreRecommendations(true);
+    try {
+      const currentIds = recommendedVideos.map((item) => item.post_id).filter(Boolean);
+      const data = await fetchRecommendationBatch({
+        seed: recommendationSeed,
+        sessionId: recommendationSessionId,
+        exclude: [...new Set([...currentIds, ...getRecentRecommendationIds()])],
+      });
+      const nextItems = data.items || [];
+      const mergedItems = mergeFeedItems(recommendedVideos, nextItems);
+      const hasMore = Boolean(data.has_more) && nextItems.length > 0;
+
+      setRecommendedVideos(mergedItems);
+      setRecommendationHasMore(hasMore);
+      rememberRecommendationIds(nextItems.map((item) => item.post_id));
+      cacheRecommendationFeed(mergedItems, {
+        hasMore,
+        seed: recommendationSeed,
+        sessionId: recommendationSessionId,
+      });
+
+      nextItems.slice(0, 4).forEach((item) => {
+        if (item.post_id) router.prefetch(`/p/${item.post_id}`).catch(() => {});
+      });
+
+      const nextLikedPostIds = await loadLikedPostIds(nextItems.map((item) => item.post_id));
+      if (nextLikedPostIds) {
+        setLikedPostIds((currentIdsSet) => new Set([...currentIdsSet, ...nextLikedPostIds]));
+      }
+    } catch (error) {
+      console.error('預先載入下一批推薦失敗:', error);
+    } finally {
+      recommendationRequestRef.current = false;
+      setLoadingMoreRecommendations(false);
+    }
+  }, [recommendationHasMore, recommendationSeed, recommendationSessionId, recommendedVideos, router]);
+
   useEffect(() => {
-    if (activeSection !== 'latest' || loading || !hasMoreFeed || typeof window === 'undefined' || !feedSentinelRef.current) return undefined;
+    const isFollowingReady = activeSection === 'following' && !followingLoading && followingHasMore;
+    const isLatestReady = activeSection === 'latest' && !loading && hasMoreFeed;
+    const isRecommendationReady = activeSection === 'recommended' && !recommendationLoading && recommendationHasMore;
+    if ((!isFollowingReady && !isLatestReady && !isRecommendationReady) || typeof window === 'undefined' || !feedSentinelRef.current) return undefined;
 
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     const preloadDistance = connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)
       ? '180px 0px'
-      : '900px 0px';
+      : `${Math.round(window.innerHeight * 1.25)}px 0px`;
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) loadMoreFeed();
+      if (!entries[0]?.isIntersecting) return;
+      if (activeSection === 'following') loadMoreFollowing();
+      if (activeSection === 'recommended') loadMoreRecommendations();
+      if (activeSection === 'latest') loadMoreFeed();
     }, { rootMargin: preloadDistance });
 
     observer.observe(feedSentinelRef.current);
     return () => observer.disconnect();
-  }, [activeSection, hasMoreFeed, loadMoreFeed, loading]);
+  }, [activeSection, followingHasMore, followingLoading, hasMoreFeed, loadMoreFeed, loadMoreFollowing, loadMoreRecommendations, loading, recommendationHasMore, recommendationLoading]);
 
   useEffect(() => {
     if (loading || typeof window === 'undefined') return;
@@ -389,12 +574,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    videos.slice(0, 8).forEach((video) => {
+    const warmItems = activeSection === 'recommended' ? recommendedVideos : videos;
+    warmItems.slice(0, 8).forEach((video) => {
       if (video.post_id) {
         router.prefetch(`/p/${video.post_id}`);
       }
     });
-  }, [router, videos]);
+  }, [activeSection, recommendedVideos, router, videos]);
 
   useEffect(() => {
     if (loading || isIdentityLoading || typeof window === 'undefined') return undefined;
@@ -515,9 +701,53 @@ export default function Home() {
   const refreshAndReturnToTop = useCallback(async () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    if (activeSection === 'recommended') {
+      if (recommendationRequestRef.current) return;
+
+      recommendationRequestRef.current = true;
+      setIsTopRefreshing(true);
+      setRecommendationLoading(recommendedVideos.length === 0);
+      try {
+        const nextSeed = createRecommendationSessionId();
+        const nextSessionId = createRecommendationSessionId();
+        const data = await fetchRecommendationBatch({
+          seed: nextSeed,
+          sessionId: nextSessionId,
+          exclude: [...new Set([
+            ...recommendedVideos.map((item) => item.post_id).filter(Boolean),
+            ...getRecentRecommendationIds(),
+          ])],
+        });
+        const items = data.items || [];
+
+        setRecommendedVideos(items);
+        setRecommendationSeed(data.seed || nextSeed);
+        setRecommendationSessionId(data.session_id || nextSessionId);
+        setRecommendationHasMore(Boolean(data.has_more));
+        rememberRecommendationIds(items.map((item) => item.post_id));
+        cacheRecommendationFeed(items, {
+          hasMore: Boolean(data.has_more),
+          seed: data.seed || nextSeed,
+          sessionId: data.session_id || nextSessionId,
+        });
+
+        const nextLikedPostIds = await loadLikedPostIds(items.map((item) => item.post_id));
+        if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
+      } catch (error) {
+        console.error('重新整理推薦採樣失敗:', error);
+        showToast('推薦重新整理失敗，請稍後再試。');
+      } finally {
+        recommendationRequestRef.current = false;
+        setIsTopRefreshing(false);
+        setRecommendationLoading(false);
+      }
+      return;
+    }
+
     if (activeSection !== 'latest' || feedRequestRef.current) return;
 
     feedRequestRef.current = true;
+    setIsTopRefreshing(true);
 
     try {
       const data = await fetchFeedPage(0);
@@ -537,8 +767,9 @@ export default function Home() {
       showToast('重新整理失敗，請稍後再試。');
     } finally {
       feedRequestRef.current = false;
+      setIsTopRefreshing(false);
     }
-  }, [activeSection]);
+  }, [activeSection, recommendedVideos]);
 
   const switchHomeSection = useCallback((nextSection, motion = 'none') => {
     if (!HOME_SECTIONS.includes(nextSection) || nextSection === activeSection) return;
@@ -646,6 +877,12 @@ export default function Home() {
         cacheHomeFeed(nextItems, { hasMore: hasMoreFeed, nextOffset: nextFeedOffset });
         return nextItems;
       });
+      setRecommendedVideos((currentItems) => currentItems.map((item) => (
+        item.post_id === video.post_id
+          ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
+          : item
+      )));
+      adjustRecommendationLikeCount(video.post_id, result.delta);
       setFollowingVideos((currentItems) => currentItems.map((item) => (
         item.post_id === video.post_id
           ? { ...item, play_count: Math.max(0, (item.play_count || 0) + result.delta) }
@@ -678,8 +915,17 @@ export default function Home() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  const visibleVideos = activeSection === 'following' ? followingVideos : videos;
-  const activeFeedLoading = activeSection === 'following' ? followingLoading : loading;
+  const visibleVideos = activeSection === 'following'
+    ? followingVideos
+    : activeSection === 'recommended'
+      ? recommendedVideos
+      : videos;
+  const activeFeedLoading = activeSection === 'following'
+    ? followingLoading
+    : activeSection === 'recommended'
+      ? recommendationLoading
+      : loading;
+  const showButterflyLoading = activeSection !== 'modules' && (activeFeedLoading || isTopRefreshing);
 
   return (
     // 主背景：略帶冷灰的基礎色
@@ -695,7 +941,7 @@ export default function Home() {
         padding: '48px 16px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
         borderBottom: '1px solid var(--border-light)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
           <button
             type="button"
             onClick={() => switchHomeSection('following', 'left')}
@@ -705,10 +951,17 @@ export default function Home() {
           </button>
           <button
             type="button"
-            onClick={() => switchHomeSection('latest', activeSection === 'following' ? 'right' : 'left')}
-            style={{ background: 'transparent', border: 'none', color: activeSection === 'latest' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'latest' ? '20px' : '18px', fontWeight: activeSection === 'latest' ? 600 : 500, padding: 0 }}
+            onClick={() => switchHomeSection('recommended', activeSection === 'following' ? 'left' : 'right')}
+            style={{ background: 'transparent', border: 'none', color: activeSection === 'recommended' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'recommended' ? '20px' : '18px', fontWeight: activeSection === 'recommended' ? 600 : 500, padding: 0 }}
           >
             推薦
+          </button>
+          <button
+            type="button"
+            onClick={() => switchHomeSection('latest', ['following', 'recommended'].includes(activeSection) ? 'left' : 'right')}
+            style={{ background: 'transparent', border: 'none', color: activeSection === 'latest' ? 'var(--text-primary)' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: activeSection === 'latest' ? '20px' : '18px', fontWeight: activeSection === 'latest' ? 600 : 500, padding: 0 }}
+          >
+            最新
           </button>
           <button
             type="button"
@@ -752,6 +1005,7 @@ export default function Home() {
         onTouchStart={handleSectionTouchStart}
         style={{ maxWidth: '600px', margin: '0 auto', minHeight: 'calc(100vh - 164px)', padding: '90px 0 0', touchAction: 'pan-y' }}
       >
+        <ButterflyLoadingIndicator visible={showButterflyLoading} />
         <div
           key={`${activeSection}-${sectionMotion}`}
           className={sectionMotion === 'none' ? '' : `home-section-enter home-section-enter--${sectionMotion}`}
@@ -822,7 +1076,7 @@ export default function Home() {
             )}
           </section>
         ) : activeFeedLoading ? (
-          <div aria-label="正在載入最新採樣" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
+          <div aria-label={activeSection === 'recommended' ? '正在載入推薦採樣' : '正在載入最新採樣'} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0 18px' }}>
             {[0, 1, 2].map((index) => (
               <article
                 key={index}
@@ -873,6 +1127,12 @@ export default function Home() {
             {activeSection === 'following' && !followingRequiresLogin && visibleVideos.length === 0 && (
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}>
                 還沒有追蹤動態。遇見喜歡的採樣人後，這裡就會慢慢流動起來。
+              </div>
+            )}
+
+            {activeSection === 'recommended' && visibleVideos.length === 0 && (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8, padding: '88px 20px', textAlign: 'center' }}>
+                暫時沒有合適的推薦。去頻道調整偏好後，再回來換一批看看。
               </div>
             )}
 
@@ -975,7 +1235,7 @@ export default function Home() {
               </article>
             ))}
 
-            {activeSection === 'latest' && loadingMoreFeed && (
+            {((activeSection === 'following' && loadingMoreFollowing) || (activeSection === 'latest' && loadingMoreFeed) || (activeSection === 'recommended' && loadingMoreRecommendations)) && (
               <article aria-label="正在預先載入更多採樣" style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', padding: '16px' }}>
                 <div style={{ alignItems: 'center', display: 'flex', gap: '10px' }}>
                   <div className="app-detail-skeleton" style={{ borderRadius: '50%', height: '28px', width: '28px' }} />
@@ -985,11 +1245,23 @@ export default function Home() {
               </article>
             )}
 
-            {activeSection === 'latest' && <div ref={feedSentinelRef} aria-hidden="true" style={{ height: '1px' }} />}
+            {['following', 'recommended', 'latest'].includes(activeSection) && <div ref={feedSentinelRef} aria-hidden="true" style={{ height: '1px' }} />}
+
+            {activeSection === 'following' && !followingHasMore && followingVideos.length > 0 && (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', padding: '18px 16px 6px', textAlign: 'center' }}>
+                追蹤動態暫時看到這裡
+              </div>
+            )}
 
             {activeSection === 'latest' && !hasMoreFeed && videos.length > 0 && (
               <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', padding: '18px 16px 6px', textAlign: 'center' }}>
                 暫時看到這裡
+              </div>
+            )}
+
+            {activeSection === 'recommended' && !recommendationHasMore && recommendedVideos.length > 0 && (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', padding: '18px 16px 6px', textAlign: 'center' }}>
+                這一批先看到這裡，重新整理可以再換一批
               </div>
             )}
           </div>
@@ -998,7 +1270,7 @@ export default function Home() {
       </main>
 
       {/* 重新整理與回到頂部按鈕 (滑過一段內容後顯示) */}
-      {showBackToTop && activeSection === 'latest' && (
+      {showBackToTop && ['recommended', 'latest'].includes(activeSection) && (
         <button
           type="button"
           aria-label="重新整理推薦並回到頂部"
@@ -1025,7 +1297,7 @@ export default function Home() {
 
       <AppBottomNav
         active={activeSection === 'modules' ? 'modules' : 'home'}
-        onHomeSelect={() => switchHomeSection('latest', activeSection === 'modules' ? 'left' : 'right')}
+        onHomeSelect={() => switchHomeSection('recommended', activeSection === 'modules' ? 'right' : 'left')}
         onModulesSelect={() => switchHomeSection('modules', 'right')}
       />
 
