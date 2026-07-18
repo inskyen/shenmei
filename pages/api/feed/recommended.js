@@ -104,6 +104,10 @@ async function loadCandidates(database, seed) {
   if (recentResult.error) throw recentResult.error;
 
   const totalCount = count || 0;
+  if (totalCount <= RECENT_CANDIDATE_LIMIT) {
+    return recentResult.data || [];
+  }
+
   const maxStart = Math.max(0, totalCount - EXPLORATION_CANDIDATE_LIMIT);
   const explorationStart = maxStart > 0 ? numericSeed(seed) % (maxStart + 1) : 0;
   const explorationResult = await baseQuery()
@@ -165,24 +169,6 @@ async function loadPersonalSignals(database, user) {
   };
 }
 
-async function saveImpressions(database, user, sessionId, posts) {
-  if (!user || !sessionId || posts.length === 0) return;
-
-  const rows = posts.map((post) => ({
-    user_id: user.id,
-    session_id: sessionId,
-    post_id: post.id,
-    reason_code: post.recommendation.reason_code,
-  }));
-  const { error } = await database
-    .from('feed_impressions')
-    .upsert(rows, { onConflict: 'user_id,session_id,post_id', ignoreDuplicates: true });
-
-  if (error && !['42P01', 'PGRST205'].includes(error.code)) {
-    console.warn('推薦曝光記錄失敗:', error);
-  }
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -236,8 +222,6 @@ export default async function handler(req, res) {
         limit,
       });
     }
-
-    await saveImpressions(database, user, sessionId, selected);
 
     res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).json({
