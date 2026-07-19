@@ -222,6 +222,8 @@ class SupabaseRest:
         prefer = "return=representation"
         if ignore_duplicates:
             prefer = f"resolution=ignore-duplicates,{prefer}"
+        elif on_conflict:
+            prefer = f"resolution=merge-duplicates,{prefer}"
         result = request_json(
             f"{self.base_url}/rest/v1/{table}{query}",
             method="POST",
@@ -766,6 +768,43 @@ def main() -> int:
     ui.done("影片 ID 已對齊")
 
     ui.title("建立採樣動態")
+    new_video_ids = [video_id_by_bvid[video.bvid] for video in new_videos]
+    generated_posts = select_in_batches(
+        database,
+        "posts",
+        "video_id",
+        new_video_ids,
+        "id,video_id,user_id,status",
+        extra={"status": "neq.deleted"},
+    ) if new_video_ids else []
+    generated_posts_by_video_id: dict[int, list[dict[str, Any]]] = {}
+    for post in generated_posts:
+        generated_posts_by_video_id.setdefault(post["video_id"], []).append(post)
+
+    video_by_id = {
+        video_id_by_bvid[video.bvid]: video
+        for video in new_videos
+    }
+    adopted_post_rows = []
+    for video_id, video in video_by_id.items():
+        candidates = generated_posts_by_video_id.get(video_id, [])
+        if len(candidates) != 1 or candidates[0].get("user_id") == profile["id"]:
+            continue
+        adopted_post_rows.append({
+            "id": candidates[0]["id"],
+            **build_post_payload(profile["id"], video_id, video),
+        })
+
+    adopted_posts = 0
+    if adopted_post_rows:
+        ui.spin("正在接管資料庫自動建立的採樣……")
+        adopted_posts = len(database.insert(
+            "posts",
+            adopted_post_rows,
+            on_conflict="id",
+        ))
+        ui.done(f"已將 {adopted_posts} 條自動採樣轉交給所選發布者")
+
     all_existing_posts = select_in_batches(
         database,
         "posts",
@@ -832,7 +871,7 @@ def main() -> int:
 
     ui.title("採樣完成")
     print(f"  新增影片     {len(new_videos)} 支")
-    print(f"  新增採樣     {len(post_rows)} 條")
+    print(f"  新增採樣     {len(post_rows) + adopted_posts} 條")
     print(f"  歸入頻道     {inserted_links} 條")
     print(f"  去重跳過     {len(videos) - len(new_videos)} 支已有影片")
     if final_conflicts:
