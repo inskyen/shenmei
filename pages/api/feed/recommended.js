@@ -146,6 +146,7 @@ async function loadPersonalSignals(database, user) {
       .from('feed_impressions')
       .select('post_id')
       .eq('user_id', user.id)
+      .like('session_id', 'read:%')
       .gte('shown_at', recentThreshold)
       .order('shown_at', { ascending: false })
       .limit(120),

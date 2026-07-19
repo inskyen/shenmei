@@ -28,7 +28,7 @@ const FEED_PAGE_SIZE = 10;
 const MIN_TOP_REFRESH_DURATION = 650;
 const HOME_SECTIONS = ['following', 'recommended', 'latest', 'modules'];
 const HOME_HISTORY_SECTION_KEY = 'shenmeiHomeSection';
-const RECENT_RECOMMENDATION_STORAGE_KEY = 'shenmei:recent-recommendations';
+const READ_RECOMMENDATION_STORAGE_KEY = 'shenmei:read-recommendations';
 
 const MODULE_GRADIENTS = [
   ['#C1693A', '#E8A87C'],
@@ -86,7 +86,7 @@ function getRecentRecommendationIds() {
   if (typeof window === 'undefined') return [];
 
   try {
-    const stored = JSON.parse(window.localStorage.getItem(RECENT_RECOMMENDATION_STORAGE_KEY) || '[]');
+    const stored = JSON.parse(window.localStorage.getItem(READ_RECOMMENDATION_STORAGE_KEY) || '[]');
     return Array.isArray(stored) ? stored.filter(Boolean).slice(0, 120) : [];
   } catch {
     return [];
@@ -97,7 +97,7 @@ function rememberRecommendationIds(postIds) {
   if (typeof window === 'undefined') return;
 
   const nextIds = [...new Set([...postIds.filter(Boolean), ...getRecentRecommendationIds()])].slice(0, 120);
-  window.localStorage.setItem(RECENT_RECOMMENDATION_STORAGE_KEY, JSON.stringify(nextIds));
+  window.localStorage.setItem(READ_RECOMMENDATION_STORAGE_KEY, JSON.stringify(nextIds));
 }
 
 async function fetchRecommendationBatch({ seed, sessionId, exclude = [], signal }) {
@@ -116,27 +116,7 @@ async function fetchRecommendationBatch({ seed, sessionId, exclude = [], signal 
     signal,
   });
   if (!response.ok) throw new Error('推薦採樣載入失敗');
-  const data = await response.json();
-
-  if (session?.user && data.items?.length) {
-    const impressions = data.items.map((item) => ({
-      user_id: session.user.id,
-      session_id: data.session_id || sessionId,
-      post_id: item.post_id,
-      reason_code: item.recommendation_reason_code || 'explore',
-    }));
-
-    supabase
-      .from('feed_impressions')
-      .upsert(impressions, { onConflict: 'user_id,session_id,post_id', ignoreDuplicates: true })
-      .then(({ error }) => {
-        if (error && !['42P01', 'PGRST205'].includes(error.code)) {
-          console.warn('推薦曝光記錄失敗:', error);
-        }
-      });
-  }
-
-  return data;
+  return response.json();
 }
 
 function normalizeFollowingPosts(feed) {
@@ -426,7 +406,6 @@ export default function Home() {
         const items = data.items || [];
         setRecommendedVideos(items);
         setRecommendationHasMore(Boolean(data.has_more));
-        rememberRecommendationIds(items.map((item) => item.post_id));
         cacheRecommendationFeed(items, {
           hasMore: Boolean(data.has_more),
           seed: data.seed || recommendationSeed,
@@ -615,7 +594,6 @@ export default function Home() {
 
       setRecommendedVideos(mergedItems);
       setRecommendationHasMore(hasMore);
-      rememberRecommendationIds(nextItems.map((item) => item.post_id));
       cacheRecommendationFeed(mergedItems, {
         hasMore,
         seed: recommendationSeed,
@@ -765,7 +743,31 @@ export default function Home() {
     };
   }, [detailPageVideo]);
 
+  const markRecommendationAsRead = (video) => {
+    if (activeSection !== 'recommended' || !video?.post_id) return;
+
+    rememberRecommendationIds([video.post_id]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+
+      supabase
+        .from('feed_impressions')
+        .upsert({
+          user_id: session.user.id,
+          session_id: `read:${recommendationSessionId}`,
+          post_id: video.post_id,
+          reason_code: video.recommendation_reason_code || 'explore',
+        }, { onConflict: 'user_id,session_id,post_id', ignoreDuplicates: true })
+        .then(({ error }) => {
+          if (error && !['42P01', 'PGRST205'].includes(error.code)) {
+            console.warn('推薦閱讀記錄失敗:', error);
+          }
+        });
+    });
+  };
+
   const openImmersive = (video) => {
+    markRecommendationAsRead(video);
     window.history.pushState({ modal: true }, "");
     setImmersiveVideo(video);
   };
@@ -778,6 +780,7 @@ export default function Home() {
   };
 
   const openDetailPage = (video) => {
+    markRecommendationAsRead(video);
     // 有 post_id 時進入正式採樣詳情頁；沒有時才退回舊的本頁浮層。
     if (video.post_id) {
       cachePostPreview(video);
@@ -812,6 +815,7 @@ export default function Home() {
   };
 
   const openVideoPage = (video) => {
+    markRecommendationAsRead(video);
     // 影片主頁以 video 為核心，負責沉澱播放、所有推薦與公共留言。
     if (video.video_id || video.id) {
       router.push(`/v/${video.video_id || video.id}`);
@@ -852,7 +856,6 @@ export default function Home() {
         setRecommendationSeed(data.seed || nextSeed);
         setRecommendationSessionId(data.session_id || nextSessionId);
         setRecommendationHasMore(Boolean(data.has_more));
-        rememberRecommendationIds(items.map((item) => item.post_id));
         cacheRecommendationFeed(items, {
           hasMore: Boolean(data.has_more),
           seed: data.seed || nextSeed,
@@ -989,6 +992,7 @@ export default function Home() {
       return;
     }
 
+    markRecommendationAsRead(video);
     setLikingPostIds((currentIds) => new Set(currentIds).add(video.post_id));
 
     try {
