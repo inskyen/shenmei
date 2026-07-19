@@ -12,6 +12,7 @@ const CANDIDATE_SELECT = `
   legacy_added_by,
   note,
   created_at,
+  updated_at,
   like_count,
   comment_count,
   profiles (
@@ -96,7 +97,7 @@ async function loadCandidates(database, seed) {
     .eq('visibility', 'public');
 
   const recentQuery = baseQuery()
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(RECENT_CANDIDATE_LIMIT);
 
   const [{ count, error: countError }, recentResult] = await Promise.all([countQuery, recentQuery]);
@@ -111,7 +112,7 @@ async function loadCandidates(database, seed) {
   const maxStart = Math.max(0, totalCount - EXPLORATION_CANDIDATE_LIMIT);
   const explorationStart = maxStart > 0 ? numericSeed(seed) % (maxStart + 1) : 0;
   const explorationResult = await baseQuery()
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .range(explorationStart, explorationStart + EXPLORATION_CANDIDATE_LIMIT - 1);
 
   if (explorationResult.error) throw explorationResult.error;

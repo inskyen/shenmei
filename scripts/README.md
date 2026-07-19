@@ -1,5 +1,133 @@
 # 本機維護工具
 
+## B站评论区审美者探针
+
+此工具会登录 B站，扫描某个视频评论区里的用户主页，并标记：
+
+1. 用户收藏夹是否公开。
+2. 默认收藏夹可见视频数量。
+3. 默认收藏夹视频数大于 100 的 `HIGH_VALUE` 用户。
+
+### 一键扫描并导入
+
+推荐先用这个合并命令。默认会完成扫描和导入预览，但不会写 Supabase：
+
+```bash
+python3 scripts/scan_and_import_bilibili_defaults.py 'https://www.bilibili.com/video/BVxxxx' --login
+```
+
+确认预览没问题后，先写入 1 个收藏夹试跑：
+
+```bash
+python3 scripts/scan_and_import_bilibili_defaults.py 'https://www.bilibili.com/video/BVxxxx' \
+  --limit 1 \
+  --commit \
+  --yes
+```
+
+常用控制参数：
+
+```bash
+python3 scripts/scan_and_import_bilibili_defaults.py BVxxxx \
+  --comment-pages 5 \
+  --user-limit 100 \
+  --limit 3 \
+  --user-delay 2.0,4.0
+```
+
+### 第一次使用
+
+在项目根目录执行：
+
+```bash
+python3 scripts/scan_bilibili_comment_users.py BVxxxx --login
+```
+
+脚本会在终端显示二维码。用 B站 App 扫码确认后，Cookie 会保存到：
+
+```text
+.local/bilibili_user_scan/cookies.json
+```
+
+`.local/` 已被 `.gitignore` 忽略，不会进入 Git。
+
+### 常规扫描
+
+```bash
+python3 scripts/scan_bilibili_comment_users.py 'https://www.bilibili.com/video/BVxxxx'
+```
+
+常用参数：
+
+```bash
+python3 scripts/scan_bilibili_comment_users.py BVxxxx \
+  --comment-pages 8 \
+  --user-limit 150 \
+  --comment-delay 1.0,2.0 \
+  --user-delay 2.0,4.0
+```
+
+输出位置：
+
+```text
+.local/bilibili_user_scan/outputs/
+```
+
+会同时生成 CSV 和 JSON，CSV 可直接用表格工具打开。扫描只读取公开可见信息；如果 B站接口返回风控或频繁失败，应降低页数、减少用户数、增大 `--user-delay`。
+
+扫描结果里会包含：
+
+```text
+default_favorite_id
+default_favorite_title
+default_favorite_url
+import_command
+```
+
+其中 `import_command` 可以把该默认收藏夹继续交给下方的收藏夹采样器导入 Supabase，例如：
+
+```bash
+python3 scripts/import_bilibili_favorite.py 2456935435
+```
+
+### 批量导入扫描出来的默认收藏夹
+
+扫描完成后，可以让批量入库器读取最新一份扫描结果。默认只处理 `HIGH_VALUE`，且只跑预览：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py
+```
+
+限制本次只预览前 3 个：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py --limit 3
+```
+
+确认要真正写入 Supabase 时，必须显式传入两个开关：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py --limit 3 --commit --yes
+```
+
+跳过排序后的第一个收藏夹：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py .local/bilibili_user_scan/outputs/BVxxxx_comment_users_20260719_230000.csv --skip 1
+```
+
+排除指定收藏夹 ID：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py .local/bilibili_user_scan/outputs/BVxxxx_comment_users_20260719_230000.csv --exclude-fid 1465102531
+```
+
+也可以指定某一份扫描结果：
+
+```bash
+python3 scripts/import_scanned_default_favorites.py .local/bilibili_user_scan/outputs/BVxxxx_comment_users_20260719_230000.csv
+```
+
 ## B站收藏夾採樣器
 
 此工具會讀取一個公開 B站收藏夾，並依序完成：
@@ -24,6 +152,12 @@ SHENMEI_IMPORT_USERNAME=您的審美號
 ```
 
 之後每次只需要輸入收藏夾 ID。工具會先展示預覽，只有輸入大寫 `YES` 才會寫入資料庫。
+
+只看預覽、不進入寫入確認：
+
+```bash
+python3 scripts/import_bilibili_favorite.py 2456935435 --preview
+```
 
 ### 直接帶入收藏夾 ID
 

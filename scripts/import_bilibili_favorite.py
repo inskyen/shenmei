@@ -625,6 +625,7 @@ def main() -> int:
     parser.add_argument("--env-file", type=Path, default=DEFAULT_ENV_FILE, help="Supabase 環境檔")
     parser.add_argument("--delay", type=float, default=0.9, help="讀取 B 站分頁的間隔秒數")
     parser.add_argument("--fresh", action="store_true", help="忽略本機續傳點並從第一頁重新讀取")
+    parser.add_argument("--preview", action="store_true", help="只展示預覽，不進入寫入確認")
     parser.add_argument("--yes", action="store_true", help="跳過最後確認並直接寫入")
     args = parser.parse_args()
 
@@ -737,6 +738,10 @@ def main() -> int:
 
     ui.title("導入預覽")
     render_preview(folder_info.get("title") or media_id, profile, channel, preview)
+
+    if args.preview:
+        print("\n  預覽完成，資料庫沒有任何變更。")
+        return 0
 
     if not args.yes:
         confirmation = input("\n確認開始寫入？輸入 YES：").strip()
