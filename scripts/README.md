@@ -8,15 +8,52 @@
 2. 默认收藏夹可见视频数量。
 3. 默认收藏夹视频数大于 100 的 `HIGH_VALUE` 用户。
 
-### 一键扫描并导入
+### Termux 终端界面
 
-推荐先用这个合并命令。默认会完成扫描和导入预览，但不会写 Supabase：
+手机 Termux 上推荐使用菜单入口：
 
 ```bash
-python3 scripts/scan_and_import_bilibili_defaults.py 'https://www.bilibili.com/video/BVxxxx' --login
+python3 scripts/bili_aesthete_tui.py
 ```
 
-确认预览没问题后，先写入 1 个收藏夹试跑：
+它会自动启用 Rich 仪表盘界面；如需纯文本兜底：
+
+```bash
+python3 scripts/bili_aesthete_tui.py --plain
+```
+
+TUI 会维护一个长期候选池：
+
+```text
+.local/bilibili_user_scan/candidate_board.json
+```
+
+扫描结果会合并进候选池。你可以在菜单 4 里隐藏某个用户、恢复用户、修改展示权重、添加备注；后续新扫描会继续更新默认收藏夹数量等动态信息，但不会覆盖人工设置的权重、状态和备注。
+
+候选池还包含 `library_status`：
+
+```text
+pending   未入库
+imported  已入库
+```
+
+菜单 4 里用 `i` 可以切换已入库/未入库。菜单 5 写入 Supabase 时会默认跳过 `imported` 项。
+
+部署说明见：
+
+```text
+scripts/TERMUX.md
+```
+
+### 一键扫描并查看用户/fid
+
+推荐先用 TUI 菜单 1。它会完成扫描，并展示高默认收藏夹用户和默认收藏夹 ID，不会写 Supabase：
+
+```bash
+python3 scripts/bili_aesthete_tui.py
+```
+
+如果确认后续要写入，再在菜单 5 单独执行。CLI 合并命令仍保留给自动化使用：
 
 ```bash
 python3 scripts/scan_and_import_bilibili_defaults.py 'https://www.bilibili.com/video/BVxxxx' \

@@ -5,7 +5,7 @@ import { scoreRecommendationCandidates } from '@/lib/recommendation/scoreFeed';
 const MAX_LIMIT = 20;
 const RECENT_CANDIDATE_LIMIT = 180;
 const EXPLORATION_CANDIDATE_LIMIT = 80;
-const MAX_EXCLUDED_IDS = 160;
+const MAX_EXCLUDED_IDS = 300;
 const CANDIDATE_SELECT = `
   id,
   user_id,
@@ -133,7 +133,7 @@ async function loadPersonalSignals(database, user) {
     };
   }
 
-  const recentThreshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const recentThreshold = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
   const [preferenceResult, followResult, impressionResult] = await Promise.all([
     database
       .from('user_channel_preferences')
@@ -147,10 +147,9 @@ async function loadPersonalSignals(database, user) {
       .from('feed_impressions')
       .select('post_id')
       .eq('user_id', user.id)
-      .like('session_id', 'read:%')
       .gte('shown_at', recentThreshold)
       .order('shown_at', { ascending: false })
-      .limit(120),
+      .limit(800),
   ]);
 
   const ignorableTableCodes = new Set(['42P01', 'PGRST205']);
@@ -208,22 +207,6 @@ export default async function handler(req, res) {
       excludedPostIds,
       limit,
     });
-
-    // 小型社区可能在两周内已经看遍大部分内容；此时只保留本批明确排除项，
-    // 允许旧内容重新流动，而不是返回空白推荐页。
-    if (
-      selected.length < Math.min(4, limit)
-      && (personalSignals.recentImpressionIds.size > 0 || excludedIds.length > 0)
-    ) {
-      selected = scoreRecommendationCandidates({
-        posts,
-        seed,
-        preferencesByModuleId: personalSignals.preferencesByModuleId,
-        followingUserIds: personalSignals.followingUserIds,
-        excludedPostIds: new Set(excludedIds),
-        limit,
-      });
-    }
 
     res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).json({

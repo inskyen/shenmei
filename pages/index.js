@@ -28,7 +28,9 @@ const FEED_PAGE_SIZE = 10;
 const MIN_TOP_REFRESH_DURATION = 650;
 const HOME_SECTIONS = ['following', 'recommended', 'latest', 'modules'];
 const HOME_HISTORY_SECTION_KEY = 'shenmeiHomeSection';
-const READ_RECOMMENDATION_STORAGE_KEY = 'shenmei:read-recommendations';
+const LEGACY_READ_RECOMMENDATION_STORAGE_KEY = 'shenmei:read-recommendations';
+const READ_RECOMMENDATION_STORAGE_KEY = 'shenmei:seen-recommendations';
+const SEEN_RECOMMENDATION_LIMIT = 300;
 
 const MODULE_GRADIENTS = [
   ['#C1693A', '#E8A87C'],
@@ -87,7 +89,11 @@ function getRecentRecommendationIds() {
 
   try {
     const stored = JSON.parse(window.localStorage.getItem(READ_RECOMMENDATION_STORAGE_KEY) || '[]');
-    return Array.isArray(stored) ? stored.filter(Boolean).slice(0, 120) : [];
+    const legacyStored = JSON.parse(window.localStorage.getItem(LEGACY_READ_RECOMMENDATION_STORAGE_KEY) || '[]');
+    return [...new Set([
+      ...(Array.isArray(stored) ? stored : []),
+      ...(Array.isArray(legacyStored) ? legacyStored : []),
+    ].filter(Boolean))].slice(0, SEEN_RECOMMENDATION_LIMIT);
   } catch {
     return [];
   }
@@ -96,8 +102,33 @@ function getRecentRecommendationIds() {
 function rememberRecommendationIds(postIds) {
   if (typeof window === 'undefined') return;
 
-  const nextIds = [...new Set([...postIds.filter(Boolean), ...getRecentRecommendationIds()])].slice(0, 120);
+  const nextIds = [...new Set([...postIds.filter(Boolean), ...getRecentRecommendationIds()])].slice(0, SEEN_RECOMMENDATION_LIMIT);
   window.localStorage.setItem(READ_RECOMMENDATION_STORAGE_KEY, JSON.stringify(nextIds));
+}
+
+async function recordRecommendationImpressions(items, sessionId) {
+  const impressionItems = (items || []).filter((item) => item?.post_id);
+  if (impressionItems.length === 0) return;
+
+  rememberRecommendationIds(impressionItems.map((item) => item.post_id));
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
+
+  const rows = impressionItems.map((item) => ({
+    user_id: session.user.id,
+    session_id: `shown:${sessionId}`,
+    post_id: item.post_id,
+    reason_code: item.recommendation_reason_code || 'explore',
+  }));
+
+  const { error } = await supabase
+    .from('feed_impressions')
+    .upsert(rows, { onConflict: 'user_id,session_id,post_id', ignoreDuplicates: true });
+
+  if (error && !['42P01', 'PGRST205'].includes(error.code)) {
+    console.warn('推薦曝光記錄失敗:', error);
+  }
 }
 
 async function fetchRecommendationBatch({ seed, sessionId, exclude = [], signal }) {
@@ -411,6 +442,8 @@ export default function Home() {
           seed: data.seed || recommendationSeed,
           sessionId: data.session_id || recommendationSessionId,
         });
+        recordRecommendationImpressions(items, data.session_id || recommendationSessionId)
+          .catch((error) => console.warn('推薦曝光記錄失敗:', error));
       } catch (error) {
         if (error.name !== 'AbortError') console.error('讀取推薦採樣失敗:', error);
       } finally {
@@ -599,6 +632,8 @@ export default function Home() {
         seed: recommendationSeed,
         sessionId: recommendationSessionId,
       });
+      recordRecommendationImpressions(nextItems, recommendationSessionId)
+        .catch((error) => console.warn('推薦曝光記錄失敗:', error));
 
       nextItems.slice(0, 4).forEach((item) => {
         if (item.post_id) router.prefetch(`/p/${item.post_id}`).catch(() => {});
@@ -861,6 +896,8 @@ export default function Home() {
           seed: data.seed || nextSeed,
           sessionId: data.session_id || nextSessionId,
         });
+        recordRecommendationImpressions(items, data.session_id || nextSessionId)
+          .catch((error) => console.warn('推薦曝光記錄失敗:', error));
 
         const nextLikedPostIds = await loadLikedPostIds(items.map((item) => item.post_id));
         if (nextLikedPostIds) setLikedPostIds(nextLikedPostIds);
