@@ -38,8 +38,10 @@ STATE_DIR = ROOT_DIR / ".local" / "bilibili_user_scan"
 OUTPUT_DIR = STATE_DIR / "outputs"
 STATE_FILE = STATE_DIR / "tui_state.json"
 CANDIDATE_BOARD_FILE = STATE_DIR / "candidate_board.json"
-SCANNER = ROOT_DIR / "scripts" / "scan_bilibili_comment_users.py"
-BATCH_IMPORTER = ROOT_DIR / "scripts" / "import_scanned_default_favorites.py"
+SCANNER = ROOT_DIR / "scripts" / "bilibili" / "scan_comments.py"
+BATCH_IMPORTER = ROOT_DIR / "scripts" / "bilibili" / "import_scanned_default_favorites.py"
+FAVORITE_IMPORTER = ROOT_DIR / "scripts" / "bilibili" / "import_favorite.py"
+DEFAULT_MIN_FAVORITE_COUNT = 50
 
 RESET = "\033[0m"
 BOLD = "\033[1m"
@@ -64,12 +66,13 @@ class MenuState:
     comment_pages: int = 5
     user_limit: int = 120
     import_limit: int = 3
-    min_count: int = 101
+    min_count: int = DEFAULT_MIN_FAVORITE_COUNT
     excluded_fids: list[str] | None = None
 
     def __post_init__(self) -> None:
         if self.excluded_fids is None:
             self.excluded_fids = []
+        self.min_count = max(DEFAULT_MIN_FAVORITE_COUNT, parse_count(self.min_count))
 
 
 def clear_screen() -> None:
@@ -223,7 +226,7 @@ def banner(state: MenuState) -> None:
         grid.add_column(ratio=1)
         grid.add_column(justify="right")
         grid.add_row(
-            "[bold magenta]审美者 B站采矿台[/bold magenta]\n[dim]Termux Console · Scan → User/FID Board[/dim]",
+            "[bold magenta]审美者 B站采样台[/bold magenta]\n[dim]Termux Console · Scan → User/FID Board[/dim]",
             "[cyan]Bilibili[/cyan]\n[green]Supabase[/green]",
         )
         console.print(Panel(grid, border_style="magenta", box=box.ROUNDED))
@@ -234,20 +237,20 @@ def banner(state: MenuState) -> None:
         status.add_row("[bold]最近视频[/bold]", state.last_video or "[dim]未设置[/dim]")
         status.add_row("[bold]最近结果[/bold]", short_path(state.last_scan_file) if state.last_scan_file else "[dim]未扫描[/dim]")
         status.add_row("[bold]扫描参数[/bold]", f"评论页 {state.comment_pages} · 用户 {state.user_limit} · 收藏下限 {state.min_count}")
-        status.add_row("[bold]写库参数[/bold]", f"每次 {state.import_limit} 个 · 排除 {len(state.excluded_fids or [])} 个 fid")
+        status.add_row("[bold]高级写库[/bold]", f"每次 {state.import_limit} 个 · 排除 {len(state.excluded_fids or [])} 个 fid")
         status.add_row("[bold]候选池[/bold]", short_path(str(CANDIDATE_BOARD_FILE)) if CANDIDATE_BOARD_FILE.exists() else "[dim]未建立[/dim]")
         console.print(Panel(status, title="当前状态", border_style="cyan", box=box.SIMPLE))
         return
 
     print(f"{MAGENTA}{BOLD}╭────────────────────────────────────────────╮{RESET}")
-    print(f"{MAGENTA}{BOLD}│{RESET}  {BOLD}审美者 B站采矿台{RESET}  {DIM}Termux Console{RESET}        {MAGENTA}{BOLD}│{RESET}")
+    print(f"{MAGENTA}{BOLD}│{RESET}  {BOLD}审美者 B站采样台{RESET}  {DIM}Termux Console{RESET}        {MAGENTA}{BOLD}│{RESET}")
     print(f"{MAGENTA}{BOLD}╰────────────────────────────────────────────╯{RESET}")
     print(f"{DIM}  输入 BV 号，扫描评论用户，整理高默认收藏夹用户和 fid。{RESET}")
     print()
     print(f"  最近视频     {state.last_video or DIM + '未设置' + RESET}")
     print(f"  最近结果     {short_path(state.last_scan_file) if state.last_scan_file else DIM + '未扫描' + RESET}")
     print(f"  扫描参数     评论页 {state.comment_pages} · 用户 {state.user_limit} · 收藏下限 {state.min_count}")
-    print(f"  写库参数     每次 {state.import_limit} 个 · 排除 {len(state.excluded_fids or [])} 个 fid")
+    print(f"  高级写库     每次 {state.import_limit} 个 · 排除 {len(state.excluded_fids or [])} 个 fid")
     print(f"  候选池       {short_path(str(CANDIDATE_BOARD_FILE)) if CANDIDATE_BOARD_FILE.exists() else DIM + '未建立' + RESET}")
     print()
 
@@ -264,9 +267,15 @@ def short_path(value: str) -> str:
 
 def prompt(text: str, default: str = "") -> str:
     if USE_RICH:
-        return Prompt.ask(text, default=default or None).strip()
+        try:
+            return Prompt.ask(text, default=default or None).strip()
+        except EOFError:
+            return default
     suffix = f" [{default}]" if default else ""
-    value = input(f"{CYAN}{text}{RESET}{suffix}: ").strip()
+    try:
+        value = input(f"{CYAN}{text}{RESET}{suffix}: ").strip()
+    except EOFError:
+        return default
     return value or default
 
 
@@ -488,7 +497,7 @@ def render_user_board(path: Path) -> list[dict[str, Any]]:
         commands = Table.grid(expand=True)
         commands.add_column(ratio=1)
         commands.add_row(f"[bold]导出 CSV[/bold]  {short_path(str(path))}")
-        commands.add_row("[bold]下一步[/bold]    菜单 6 可排除 fid；菜单 5 才会写 Supabase")
+        commands.add_row("[bold]下一步[/bold]    菜单 4 可编辑候选池；高级工具里才会写 Supabase")
         console.print(Panel(commands, title="只看数据，不写库", border_style="green", box=box.SIMPLE))
     else:
         print()
@@ -508,7 +517,7 @@ def render_user_board(path: Path) -> list[dict[str, Any]]:
                 f"{str(row.get('default_favorite_count') or '0'):>6}  "
                 f"{'已排除' if fid in excluded else '候选':<6} @{row.get('username') or row.get('mid')}"
             )
-        print(f"\n  {DIM}只看数据，不写库。菜单 6 可排除 fid；菜单 5 才会写 Supabase。{RESET}")
+        print(f"\n  {DIM}只看数据，不写库。菜单 4 可编辑候选池；高级工具里才会写 Supabase。{RESET}")
 
     if high_priority_rows and not high_rows:
         print_warning("这份扫描结果是旧格式，缺少 default_favorite_id。请选较新的 pipeline_*.csv，或重新扫描。")
@@ -708,6 +717,66 @@ def import_from_scan(state: MenuState, *, commit: bool) -> None:
     import_from_path(state, path, commit=commit)
 
 
+def preview_pending_favorites(state: MenuState) -> None:
+    items = [
+        item for item in sorted_board_items(include_hidden=False)
+        if item.get("library_status") != "imported"
+        and parse_count(item.get("default_favorite_count")) >= state.min_count
+    ]
+
+    if USE_RICH:
+        summary = Table.grid(expand=True)
+        summary.add_column(ratio=1)
+        summary.add_column(ratio=1)
+        summary.add_row("[bold]候选池文件[/bold]", short_path(str(CANDIDATE_BOARD_FILE)))
+        summary.add_row("[bold]默认数下限[/bold]", str(state.min_count))
+        summary.add_row("[bold green]未入库收藏夹[/bold green]", str(len(items)))
+        console.print(Panel(summary, title="未入库收藏夹", border_style="cyan", box=box.ROUNDED))
+
+        table = Table(title="复制 fid 后可去高级工具 2 写入", box=box.SIMPLE_HEAVY)
+        table.add_column("#", justify="right", style="dim")
+        table.add_column("fid", style="magenta", no_wrap=True)
+        table.add_column("默认数", justify="right", style="green")
+        table.add_column("权重", justify="right", style="yellow")
+        table.add_column("用户")
+        table.add_column("mid", style="cyan")
+        table.add_column("收藏夹")
+        table.add_column("备注", overflow="fold")
+        for index, item in enumerate(items[:50], start=1):
+            table.add_row(
+                str(index),
+                str(item.get("fid") or ""),
+                str(item.get("default_favorite_count") or 0),
+                str(item.get("weight") or 0),
+                f"@{item.get('username') or item.get('mid')}",
+                str(item.get("mid") or ""),
+                str(item.get("default_favorite_title") or "默认收藏夹"),
+                str(item.get("note") or ""),
+            )
+        console.print(table)
+        if items:
+            console.print("[dim]提示：复制某一行 fid，选择高级工具 2，然后粘贴写入。[/dim]")
+    else:
+        print()
+        print(f"{CYAN}{BOLD}━━ 未入库收藏夹 {RESET}{GRAY}{'━' * 34}{RESET}")
+        print(f"  文件       {short_path(str(CANDIDATE_BOARD_FILE))}")
+        print(f"  默认下限   {state.min_count}")
+        print(f"  未入库     {len(items)}")
+        print()
+        print(f"  {'#':>2} {'fid':<14} {'默认数':>6} {'权重':>6} {'用户':<18} 收藏夹")
+        for index, item in enumerate(items[:50], start=1):
+            print(
+                f"  {index:>2}. {str(item.get('fid') or ''):<14} "
+                f"{str(item.get('default_favorite_count') or 0):>6} "
+                f"{str(item.get('weight') or 0):>6} "
+                f"@{str(item.get('username') or item.get('mid')):<17} "
+                f"{item.get('default_favorite_title') or '默认收藏夹'}"
+            )
+        if items:
+            print(f"\n  {DIM}复制某一行 fid，选择高级工具 2，然后粘贴写入。{RESET}")
+    pause()
+
+
 def export_candidate_board_for_import() -> Path | None:
     items = [
         item for item in sorted_board_items(include_hidden=False)
@@ -794,6 +863,25 @@ def import_from_path(state: MenuState, path: Path, *, commit: bool) -> None:
     pause()
 
 
+def import_single_favorite(state: MenuState) -> None:
+    favorite_id = prompt("输入要写入的视频收藏夹 ID", "")
+    if not favorite_id:
+        print_warning("没有输入收藏夹 ID。")
+        pause()
+        return
+
+    command = [
+        sys.executable,
+        "-u",
+        str(FAVORITE_IMPORTER),
+        favorite_id,
+    ]
+    code = run_command(command)
+    save_state(state)
+    (print_success if code == 0 else print_error)(f"{'完成' if code == 0 else '失败'} code={code}")
+    pause()
+
+
 def scan_and_show_users(state: MenuState) -> None:
     video = prompt("BV 号或视频链接", state.last_video)
     if not video:
@@ -872,6 +960,41 @@ def edit_exclusions(state: MenuState) -> None:
     pause()
 
 
+def advanced_menu(state: MenuState) -> None:
+    while True:
+        clear_screen()
+        if USE_RICH:
+            table = Table(title="高级工具", box=box.ROUNDED, expand=True)
+            table.add_column("键", justify="center", style="bold cyan", width=4)
+            table.add_column("动作", style="bold")
+            table.add_column("说明", style="dim")
+            table.add_row("1", "预览未入库收藏夹", "显示用户信息和 fid，方便复制")
+            table.add_row("2", "写入指定收藏夹视频", "手动输入 fid，再确认写入")
+            table.add_row("3", "排除/取消排除 fid", "过滤不想导入的收藏夹")
+            table.add_row("0", "返回主菜单", "继续编辑候选池")
+            console.print(table)
+        else:
+            print(f"{BOLD}高级工具{RESET}")
+            print(f"{BOLD}  1.{RESET} 预览未入库收藏夹")
+            print(f"{BOLD}  2.{RESET} 写入指定收藏夹视频")
+            print(f"{BOLD}  3.{RESET} 排除/取消排除 fid")
+            print(f"{BOLD}  0.{RESET} 返回主菜单")
+            print()
+
+        choice = prompt("选择高级工具", "0")
+        if choice == "1":
+            preview_pending_favorites(state)
+        elif choice == "2":
+            import_single_favorite(state)
+        elif choice == "3":
+            edit_exclusions(state)
+        elif choice == "0":
+            return
+        else:
+            print_error("未知菜单。")
+            pause()
+
+
 def menu_loop() -> int:
     state = load_state()
 
@@ -886,8 +1009,7 @@ def menu_loop() -> int:
             menu.add_row("2", "只扫描视频评论用户", "生成 CSV/JSON，不触发导入")
             menu.add_row("3", "从扫描结果合并", "把 CSV/JSON 合并进候选池")
             menu.add_row("4", "查看/编辑候选池", "隐藏、恢复、改权重、备注")
-            menu.add_row("5", "写入 Supabase", "需要输入 YES")
-            menu.add_row("6", "排除/取消排除 fid", "过滤不想导入的收藏夹")
+            menu.add_row("5", "高级工具", "预览/写库/排除 fid")
             menu.add_row("0", "退出", "保存当前状态")
             console.print(menu)
         else:
@@ -895,12 +1017,11 @@ def menu_loop() -> int:
             print(f"{BOLD}  2.{RESET} 只扫描视频评论用户")
             print(f"{BOLD}  3.{RESET} 从扫描结果合并")
             print(f"{BOLD}  4.{RESET} 查看/编辑候选池")
-            print(f"{BOLD}  5.{RESET} 写入 Supabase")
-            print(f"{BOLD}  6.{RESET} 排除/取消排除 fid")
+            print(f"{BOLD}  5.{RESET} 高级工具")
             print(f"{BOLD}  0.{RESET} 退出")
             print()
 
-        choice = prompt("选择菜单", "1")
+        choice = prompt("选择菜单", "1" if sys.stdin.isatty() else "0")
         if choice == "1":
             scan_and_show_users(state)
         elif choice == "2":
@@ -910,9 +1031,7 @@ def menu_loop() -> int:
         elif choice == "4":
             edit_candidate_board(state)
         elif choice == "5":
-            import_from_scan(state, commit=True)
-        elif choice == "6":
-            edit_exclusions(state)
+            advanced_menu(state)
         elif choice == "0":
             if USE_RICH:
                 console.print("[dim]下次继续采。[/dim]")

@@ -1,22 +1,31 @@
 # 本機維護工具
 
-## B站评论区审美者探针
+## B站采样台
 
-此工具会登录 B站，扫描某个视频评论区里的用户主页，并标记：
-
-1. 用户收藏夹是否公开。
-2. 默认收藏夹可见视频数量。
-3. 默认收藏夹视频数大于 100 的 `HIGH_VALUE` 用户。
-
-### Termux 终端界面
-
-手机 Termux 上推荐使用菜单入口：
+日常只需要记住一个入口：
 
 ```bash
 python3 scripts/bili_aesthete_tui.py
 ```
 
-它会自动启用 Rich 仪表盘界面；如需纯文本兜底：
+它会登录 B站，扫描某个视频评论区里的用户主页，并标记：
+
+1. 用户收藏夹是否公开。
+2. 默认收藏夹可见视频数量。
+3. 默认收藏夹视频数大于 100 的 `HIGH_VALUE` 用户。
+
+### 文件结构
+
+面向人的入口尽量保持简约：
+
+```text
+scripts/
+  bili_aesthete_tui.py        # 日常唯一入口
+  bilibili/                   # B站内部执行脚本
+  *_bilibili_*.py             # 旧命令兼容转发器
+```
+
+手机 Termux 上也推荐使用这个菜单入口。它会自动启用 Rich 仪表盘界面；如需纯文本兜底：
 
 ```bash
 python3 scripts/bili_aesthete_tui.py --plain
@@ -53,7 +62,7 @@ scripts/TERMUX.md
 python3 scripts/bili_aesthete_tui.py
 ```
 
-如果确认后续要写入，再在菜单 5 单独执行。CLI 合并命令仍保留给自动化使用：
+如果确认后续要写入，再进菜单 5 的高级工具，手动输入要写入的收藏夹 ID。CLI 合并命令仍保留给自动化使用：
 
 ```bash
 python3 scripts/scan_and_import_bilibili_defaults.py 'https://www.bilibili.com/video/BVxxxx' \
@@ -77,7 +86,7 @@ python3 scripts/scan_and_import_bilibili_defaults.py BVxxxx \
 在项目根目录执行：
 
 ```bash
-python3 scripts/scan_bilibili_comment_users.py BVxxxx --login
+python3 scripts/bili_aesthete_tui.py
 ```
 
 脚本会在终端显示二维码。用 B站 App 扫码确认后，Cookie 会保存到：
@@ -88,13 +97,9 @@ python3 scripts/scan_bilibili_comment_users.py BVxxxx --login
 
 `.local/` 已被 `.gitignore` 忽略，不会进入 Git。
 
-### 常规扫描
+### 旧 CLI 命令
 
-```bash
-python3 scripts/scan_bilibili_comment_users.py 'https://www.bilibili.com/video/BVxxxx'
-```
-
-常用参数：
+旧命令仍可执行，但现在只是转发到 `scripts/bilibili/` 里的内部脚本：
 
 ```bash
 python3 scripts/scan_bilibili_comment_users.py BVxxxx \
@@ -104,7 +109,7 @@ python3 scripts/scan_bilibili_comment_users.py BVxxxx \
   --user-delay 2.0,4.0
 ```
 
-输出位置：
+扫描输出位置：
 
 ```text
 .local/bilibili_user_scan/outputs/
@@ -129,7 +134,7 @@ python3 scripts/import_bilibili_favorite.py 2456935435
 
 ### 批量导入扫描出来的默认收藏夹
 
-扫描完成后，可以让批量入库器读取最新一份扫描结果。默认只处理 `HIGH_VALUE`，且只跑预览：
+优先使用 TUI 菜单 5 的高级工具，先预览未入库收藏夹并复制 fid，再输入明确的收藏夹 ID 写入。CLI 入库器保留给自动化使用，默认只处理 `HIGH_VALUE`，且只跑预览：
 
 ```bash
 python3 scripts/import_scanned_default_favorites.py
