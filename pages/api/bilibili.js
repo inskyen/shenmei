@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (data.code === 0 && data.data) {
-      const { title, pic, owner } = data.data;
+      const { title, pic, owner, pubdate } = data.data;
       
       // B站返回的图片通常是 http 开头，替换为 https 以避免 mixed content 报错
       const securePic = pic ? pic.replace(/^http:\/\//i, 'https://') : '';
@@ -38,6 +38,8 @@ export default async function handler(req, res) {
         title,
         cover: securePic,
         author: owner?.name || '',
+        pubdate: pubdate || null,
+        published_at: pubdate ? new Date(pubdate * 1000).toISOString() : null,
         dimension: data.data.dimension || null,
       });
     }

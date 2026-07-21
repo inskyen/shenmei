@@ -21,12 +21,19 @@ function createFallbackUsername() {
   return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
+function isBilibili2021OrEarlier(pubdate) {
+  const timestamp = Number(pubdate);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return false;
+  return new Date(timestamp * 1000).getUTCFullYear() <= 2021;
+}
+
 export default function SubmitPage() {
   const router = useRouter();
   const [sourceInput, setSourceInput] = useState(null);
   const [videoTitle, setVideoTitle] = useState(null);
   const [coverUrl, setCoverUrl] = useState('');
   const [authorName, setAuthorName] = useState('');
+  const [videoPubdate, setVideoPubdate] = useState(null);
   const [note, setNote] = useState('');
   const [modules, setModules] = useState([]);
   const [selectedModuleIds, setSelectedModuleIds] = useState([]);
@@ -38,6 +45,7 @@ export default function SubmitPage() {
   const [roleLoading, setRoleLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [publishComplete, setPublishComplete] = useState(false);
+  const [publishTargetModule, setPublishTargetModule] = useState(null);
 
   const prefilledBvid = router.isReady && typeof router.query.bvid === 'string' ? router.query.bvid : '';
   const prefilledTitle = router.isReady && typeof router.query.title === 'string' ? router.query.title : '';
@@ -45,7 +53,16 @@ export default function SubmitPage() {
   const sourceValue = sourceInput ?? prefilledBvid;
   const videoTitleValue = videoTitle ?? prefilledTitle;
   const forcedModule = modules.find((module) => module.slug === forcedModuleSlug) || null;
-  const effectiveSelectedModuleIds = forcedModule ? [forcedModule.id] : selectedModuleIds;
+  const b2021Module = modules.find((module) => module.name === 'B站2021') || null;
+  const hasManualModuleSelection = Boolean(forcedModule) || selectedModuleIds.length > 0;
+  const shouldForceB2021 = !hasManualModuleSelection && isBilibili2021OrEarlier(videoPubdate);
+  const forcedByYearModule = shouldForceB2021 ? b2021Module : null;
+  const effectiveSelectedModuleIds = forcedByYearModule
+    ? [forcedByYearModule.id]
+    : forcedModule
+      ? [forcedModule.id]
+      : selectedModuleIds;
+  const displayForcedModule = forcedByYearModule || forcedModule;
   const canChooseModule = canCurateInModules(currentRole);
 
   const handleSourceChange = (event) => {
@@ -83,6 +100,7 @@ export default function SubmitPage() {
         if (data.title && !videoTitleValue) setVideoTitle(data.title);
         if (data.cover && !coverUrl) setCoverUrl(data.cover);
         if (data.author && !authorName) setAuthorName(data.author);
+        if (data.pubdate) setVideoPubdate(data.pubdate);
       } else {
         setMessage('解析失敗，請手動確保連結正確。');
       }
@@ -99,6 +117,7 @@ export default function SubmitPage() {
     setVideoTitle(null);
     setCoverUrl('');
     setAuthorName('');
+    setVideoPubdate(null);
     router.replace(forcedModuleSlug ? `/submit?module=${forcedModuleSlug}` : '/submit', undefined, { shallow: true });
   };
 
@@ -190,6 +209,7 @@ export default function SubmitPage() {
       throw new Error('這支影片還沒有收錄，請先補上影片標題。');
     }
 
+    const publishedAt = videoPubdate ? new Date(Number(videoPubdate) * 1000).toISOString() : null;
     const { data, error } = await supabase
       .from('videos')
       .insert({
@@ -202,6 +222,7 @@ export default function SubmitPage() {
         cover_url: coverUrl.trim() || null,
         up_name: authorName.trim() || null,
         author_name: authorName.trim() || null,
+        published_at: publishedAt,
         status: 'published',
       })
       .select('id')
@@ -214,6 +235,7 @@ export default function SubmitPage() {
   const handleSubmit = async (event) => {
     if (event) event.preventDefault();
     setMessage('');
+    setPublishTargetModule(null);
 
     const bvid = parseBvid(sourceValue);
     const trimmedNote = note.trim();
@@ -248,7 +270,30 @@ export default function SubmitPage() {
       const latestRole = await loadProfileRole(user.id);
       setCurrentRole(latestRole);
 
-      if (effectiveSelectedModuleIds.length > 0 && !canCurateInModules(latestRole)) {
+      let finalSelectedModuleIds = effectiveSelectedModuleIds;
+      let finalForcedByYearModule = forcedByYearModule;
+      if (!hasManualModuleSelection && !finalForcedByYearModule) {
+        try {
+          const res = await fetch(`/api/bilibili?bvid=${bvid}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.pubdate) setVideoPubdate(data.pubdate);
+            if (isBilibili2021OrEarlier(data.pubdate)) {
+              const targetModule = b2021Module || modules.find((module) => module.name === 'B站2021') || null;
+              if (!targetModule) {
+                throw new Error('這支影片是 2021 年及以前發布，但找不到「B站2021」頻道。');
+              }
+              finalForcedByYearModule = targetModule;
+              finalSelectedModuleIds = [targetModule.id];
+            }
+          }
+        } catch (error) {
+          if (error.message?.includes('B站2021')) throw error;
+          console.warn('提交時補充 B站發布時間失敗:', error);
+        }
+      }
+
+      if (finalSelectedModuleIds.length > 0 && !finalForcedByYearModule && !canCurateInModules(latestRole)) {
         setMessage('只有審美者可以投稿至頻道；這次採樣可發佈到大廳。');
         return;
       }
@@ -272,8 +317,29 @@ export default function SubmitPage() {
 
       if (postError) throw postError;
 
-      if (effectiveSelectedModuleIds.length > 0) {
-        const rows = effectiveSelectedModuleIds.map((moduleId) => ({
+      let moduleToPrefetch = finalForcedByYearModule || forcedModule;
+      if (finalForcedByYearModule) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) throw new Error('登入狀態已過期，請重新登入。');
+
+        const assignResponse = await fetch('/api/posts/assign-bilibili-2021', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ postId: post.id }),
+        });
+        const assignResult = await assignResponse.json().catch(() => ({}));
+        if (!assignResponse.ok) {
+          throw new Error(assignResult.error || 'B站2021 自動歸檔失敗。');
+        }
+        if (assignResult.assigned && assignResult.module) {
+          moduleToPrefetch = assignResult.module;
+        }
+      } else if (finalSelectedModuleIds.length > 0) {
+        const rows = finalSelectedModuleIds.map((moduleId) => ({
           post_id: post.id,
           module_id: moduleId,
           added_by: user.id,
@@ -286,14 +352,15 @@ export default function SubmitPage() {
         if (moduleError) throw moduleError;
       }
 
-      if (forcedModule) {
-        await prefetchModulePage(forcedModule.slug, { force: true })
+      if (moduleToPrefetch) {
+        await prefetchModulePage(moduleToPrefetch.slug, { force: true })
           .catch((error) => console.error('頻道快取更新失敗:', error));
       }
 
+      setPublishTargetModule(moduleToPrefetch || null);
       setPublishComplete(true);
       window.setTimeout(() => {
-        router.push(forcedModule ? `/m/${forcedModule.slug}` : '/');
+        router.push(moduleToPrefetch ? `/m/${moduleToPrefetch.slug}` : '/');
       }, 520);
     } catch (error) {
       console.error('採樣失敗:', error);
@@ -486,6 +553,14 @@ export default function SubmitPage() {
            <div style={{ marginTop: '32px' }}>
              {roleLoading ? (
                <div className="app-detail-skeleton" style={{ borderRadius: '6px', height: '58px', width: '100%' }} />
+             ) : forcedByYearModule ? (
+              <>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>本次投遞</div>
+                <div style={{ alignItems: 'center', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', padding: '12px 14px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 600 }}>{forcedByYearModule.name}</span>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>2021 及以前自動歸檔</span>
+                </div>
+              </>
              ) : forcedModuleSlug && !canChooseModule ? (
                <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, padding: '12px 14px' }}>
                  這個頻道開放給審美者投稿；您仍可將這次採樣發佈到大廳。
@@ -544,8 +619,8 @@ export default function SubmitPage() {
         <div style={{ alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', inset: 0, justifyContent: 'center', position: 'fixed', zIndex: 80 }}>
           <div style={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border-light)', color: 'var(--text-primary)', padding: '24px 28px', textAlign: 'center' }}>
             <div style={{ alignItems: 'center', backgroundColor: 'var(--brand-blue-light)', borderRadius: '50%', color: 'var(--brand-blue)', display: 'flex', fontSize: '22px', height: '42px', justifyContent: 'center', margin: '0 auto 12px', width: '42px' }}>✓</div>
-            <div style={{ fontSize: '16px', fontWeight: 600 }}>{forcedModule ? `已投遞至 ${forcedModule.name}` : '已放進最新大廳'}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{forcedModule ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的採樣。'}</div>
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>{(publishTargetModule || displayForcedModule) ? `已投遞至 ${(publishTargetModule || displayForcedModule).name}` : '已放進最新大廳'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>{(publishTargetModule || displayForcedModule) ? '正在帶您回到這個頻道。' : '正在帶您回到剛剛發出的採樣。'}</div>
           </div>
         </div>
       )}
